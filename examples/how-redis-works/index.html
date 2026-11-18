@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>How Redis Works Under the Hood — ByteByteGo Explainer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #262626; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="../../dist/tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Camera, Connectors, Icons, Illustrations, createVideo } = window.TechVideoStudio;
+
+    createVideo({
+      title: 'How Redis Works Under the Hood',
+      palette: 'byteCharcoal',
+      fps: 60,
+      scenes: [
+        // ====================================================================
+        // SCENE 1: In-Memory RAM vs Traditional Disk Storage (0s -> 15s)
+        // ====================================================================
+        {
+          id: 'ram-vs-disk',
+          chapter: '01. In-Memory RAM vs Traditional Disk Storage',
+          duration: 15,
+          qaTime: 5.5,
+          backdrop: 'waves',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.0, type: 'draw' },
+            { time: 2.2, type: 'whoosh' },
+            { time: 3.5, type: 'success' },
+            { time: 8.0, type: 'whoosh' }
+          ],
+          captions: [
+            { start: 0.4, end: 5.5, text: 'Traditional databases read and write to magnetic or NVMe disks with millisecond latency.' },
+            { start: 6.0, end: 11.5, text: 'Redis stores all working datasets directly in DRAM, achieving sub-100 microsecond response times.' },
+            { start: 12.0, end: 14.8, text: 'This in-memory architecture delivers over 100,000 queries per second on a single machine.' }
+          ],
+          initialState: () => ({
+            diskCard: 0,
+            redisCard: 0,
+            arrows: 0,
+            hero: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { diskCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { redisCard: 1, duration: 0.8, ease: 'power2.out' }, 0.7)
+              .to(s, { arrows: 1, duration: 0.8, ease: 'power2.out' }, 1.4)
+              .to(s, { hero: 1, duration: 0.7, ease: 'back.out(1.5)' }, 2.4);
+            Camera.zoomTo(tl, s, { x: 1520, y: 520, zoom: 1.25, duration: 1.2 }, 8.0);
+            Camera.reset(tl, s, 12.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Traditional Relational DB (Disk Latency)
+            Theme.drawGlassCard(ctx, 160, 240, 480, 560, {
+              tint: 'slate',
+              badge: 'Traditional Disk DB',
+              badgeSide: 'left',
+              progress: state.diskCard
+            });
+
+            Icons.draw(ctx, 'postgresElephant', 400, 340, 68, { alpha: state.diskCard });
+
+            Illustrations.wireframeCylinderDb(ctx, 400, 480, {
+              width: 170,
+              height: 180,
+              color: '#94A3B8',
+              label: 'Disk Block I/O (~5ms)',
+              progress: state.diskCard
+            });
+
+            if (state.diskCard > 0.6) {
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 17px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('• B-Tree Disk Seeks & Page Buffer Swaps', 400, 680);
+              ctx.fillText('• Heavy Kernel File System Overhead', 400, 715);
+            }
+
+            // Middle: Kinetic Latency Comparison Banner & Hero Metric
+            if (state.hero > 0.05) {
+              Illustrations.heroMetricSlam(ctx, '< 100 μs', {
+                cx: 960,
+                cy: 420,
+                fontSize: 110,
+                color: '#5CE1E6',
+                subtitle: 'DRAM Microsecond Access Time',
+                scale: state.hero
+              });
+
+              Theme.drawGlassCard(ctx, 720, 560, 480, 160, {
+                tint: 'teal',
+                badge: 'Speed Advantage',
+                badgeSide: 'center',
+                progress: state.hero
+              });
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 20px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('100,000+ QPS per Single Core', 960, 630);
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `600 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('RAM: 100ns  vs  NVMe Disk: 10,000ns', 960, 670);
+            }
+
+            // Right: Redis In-Memory Engine
+            Theme.drawGlassCard(ctx, 1280, 240, 480, 560, {
+              tint: 'crimson',
+              badge: 'Redis In-Memory Engine',
+              badgeSide: 'right',
+              progress: state.redisCard
+            });
+
+            Icons.draw(ctx, 'redisCube', 1520, 340, 72, { glowColor: '#EF4444', alpha: state.redisCard });
+
+            Illustrations.cacheMemoryMatrix(ctx, 1340, 420, 360, 240, t, {
+              header: 'RAM Cache Matrix (DRAM)',
+              cols: 3,
+              rows: 3
+            });
+
+            if (state.redisCard > 0.6) {
+              ctx.fillStyle = '#FCA5A5';
+              ctx.font = `500 17px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('• Zero Disk Latency on Reads/Writes', 1520, 710);
+              ctx.fillText('• In-Memory Hash Tables with O(1) Speed', 1520, 745);
+            }
+
+            // Flow Connector Arcing Gracefully Over the Center
+            Connectors.curvedArrow(ctx, 640, 310, 1280, 310, {
+              progress: state.arrows,
+              curvature: -0.22,
+              color: '#38BDF8',
+              label: 'Cache-Aside Query (Read Fast Path)'
+            });
+
+            if (state.hero > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Redis Stores All Working Datasets in RAM for Sub-Millisecond Speed');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 2: Single-Threaded Event Loop & I/O Multiplexing (15s -> 30s)
+        // ====================================================================
+        {
+          id: 'event-loop-multiplexing',
+          chapter: '02. Single-Threaded Event Loop & I/O Multiplexing',
+          duration: 15,
+          qaTime: 5.5,
+          backdrop: 'blueprint',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.1, type: 'draw' },
+            { time: 2.2, type: 'tick' },
+            { time: 3.4, type: 'whoosh' },
+            { time: 4.5, type: 'success' },
+            { time: 7.5, type: 'whoosh' }
+          ],
+          captions: [
+            { start: 0.4, end: 5.5, text: 'Many assume a single-threaded server is slow, but Redis uses non-blocking I/O multiplexing.' },
+            { start: 6.0, end: 10.5, text: 'The Linux epoll selector monitors thousands of open sockets simultaneously without polling.' },
+            { start: 11.0, end: 14.8, text: 'With zero thread lock contention and zero context switching, CPU caches stay hot.' }
+          ],
+          initialState: () => ({
+            clients: 0,
+            epoll: 0,
+            loop: 0,
+            queue: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { clients: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { epoll: 1, duration: 0.8, ease: 'power2.out' }, 0.8)
+              .to(s, { queue: 1, duration: 0.7, ease: 'power2.out' }, 1.5)
+              .to(s, { loop: 1, duration: 0.8, ease: 'power2.out' }, 2.2);
+            Camera.zoomTo(tl, s, { x: 1450, y: 520, zoom: 1.22, duration: 1.2 }, 7.5);
+            Camera.reset(tl, s, 12.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Concurrent Clients
+            Theme.drawGlassCard(ctx, 160, 220, 360, 580, {
+              tint: 'teal',
+              badge: 'Concurrent Clients',
+              badgeSide: 'left',
+              progress: state.clients
+            });
+
+            Illustrations.lineArtUser(ctx, 340, 330, { label: 'Client 1 (SET key)', color: '#5CE1E6', progress: state.clients });
+            Illustrations.lineArtUser(ctx, 340, 500, { label: 'Client 2 (GET user)', color: '#4ADE80', progress: state.clients });
+            Illustrations.lineArtUser(ctx, 340, 670, { label: 'Client 3 (INCR count)', color: '#C084FC', progress: state.clients });
+
+            // Center: Linux epoll I/O Multiplexer
+            Theme.drawGlassCard(ctx, 590, 220, 480, 580, {
+              tint: 'olive',
+              badge: 'I/O Multiplexing (epoll)',
+              badgeSide: 'center',
+              progress: state.epoll
+            });
+
+            Illustrations.loadBalancerRouter(ctx, 830, 420, {
+              radius: 64,
+              color: '#FACC15',
+              label: 'epoll_wait() Socket Selector',
+              algorithm: 'Kernel Event Notification',
+              progress: state.epoll
+            });
+
+            // Connectors from clients to epoll
+            Connectors.solidArrow(ctx, 420, 330, 750, 400, { progress: state.epoll, color: '#5CE1E6', dashed: true, timeSec: t });
+            Connectors.solidArrow(ctx, 420, 500, 750, 420, { progress: state.epoll, color: '#4ADE80', dashed: true, timeSec: t });
+            Connectors.solidArrow(ctx, 420, 670, 750, 440, { progress: state.epoll, color: '#C084FC', dashed: true, timeSec: t });
+
+            if (state.epoll > 0.6) {
+              ctx.fillStyle = '#FEF08A';
+              ctx.font = `600 17px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Non-Blocking Sockets', 830, 560);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.fillText('Monitors 10,000+ connections in O(1)', 830, 595);
+              ctx.fillText('Awakens only when socket is readable', 830, 625);
+            }
+
+            // Right: Single Threaded Execution Event Loop
+            Theme.drawGlassCard(ctx, 1140, 220, 620, 580, {
+              tint: 'emerald',
+              badge: 'Single Execution Thread',
+              badgeSide: 'right',
+              progress: state.loop
+            });
+
+            // Sequential Ready Event FIFO Queue
+            Illustrations.pubSubTopicBox(ctx, 1180, 290, 540, 110, {
+              title: 'Sequential Ready Events FIFO Queue',
+              tint: 'slate',
+              offsets: ['SET #1', 'GET #2', 'INCR #3', 'READY'],
+              activeSlot: 2,
+              progress: state.queue
+            });
+
+            Connectors.solidArrow(ctx, 910, 420, 1180, 345, { progress: state.queue, color: '#FACC15', label: 'Push Events' });
+
+            // Execution CPU Core & Speed Gauge
+            Icons.draw(ctx, 'cpuSilicon', 1320, 550, 96, { glowColor: '#4ADE80', alpha: state.loop });
+            Icons.draw(ctx, 'turboMeter', 1560, 550, 96, { glowColor: '#F59E0B', alpha: state.loop });
+
+            if (state.loop > 0.6) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 20px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Zero Lock Overhead & Zero Race Conditions', 1450, 670);
+              ctx.fillStyle = '#86EFAC';
+              ctx.font = `500 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('No Mutex • No Thread Context Switch • Pure L1/L2 Cache Hits', 1450, 710);
+            }
+
+            if (state.loop > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'I/O Multiplexing (epoll) Eliminates Locking and Thread Context Switching');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 3: Rich In-Memory Data Structures (SkipList & Hashes) (30s -> 45s)
+        // ====================================================================
+        {
+          id: 'data-structures-skiplist',
+          chapter: '03. Rich In-Memory Data Structures (Hashes & SkipLists)',
+          duration: 15,
+          qaTime: 5.5,
+          backdrop: 'waves',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.0, type: 'draw' },
+            { time: 2.2, type: 'tick' },
+            { time: 3.5, type: 'success' },
+            { time: 7.5, type: 'whoosh' }
+          ],
+          captions: [
+            { start: 0.4, end: 5.5, text: 'Redis is not just a key-value store—it is a specialized data structure engine.' },
+            { start: 6.0, end: 10.8, text: 'Sorted Sets use SkipLists and hash tables to maintain real-time leaderboards in O(log N).' },
+            { start: 11.2, end: 14.8, text: 'Hashes, Lists, Bitmaps, and HyperLogLogs are optimized with memory-efficient compact encodings.' }
+          ],
+          initialState: () => ({
+            structs: 0,
+            hashBox: 0,
+            skipList: 0,
+            queryArrow: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { structs: 1, duration: 0.7, ease: 'power2.out' }, 0.2)
+              .to(s, { hashBox: 1, duration: 0.8, ease: 'power2.out' }, 0.8)
+              .to(s, { skipList: 1, duration: 0.9, ease: 'power2.out' }, 1.5)
+              .to(s, { queryArrow: 1, duration: 0.7, ease: 'power2.out' }, 2.4);
+            Camera.zoomTo(tl, s, { x: 1340, y: 560, zoom: 1.20, duration: 1.2 }, 7.5);
+            Camera.reset(tl, s, 12.5, 1.0);
+          },
+          render(ctx, { state }) {
+            // Top Data Structure Badges Strip
+            if (state.structs > 0.05) {
+              const types = [
+                { tag: 'STRING', bg: '#0284C7', desc: 'Raw binary bytes / caching' },
+                { tag: 'HASH', bg: '#10B981', desc: 'Objects & user fields' },
+                { tag: 'ZSET', bg: '#F59E0B', desc: 'Sorted Set leaderboards' },
+                { tag: 'LIST', bg: '#8B5CF6', desc: 'LPUSH/RPOP job queues' },
+                { tag: 'BITMAP', bg: '#EC4899', desc: 'Daily active users bitset' }
+              ];
+              const spanW = 1560;
+              const startX = (1920 - spanW) / 2;
+              const stepW = spanW / types.length;
+
+              types.forEach((item, idx) => {
+                const cx = startX + idx * stepW + stepW / 2;
+                Illustrations.foldedFileBadge(ctx, cx, 230, item.tag, {
+                  ribbonBg: item.bg,
+                  width: 88,
+                  height: 104,
+                  caption: item.desc,
+                  progress: state.structs
+                });
+              });
+            }
+
+            // Left Pane: Hash Table (O(1) Dictionary Lookup)
+            Theme.drawGlassCard(ctx, 160, 360, 680, 450, {
+              tint: 'teal',
+              badge: 'Redis Hashes (HSET / HGET)',
+              badgeSide: 'left',
+              progress: state.hashBox
+            });
+
+            if (state.hashBox > 0.2) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 20px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('Key: "user:1001" -> Dict Bucket Array', 200, 420);
+
+              const entries = [
+                { k: 'name', v: '"Alice"', color: '#38BDF8' },
+                { k: 'role', v: '"Architect"', color: '#4ADE80' },
+                { k: 'score', v: '9840', color: '#FACC15' },
+                { k: 'login', v: '1731974400', color: '#C084FC' }
+              ];
+
+              entries.forEach((e, i) => {
+                const ey = 460 + i * 58;
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+                ctx.beginPath();
+                ctx.roundRect(200, ey, 600, 46, 8);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(94, 234, 212, 0.35)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.fillStyle = '#94A3B8';
+                ctx.font = `600 16px ${Theme.FONTS.mono}`;
+                ctx.fillText(`bucket[${i}]`, 220, ey + 28);
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `700 17px ${Theme.FONTS.mono}`;
+                ctx.fillText(e.k, 360, ey + 28);
+
+                ctx.fillStyle = e.color;
+                ctx.font = `700 17px ${Theme.FONTS.mono}`;
+                ctx.fillText(e.v, 520, ey + 28);
+              });
+
+              ctx.fillStyle = '#5CE1E6';
+              ctx.font = `500 16px ${Theme.FONTS.sans}`;
+              ctx.fillText('✔ O(1) Time Complexity with Automatic Hash Table Rehashing', 200, 740);
+            }
+
+            // Right Pane: Sorted Set (ZSET) SkipList Hierarchy
+            Theme.drawGlassCard(ctx, 920, 360, 840, 450, {
+              tint: 'emerald',
+              badge: 'Sorted Sets (SkipList Hierarchy)',
+              badgeSide: 'right',
+              progress: state.skipList
+            });
+
+            Illustrations.bTreeHierarchy(ctx, 1340, 430, {
+              root: ['50', '85'],
+              children: [
+                { keys: ['10', '25'], active: false },
+                { keys: ['50', '72'], active: true },
+                { keys: ['85', '99'], active: false }
+              ],
+              progress: state.skipList
+            });
+
+            if (state.skipList > 0.4) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 19px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('ZREVRANGEBYSCORE leaderboard:gaming (Score 72 -> Rank #2)', 1340, 680);
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `500 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('SkipList Forward Pointers Skip Nodes in O(log N) Time', 1340, 720);
+            }
+
+            if (state.skipList > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'SkipLists & Compact Hash Encoding Enable O(log N) Real-Time Leaderboards');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 4: Persistence & Non-Blocking Background Snapshots (45s -> 60s)
+        // ====================================================================
+        {
+          id: 'persistence-rdb-aof',
+          chapter: '04. Persistence & Non-Blocking Background Snapshots',
+          duration: 15,
+          qaTime: 5.5,
+          backdrop: 'speedlines',
+          transition: 'fade',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.2, type: 'draw' },
+            { time: 2.4, type: 'tick' },
+            { time: 3.5, type: 'success' },
+            { time: 7.5, type: 'whoosh' }
+          ],
+          captions: [
+            { start: 0.4, end: 5.5, text: 'To survive reboots, Redis combines in-memory speed with two robust persistence models.' },
+            { start: 6.0, end: 10.5, text: 'RDB forks a background process using OS Copy-On-Write to stream compact snapshots to disk.' },
+            { start: 11.0, end: 14.8, text: 'AOF journals every write command in real-time, achieving maximum durability with zero downtime.' }
+          ],
+          initialState: () => ({
+            mainProc: 0,
+            forkProc: 0,
+            aofStream: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { mainProc: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { forkProc: 1, duration: 0.8, ease: 'power2.out' }, 1.0)
+              .to(s, { aofStream: 1, duration: 0.8, ease: 'power2.out' }, 2.0);
+            Camera.zoomTo(tl, s, { x: 980, y: 500, zoom: 1.20, duration: 1.2 }, 7.5);
+            Camera.reset(tl, s, 12.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Main Parent Process (Serving Client Queries with Zero Pauses)
+            Theme.drawGlassCard(ctx, 160, 220, 520, 580, {
+              tint: 'crimson',
+              badge: 'Parent Process (Port 6379)',
+              badgeSide: 'left',
+              progress: state.mainProc
+            });
+
+            Icons.draw(ctx, 'redisCube', 420, 320, 68, { glowColor: '#EF4444', alpha: state.mainProc });
+
+            if (state.mainProc > 0.3) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 22px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Live In-Memory State', 420, 400);
+
+              ctx.fillStyle = '#4ADE80';
+              ctx.font = `600 17px ${Theme.FONTS.mono}`;
+              ctx.fillText('✔ Serves 100K QPS Uninterrupted', 420, 440);
+
+              // Live Memory Blocks
+              const memBlocks = ['Page 0x1A: [Live]', 'Page 0x1B: [Live]', 'Page 0x1C: [Mutated ⚡]'];
+              memBlocks.forEach((mb, idx) => {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(240, 480 + idx * 56, 360, 44, 8);
+                ctx.fill();
+                ctx.strokeStyle = idx === 2 ? '#FACC15' : '#38BDF8';
+                ctx.lineWidth = 1.6;
+                ctx.stroke();
+
+                ctx.fillStyle = idx === 2 ? '#FEF08A' : '#E2E8F0';
+                ctx.font = `600 15px ${Theme.FONTS.mono}`;
+                ctx.fillText(mb, 420, 508 + idx * 56);
+              });
+
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.fillText('Memory writes copy only modified pages (COW)', 420, 690);
+            }
+
+            // Middle: Forked Child Process (BGSAVE & RDB Snapshot)
+            Theme.drawGlassCard(ctx, 740, 220, 480, 580, {
+              tint: 'olive',
+              badge: 'BGSAVE (Point-in-Time RDB)',
+              badgeSide: 'center',
+              progress: state.forkProc
+            });
+
+            Connectors.solidArrow(ctx, 680, 360, 740, 360, {
+              progress: state.forkProc,
+              color: '#FACC15',
+              label: 'fork() System Call'
+            });
+
+            if (state.forkProc > 0.3) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 20px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Child Process (Isolated Snapshot)', 980, 320);
+
+              Illustrations.foldedFileBadge(ctx, 980, 450, 'RDB', {
+                ribbonBg: '#10B981',
+                caption: 'dump.rdb (Compressed Binary)',
+                progress: state.forkProc
+              });
+
+              ctx.fillStyle = '#FEF08A';
+              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.fillText('OS Copy-On-Write (COW)', 980, 580);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('Shares RAM read-only pages with parent', 980, 615);
+              ctx.fillText('Writes to disk without holding any locks', 980, 645);
+            }
+
+            // Right: Append-Only File (AOF Journaling)
+            Theme.drawGlassCard(ctx, 1280, 220, 480, 580, {
+              tint: 'teal',
+              badge: 'AOF Stream (Append-Only File)',
+              badgeSide: 'right',
+              progress: state.aofStream
+            });
+
+            Illustrations.pubSubTopicBox(ctx, 1310, 320, 420, 110, {
+              title: 'appendonly.aof (Write Journal)',
+              tint: 'teal',
+              offsets: ['*3 $3 SET', '$4 user', '$5 Alice'],
+              activeSlot: 2,
+              progress: state.aofStream
+            });
+
+            if (state.aofStream > 0.4) {
+              Illustrations.wireframeCylinderDb(ctx, 1520, 560, {
+                width: 140,
+                height: 140,
+                color: '#38BDF8',
+                label: 'fsync: everysec (1s Max Loss)',
+                progress: state.aofStream
+              });
+
+              ctx.fillStyle = '#4ADE80';
+              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('AOF Rewrite Compacts Redundant Keys', 1520, 680);
+              ctx.fillStyle = '#94A3B8';
+              ctx.font = `500 14px ${Theme.FONTS.mono}`;
+              ctx.fillText('Auto-Truncates SET x 1 ... SET x 100 -> SET x 100', 1520, 715);
+            }
+
+            if (state.aofStream > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Copy-On-Write (BGSAVE) & AOF Logging Guarantee Durability Without Blocking');
+            }
+          }
+        }
+      ]
+    });
+  </script>
+</body>
+</html>
