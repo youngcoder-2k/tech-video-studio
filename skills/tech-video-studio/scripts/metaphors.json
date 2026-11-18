@@ -1,0 +1,90 @@
+[
+  {
+    "id": "source-compilation",
+    "domain": "compilation",
+    "keywords": ["code", "source", "compiler", "javac", "gcc", "ast", "build", "transpile", "biên dịch", "mã nguồn"],
+    "antiPattern": "Flat colored box labeled 'Source Code' connected to another flat box labeled 'Binary'.",
+    "visualMetaphor": "Realistic IDE Code Editor window (traffic lights, file tab, line numbers, syntax-highlighted code) feeding into a rotating mechanical gear ('javac' / 'rustc') that stamps out a glowing binary capsule.",
+    "studioPrimitive": "Illustrations.codeEditorWindow(...) + Illustrations.compilerGear(...) + Illustrations.bytecodeCapsule(...)"
+  },
+  {
+    "id": "cross-platform-portability",
+    "domain": "compilation",
+    "keywords": ["wora", "portability", "cross-platform", "os", "windows", "linux", "macos", "wasm", "jvm", "đa nền tảng"],
+    "antiPattern": "Three identical rounded pills labeled Windows, Linux, macOS.",
+    "visualMetaphor": "Three distinct hardware silhouettes: a Desktop Workstation Monitor (Windows), a 19-inch Datacenter Rack Server with blinking LEDs (Linux), and an unfolded sleek Laptop (macOS) — each running an embedded runtime engine.",
+    "studioPrimitive": "Layout.fanOutTargets(3, ...) + Illustrations.hardwareMachine(ctx, x, cy, { type: 'pc' | 'server' | 'laptop', osIcon })"
+  },
+  {
+    "id": "hierarchical-lookup-vault",
+    "domain": "security",
+    "keywords": ["classloader", "delegation", "hierarchy", "dns", "cpu-cache", "l1-l2-l3", "storage-tier", "phân tầng"],
+    "antiPattern": "Three stacked plain rectangles inside a dashed border.",
+    "visualMetaphor": "Multi-tier armored security vault with gold lock indicators (Gold Bootstrap Tier -> Silver Platform Tier -> Bronze Application Tier) illustrating upward delegation or tiered lookup.",
+    "studioPrimitive": "Illustrations.tieredVault(ctx, x, y, w, h, { header, tiers })"
+  },
+  {
+    "id": "security-verification-gatekeeper",
+    "domain": "security",
+    "keywords": ["verifier", "security", "auth", "waf", "firewall", "zero-trust", "jwt", "validation", "sandbox", "bảo mật", "xác thực"],
+    "antiPattern": "Plain text box listing 'Checks security and types'.",
+    "visualMetaphor": "Holographic X-Ray Security Scanner chamber with a sweeping laser radar line, green shield emblem, live 3-point checklist HUD, and a red Attack Deflection Shield blocking malicious payloads.",
+    "studioPrimitive": "Illustrations.xraySecurityScanner(ctx, x, y, w, h, { radarProgress, checks, shieldTitle, shieldNote })"
+  },
+  {
+    "id": "stack-vs-heap-memory",
+    "domain": "memory",
+    "keywords": ["stack", "heap", "pointer", "reference", "ram", "garbage-collection", "gc", "memory-leak", "bộ nhớ", "con trỏ"],
+    "antiPattern": "Two plain boxes with text bullets explaining Stack and Heap.",
+    "visualMetaphor": "Transparent LIFO Stack Chamber on the left shooting a glowing fiber-optic laser beam ('64-bit ref') into a 3D Shared Heap Grid on the right, linking to a live User Avatar Card while an autonomous hovering GC Sweeper Drone reclaims severed dead objects.",
+    "studioPrimitive": "Layout.splitColumns(...) + Illustrations.lifoStackChamber(...) + Connectors.laserBeam(...) + Illustrations.memoryHeapGrid(...)"
+  },
+  {
+    "id": "jit-hotspot-acceleration",
+    "domain": "performance",
+    "keywords": ["jit", "interpreter", "hotspot", "optimization", "profiler", "benchmark", "latency", "throughput", "tăng tốc", "hiệu năng"],
+    "antiPattern": "Four identical boxes connected by arrows with long explanatory paragraphs.",
+    "visualMetaphor": "4-stage distinct pipeline: (1) Step-by-step Opcode Tape Reader -> (2) Tachometer Gauge hitting redline at 10,000x with a pulsing Nitro Flame Forge -> (3) Native x86/ARM Assembly Terminal -> (4) Bare-Metal Silicon CPU Die with gold pins and live RAX/RBX/RCX registers.",
+    "studioPrimitive": "Illustrations.sequentialReader(...) + Illustrations.turboForge(...) + Illustrations.nativeAssemblyBlock(...) + Illustrations.siliconCpuDie(...)"
+  },
+  {
+    "id": "http-client-server",
+    "domain": "networking",
+    "keywords": ["http", "https", "rest", "graphql", "grpc", "websocket", "api", "tls", "browser", "request-response", "mạng"],
+    "antiPattern": "Box 'Client' -> Box 'Server'.",
+    "visualMetaphor": "Modern Web Browser Viewport (with lock icon & URL bar) exchanging bidirectional glowing packet orbs ('GET /api' -> '200 OK JSON') with a Datacenter Rack Server or Load Balancer.",
+    "studioPrimitive": "Illustrations.browserClient(...) + Connectors.bidirectional(...) + Illustrations.hardwareMachine(..., { type: 'server' })"
+  },
+  {
+    "id": "database-acid-storage",
+    "domain": "database",
+    "keywords": ["database", "sql", "postgres", "mysql", "acid", "transaction", "wal", "sharding", "replication", "b-tree", "cơ sở dữ liệu"],
+    "antiPattern": "Flat rectangle labeled 'Database'.",
+    "visualMetaphor": "3D Isometric Multi-Platter Database Cylinder paired with a Sequential WAL Log Tape (`sequentialReader`) or Primary-Replica Laser Replication Stream.",
+    "studioPrimitive": "Illustrations.isometricDatabase(ctx, x, y, w, h, { title, sub, platters: 3 })"
+  },
+  {
+    "id": "in-memory-caching",
+    "domain": "database",
+    "keywords": ["redis", "memcached", "cdn", "cache", "cache-hit", "cache-miss", "ttl", "eviction", "lru"],
+    "antiPattern": "Single box labeled 'Redis Cache'.",
+    "visualMetaphor": "High-Speed 3x3 RAM Cache Matrix Grid where hot key-value cells light up emerald green ('HIT ⚡') in sub-millisecond O(1) lookups.",
+    "studioPrimitive": "Illustrations.cacheMemoryMatrix(ctx, x, y, w, h, timeSec, { header: 'Redis RAM Matrix' })"
+  },
+  {
+    "id": "event-streaming-queue",
+    "domain": "distributed",
+    "keywords": ["kafka", "rabbitmq", "sqs", "pubsub", "queue", "event-driven", "stream", "broker", "partition", "hàng đợi"],
+    "antiPattern": "Static rectangle labeled 'Message Queue'.",
+    "visualMetaphor": "Transparent horizontal partitioned pipeline tube where discrete message capsules glide smoothly from Producer nodes to Consumer workers.",
+    "studioPrimitive": "Illustrations.messageQueuePipe(ctx, x, y, w, h, timeSec, { title: 'Kafka Partition Log' })"
+  },
+  {
+    "id": "containers-vs-vms",
+    "domain": "containers",
+    "keywords": ["docker", "kubernetes", "k8s", "container", "vm", "hypervisor", "namespace", "cgroups", "ảo hóa"],
+    "antiPattern": "Identical stacked text boxes.",
+    "visualMetaphor": "Split comparison: Heavy Virtual Machines (each carrying full Guest OS weight on a Hypervisor) vs Lightweight Shipping Containers (`dockerContainer` icon) sharing a single Linux Kernel (`linuxPenguin`) over Bare-Metal Silicon (`siliconCpuDie`).",
+    "studioPrimitive": "Layout.splitColumns(...) + Icons.get('dockerContainer') + Illustrations.siliconCpuDie(...)"
+  }
+]

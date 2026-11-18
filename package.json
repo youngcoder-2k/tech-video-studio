@@ -1,0 +1,52 @@
+{
+  "name": "tech-video-studio",
+  "version": "1.0.0",
+  "description": "AI-ready visual motion graphics engine & multi-agent skill kit for producing ByteByteGo-grade 1080p60 YouTube technical explainer videos.",
+  "main": "src/index.js",
+  "bin": {
+    "tech-video-studio": "./bin/tech-video-studio.js",
+    "techvid": "./bin/tech-video-studio.js"
+  },
+  "files": [
+    "assets/",
+    "bin/",
+    "data/",
+    "dist/",
+    "examples/",
+    "rules/",
+    "scripts/",
+    "skills/",
+    "src/",
+    "vendor/",
+    "plugin.json",
+    "skill.json",
+    "AGENTS.md",
+    "CLAUDE.md"
+  ],
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "npm run build && node --test test/smoke.test.js",
+    "qa:example": "node bin/tech-video-studio.js qa examples/jvm-under-the-hood/index.html",
+    "render:example": "node bin/tech-video-studio.js render examples/jvm-under-the-hood/index.html -o examples/jvm-under-the-hood/jvm_explainer_1080p60.mp4"
+  },
+  "keywords": [
+    "youtube-video",
+    "explainer-video",
+    "system-design",
+    "bytebytego-style",
+    "motion-graphics",
+    "canvas-animation",
+    "gsap",
+    "ffmpeg",
+    "ai-skill",
+    "antigravity-plugin",
+    "claude-code-skill"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "puppeteer-core": "^25.17.0"
+  }
+}

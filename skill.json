@@ -1,0 +1,30 @@
+{
+  "name": "tech-video-studio",
+  "displayName": "Tech Video Studio",
+  "description": "AI-first motion graphics library & multi-agent skill for producing ByteByteGo-caliber 1080p60 YouTube technical explainer videos with 28+ visual metaphors, mathematical layout symmetry, multimodal QA contact sheets, and deterministic 60FPS FFmpeg rendering.",
+  "version": "1.0.0",
+  "license": "MIT",
+  "repository": "https://github.com/your-username/tech-video-studio",
+  "keywords": [
+    "youtube",
+    "video-generation",
+    "system-design",
+    "technical-animation",
+    "motion-graphics",
+    "gsap",
+    "ffmpeg",
+    "ai-skill"
+  ],
+  "platforms": [
+    "antigravity",
+    "claude",
+    "cursor",
+    "windsurf",
+    "codex",
+    "gemini",
+    "copilot",
+    "roocode",
+    "opencode"
+  ],
+  "install": "npx tech-video-studio install-skill --target {{platform}}"
+}

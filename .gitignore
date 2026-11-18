@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.DS_Store
+output/
+qa_output/
+examples/*/*.mp4
+examples/*/*.webm
+examples/*/qa_output/
+tmp/

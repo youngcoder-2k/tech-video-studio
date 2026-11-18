@@ -1,0 +1,8 @@
+{
+  "name": "tech-video-studio",
+  "description": "AI skill & visual motion graphics engine for producing 1080p60 YouTube technical and system design explainer videos.",
+  "version": "1.0.0",
+  "skills": [
+    "./skills/tech-video-studio"
+  ]
+}

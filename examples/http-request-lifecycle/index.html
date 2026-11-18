@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>High-Scale Backend Architecture — TechVideoStudio Example</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1E1E1E; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="../../dist/tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Layout, Connectors, Illustrations, createVideo } = window.TechVideoStudio;
+
+    createVideo({
+      title: 'How High-Scale Backends Handle 1M RPS',
+      fps: 60,
+      scenes: [
+        {
+          id: 'edge-and-cache',
+          chapter: '01. Fast Path: Redis In-Memory Cache',
+          duration: 15,
+          qaTime: 8,
+          initialState: () => ({ browser: 0, api: 0, cache: 0 }),
+          build(tl, s) {
+            tl.to(s, { browser: 1, duration: 0.6, ease: 'back.out(1.5)' }, 0.3)
+              .to(s, { api: 1, duration: 0.6, ease: 'back.out(1.5)' }, 1.2)
+              .to(s, { cache: 1, duration: 0.6, ease: 'back.out(1.5)' }, 2.2);
+          },
+          render(ctx, { state, t }) {
+            const pipe = Layout.horizontalPipeline([340, 350, 380], { gap: 190, centerY: 450, height: 320 });
+            const [s1, s2, s3] = pipe.stages;
+            const [c1, c2] = pipe.connectors;
+
+            Layout.scaleAround(ctx, s1.cx, s1.cy, state.browser, () => {
+              Illustrations.browserClient(ctx, s1.x, s1.y + 30, s1.w, 250, {
+                url: 'https://shop.io/product/42',
+                headline: 'User Browser',
+                status: 'HTTP/3 QUIC'
+              });
+            });
+
+            Connectors.bidirectional(ctx, c1.x1, c1.y1, c1.x2, c1.y2, t, {
+              reqProgress: state.api,
+              resProgress: state.cache,
+              reqLabel: 'GET /product/42',
+              resLabel: '200 OK (2ms)'
+            });
+
+            Layout.scaleAround(ctx, s2.cx, s2.cy, state.api, () => {
+              Illustrations.hardwareMachine(ctx, s2.x, s2.cy, {
+                width: s2.w,
+                type: 'server',
+                osIcon: 'linuxPenguin',
+                title: 'API Gateway',
+                status: 'Stateless Worker'
+              });
+            });
+
+            Connectors.bidirectional(ctx, c2.x1, c2.y1, c2.x2, c2.y2, t, {
+              reqProgress: state.cache,
+              resProgress: state.cache,
+              reqLabel: 'GET key:42',
+              resLabel: 'CACHE HIT ⚡'
+            });
+
+            Layout.scaleAround(ctx, s3.cx, s3.cy, state.cache, () => {
+              Illustrations.cacheMemoryMatrix(ctx, s3.x, s3.y, s3.w, s3.h, t);
+            });
+
+            if (state.cache > 0.5) {
+              Theme.drawTakeawayPill(ctx, '95% of Reads Served from RAM in < 1ms', { bg: '#881337', border: '#F43F5E' });
+            }
+          }
+        },
+        {
+          id: 'async-kafka-persistence',
+          chapter: '02. Async Writes: Kafka Stream to Primary DB',
+          duration: 15,
+          qaTime: 8,
+          initialState: () => ({ producer: 0, queue: 0, db: 0 }),
+          build(tl, s) {
+            tl.to(s, { producer: 1, duration: 0.6, ease: 'back.out(1.5)' }, 0.3)
+              .to(s, { queue: 1, duration: 0.6, ease: 'back.out(1.5)' }, 1.2)
+              .to(s, { db: 1, duration: 0.6, ease: 'back.out(1.5)' }, 2.3);
+          },
+          render(ctx, { state, t }) {
+            const pipe = Layout.horizontalPipeline([330, 480, 260], { gap: 180, centerY: 460, height: 260 });
+            const [s1, s2, s3] = pipe.stages;
+            const [c1, c2] = pipe.connectors;
+
+            Layout.scaleAround(ctx, s1.cx, s1.cy, state.producer, () => {
+              Illustrations.hardwareMachine(ctx, s1.x, s1.cy, {
+                width: s1.w,
+                type: 'server',
+                osIcon: 'dockerContainer',
+                title: 'Order Service',
+                status: 'Publishes Event'
+              });
+            });
+
+            Connectors.dashedArrow(ctx, c1.x1, c1.y1, c1.x2, c1.y2, { progress: state.queue, label: 'Append', color: '#F59E0B' });
+            if (state.queue > 0.85) Connectors.pulseOrb(ctx, c1.x1, c1.y1, c1.x2, c1.y2, t, { color: '#F59E0B' });
+
+            Layout.scaleAround(ctx, s2.cx, s2.cy, state.queue, () => {
+              Illustrations.messageQueuePipe(ctx, s2.x, s2.cy - 48, s2.w, 96, t, { title: 'Kafka Order Partition' });
+            });
+
+            Connectors.dashedArrow(ctx, c2.x1, c2.y1, c2.x2, c2.y2, { progress: state.db, label: 'Batch Commit', color: '#10B981' });
+            if (state.db > 0.85) Connectors.pulseOrb(ctx, c2.x1, c2.y1, c2.x2, c2.y2, t, { color: '#10B981' });
+
+            Layout.scaleAround(ctx, s3.cx, s3.cy, state.db, () => {
+              Illustrations.isometricDatabase(ctx, s3.x, s3.y, s3.w, s3.h, {
+                title: 'PostgreSQL',
+                sub: 'ACID • WAL Durable'
+              });
+            });
+
+            if (state.db > 0.5) {
+              Theme.drawTakeawayPill(ctx, 'Async Queues Absorb Traffic Spikes Without Dropping Writes', { bg: '#065F46', border: '#10B981' });
+            }
+          }
+        }
+      ]
+    });
+  </script>
+</body>
+</html>

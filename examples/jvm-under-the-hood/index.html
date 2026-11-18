@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>How the JVM Works — TechVideoStudio Reference Example</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1E1E1E; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="../../dist/tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Layout, Connectors, Illustrations, createVideo } = window.TechVideoStudio;
+
+    createVideo({
+      title: 'How the JVM Works',
+      fps: 60,
+      scenes: [
+        // SCENE 1: Compilation & Cross-Platform Hardware Portability
+        {
+          id: 'compilation-portability',
+          chapter: '01. Compilation & Portability',
+          duration: 15,
+          qaTime: 8,
+          initialState: () => ({ editor: 0, toGear: 0, gearDeg: 0, capsule: 0, fanOut: 0, machines: 0 }),
+          build(tl, s) {
+            tl.to(s, { editor: 1, duration: 0.65, ease: 'back.out(1.5)' }, 0.3)
+              .to(s, { toGear: 1, duration: 0.55, ease: 'power2.out' }, 1.0)
+              .to(s, { gearDeg: 360, duration: 4.5, ease: 'none' }, 1.2)
+              .to(s, { capsule: 1, duration: 0.65, ease: 'back.out(1.5)' }, 2.1)
+              .to(s, { fanOut: 1, duration: 0.65, ease: 'power2.out' }, 3.3)
+              .to(s, { machines: 1, duration: 0.65, ease: 'back.out(1.5)' }, 4.1);
+          },
+          render(ctx, { state, t }) {
+            // Left: Realistic IDE Editor
+            Layout.scaleAround(ctx, 310, 440, state.editor, () => {
+              Illustrations.codeEditorWindow(ctx, 140, 260, 340, 360, { fileName: 'App.java' });
+            });
+
+            // Compiler Gear Bridge
+            Connectors.dashedArrow(ctx, 480, 440, 565, 440, { progress: state.toGear, color: '#38BDF8' });
+            if (state.toGear > 0.85) Connectors.pulseOrb(ctx, 480, 440, 565, 440, t);
+            if (state.toGear > 0.3) {
+              Illustrations.compilerGear(ctx, 610, 440, state.gearDeg, { label: 'javac compiler' });
+            }
+            Connectors.dashedArrow(ctx, 655, 440, 740, 440, { progress: state.capsule, color: '#38BDF8' });
+            if (state.capsule > 0.85) Connectors.pulseOrb(ctx, 655, 440, 740, 440, t);
+
+            // Center: Universal Bytecode Capsule
+            Layout.scaleAround(ctx, 870, 440, state.capsule, () => {
+              Illustrations.bytecodeCapsule(ctx, 740, 260, 260, 360);
+            });
+
+            // Right: 3 Diverse Physical Target Machines
+            const targets = Layout.fanOutTargets(3, { centerY: 440, spacing: 150, targetX: 1300, targetWidth: 340 });
+            const specs = [
+              { type: 'pc', osIcon: 'winOS', title: 'Windows PC', status: '⚙️ Native JVM Engine OK' },
+              { type: 'server', osIcon: 'linuxPenguin', title: 'Linux Rack Server', status: '⚙️ Native JVM Engine OK' },
+              { type: 'laptop', osIcon: 'appleLogo', title: 'macOS Apple Silicon', status: '⚙️ Native JVM Engine OK' }
+            ];
+
+            targets.forEach((tgt, i) => {
+              Connectors.dashedArrow(ctx, 1000, 440, tgt.x, tgt.cy, { progress: state.fanOut, color: '#10B981' });
+              if (state.fanOut > 0.85) Connectors.pulseOrb(ctx, 1000, 440, tgt.x, tgt.cy, t, { color: '#10B981', phase: i * 0.25 });
+              Layout.scaleAround(ctx, tgt.cx, tgt.cy, state.machines, () => {
+                Illustrations.hardwareMachine(ctx, tgt.x, tgt.cy, Object.assign({ width: tgt.w }, specs[i]));
+              });
+            });
+
+            if (state.machines > 0.5) {
+              Theme.drawTakeawayPill(ctx, 'Write Once, Run Anywhere (WORA)');
+            }
+          }
+        },
+
+        // SCENE 2: ClassLoader Vault & Holographic Security Scanner
+        {
+          id: 'classloader-security',
+          chapter: '02. Class Loading & Security Verification',
+          duration: 15,
+          qaTime: 8,
+          initialState: () => ({ vault: 0, arr1: 0, scanner: 0, radar: 0, arr2: 0, init: 0 }),
+          build(tl, s) {
+            tl.to(s, { vault: 1, duration: 0.6, ease: 'back.out(1.5)' }, 0.3)
+              .to(s, { arr1: 1, duration: 0.5, ease: 'power2.out' }, 1.1)
+              .to(s, { scanner: 1, duration: 0.6, ease: 'back.out(1.5)' }, 1.7)
+              .to(s, { radar: 1, duration: 2.2, ease: 'none' }, 2.3)
+              .to(s, { arr2: 1, duration: 0.5, ease: 'power2.out' }, 4.2)
+              .to(s, { init: 1, duration: 0.6, ease: 'back.out(1.5)' }, 4.8);
+          },
+          render(ctx, { state, t }) {
+            const pipe = Layout.horizontalPipeline([380, 420, 380], { gap: 210, centerY: 470, height: 400 });
+            const [s1, s2, s3] = pipe.stages;
+            const [c1, c2] = pipe.connectors;
+
+            Layout.scaleAround(ctx, s1.cx, s1.cy, state.vault, () => {
+              Illustrations.tieredVault(ctx, s1.x, s1.y, s1.w, s1.h, { header: '1. ClassLoader Vault' });
+            });
+
+            Connectors.dashedArrow(ctx, c1.x1, c1.y1, c1.x2, c1.y2, { progress: state.arr1, label: 'Bytecode Stream', color: '#F59E0B' });
+            if (state.arr1 > 0.85) Connectors.pulseOrb(ctx, c1.x1, c1.y1, c1.x2, c1.y2, t, { color: '#F59E0B' });
+
+            Layout.scaleAround(ctx, s2.cx, s2.cy, state.scanner, () => {
+              Illustrations.xraySecurityScanner(ctx, s2.x, s2.y, s2.w, s2.h, {
+                header: '2. Bytecode Security Scanner',
+                radarProgress: state.radar
+              });
+            });
+
+            Connectors.dashedArrow(ctx, c2.x1, c2.y1, c2.x2, c2.y2, { progress: state.arr2, label: 'Verified ✓', color: '#10B981' });
+            if (state.arr2 > 0.85) Connectors.pulseOrb(ctx, c2.x1, c2.y1, c2.x2, c2.y2, t, { color: '#10B981' });
+
+            Layout.scaleAround(ctx, s3.cx, s3.cy, state.init, () => {
+              Illustrations.stagePanel(ctx, s3.x, s3.y, s3.w, s3.h, { header: '3. Metaspace Init', accent: '#8A4F80', bg: '#311E2D' });
+              Illustrations.stepBlock(ctx, s3.x + 28, s3.y + 60, s3.w - 56, 72, 'Execute <clinit>', 'Runs static { ... } blocks', { bg: '#701A75' });
+              Connectors.dashedArrow(ctx, s3.cx, s3.y + 134, s3.cx, s3.y + 184, { color: '#A855F7' });
+              Illustrations.stepBlock(ctx, s3.x + 28, s3.y + 186, s3.w - 56, 72, 'Allocate Static RAM', 'Method table & constants', { bg: '#4A044E' });
+            });
+
+            if (state.init > 0.5) {
+              Theme.drawTakeawayPill(ctx, '🛡️ Sandbox Security: Zero Buffer Overflows', { bg: '#065F46', border: '#10B981' });
+            }
+          }
+        },
+
+        // SCENE 3: Stack Chamber vs 3D Heap Grid & Autonomous GC Drone
+        {
+          id: 'stack-vs-heap',
+          chapter: '03. Runtime Memory: Stack vs Heap',
+          duration: 15,
+          qaTime: 8,
+          initialState: () => ({ stack: 0, heap: 0, beam: 0 }),
+          build(tl, s) {
+            tl.to(s, { stack: 1, duration: 0.7, ease: 'back.out(1.5)' }, 0.3)
+              .to(s, { heap: 1, duration: 0.7, ease: 'back.out(1.5)' }, 1.4)
+              .to(s, { beam: 1, duration: 0.8, ease: 'power2.out' }, 2.6);
+          },
+          render(ctx, { state, t }) {
+            const split = Layout.splitColumns(460, 460, { gap: 540, centerY: 480, height: 430 });
+            let stackAnchor = { anchorX: split.left.right, anchorY: split.left.cy };
+            let heapTarget = { targetX: split.right.x + 36, targetY: split.right.y + 120 };
+
+            Layout.scaleAround(ctx, split.left.cx, split.left.cy, state.stack, () => {
+              stackAnchor = Illustrations.lifoStackChamber(ctx, split.left.x, split.left.y, split.left.w, split.left.h);
+            });
+
+            Layout.scaleAround(ctx, split.right.cx, split.right.cy, state.heap, () => {
+              heapTarget = Illustrations.memoryHeapGrid(ctx, split.right.x, split.right.y, split.right.w, split.right.h, t);
+            });
+
+            Connectors.laserBeam(ctx, stackAnchor.anchorX, stackAnchor.anchorY, heapTarget.targetX, heapTarget.targetY, t, {
+              progress: state.beam,
+              color: '#38BDF8',
+              label: 'Direct 64-bit Pointer (ref)'
+            });
+
+            if (state.beam > 0.5) {
+              Theme.drawTakeawayPill(ctx, 'Automatic Garbage Collection (No Manual Free)', { bg: '#701A75', border: '#A855F7' });
+            }
+          }
+        },
+
+        // SCENE 4: Interpreter -> HotSpot JIT Turbocharger -> Assembly -> Silicon CPU Die
+        {
+          id: 'jit-to-silicon',
+          chapter: '04. JIT Compilation to Bare-Metal Silicon',
+          duration: 15,
+          qaTime: 9,
+          initialState: () => ({ reader: 0, forge: 0, loops: 0, flame: 1, asm: 0, cpu: 0, cpuPulse: 1 }),
+          build(tl, s) {
+            tl.to(s, { reader: 1, duration: 0.55, ease: 'back.out(1.5)' }, 0.3)
+              .to(s, { forge: 1, duration: 0.55, ease: 'back.out(1.5)' }, 1.2)
+              .to(s, { loops: 10000, duration: 2.8, ease: 'power2.out' }, 1.5)
+              .to(s, { flame: 1.32, duration: 0.35, yoyo: true, repeat: 9 }, 2.2)
+              .to(s, { asm: 1, duration: 0.55, ease: 'back.out(1.5)' }, 3.4)
+              .to(s, { cpu: 1, duration: 0.55, ease: 'back.out(1.5)' }, 4.6)
+              .to(s, { cpuPulse: 1.18, duration: 0.4, yoyo: true, repeat: 8 }, 5.3);
+          },
+          render(ctx, { state, t }) {
+            const pipe = Layout.horizontalPipeline([270, 370, 310, 340], { gap: 120, centerY: 445, height: 360 });
+            const [p1, p2, p3, p4] = pipe.stages;
+            const [c1, c2, c3] = pipe.connectors;
+
+            Layout.scaleAround(ctx, p1.cx, p1.cy, state.reader, () => {
+              Illustrations.sequentialReader(ctx, p1.x, p1.y, p1.w, p1.h);
+            });
+
+            Connectors.dashedArrow(ctx, c1.x1, c1.y1, c1.x2, c1.y2, { progress: state.forge, label: 'Hot Loop', color: '#F59E0B' });
+            if (state.forge > 0.85) Connectors.pulseOrb(ctx, c1.x1, c1.y1, c1.x2, c1.y2, t, { color: '#F59E0B' });
+
+            Layout.scaleAround(ctx, p2.cx, p2.cy, state.forge, () => {
+              Illustrations.turboForge(ctx, p2.x, p2.y, p2.w, p2.h, {
+                countValue: state.loops,
+                flameScale: state.flame
+              });
+            });
+
+            Connectors.dashedArrow(ctx, c2.x1, c2.y1, c2.x2, c2.y2, { progress: state.asm, label: 'Compiles', color: '#10B981' });
+            if (state.asm > 0.85) Connectors.pulseOrb(ctx, c2.x1, c2.y1, c2.x2, c2.y2, t, { color: '#10B981' });
+
+            Layout.scaleAround(ctx, p3.cx, p3.cy, state.asm, () => {
+              Illustrations.nativeAssemblyBlock(ctx, p3.x, p3.y, p3.w, p3.h);
+            });
+
+            Connectors.dashedArrow(ctx, c3.x1, c3.y1, c3.x2, c3.y2, { progress: state.cpu, label: 'Direct 4.5GHz', color: '#F59E0B' });
+            if (state.cpu > 0.85) Connectors.pulseOrb(ctx, c3.x1, c3.y1, c3.x2, c3.y2, t, { color: '#F59E0B' });
+
+            Layout.scaleAround(ctx, p4.cx, p4.cy, state.cpu, () => {
+              Illustrations.siliconCpuDie(ctx, p4.x, p4.y, p4.w, p4.h, { cpuPulse: state.cpuPulse });
+            });
+
+            if (state.cpu > 0.5) {
+              Theme.drawTakeawayPill(ctx, '⚡ Instant Startup of Interpreter + Bare-Metal C++ Speed', { bg: '#065F46', border: '#10B981' });
+            }
+          }
+        }
+      ]
+    });
+  </script>
+</body>
+</html>

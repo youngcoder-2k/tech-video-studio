@@ -1,0 +1,529 @@
+#!/usr/bin/env node
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const { spawn, execFileSync } = require('child_process');
+
+const ROOT = path.resolve(__dirname, '..');
+
+function findMetaphorsPath() {
+  const candidates = [
+    path.join(ROOT, 'data/metaphors.json'),
+    path.join(__dirname, 'metaphors.json')
+  ];
+  return candidates.find((p) => fs.existsSync(p));
+}
+
+function findBundlePath() {
+  const candidates = [
+    path.join(ROOT, 'dist/tech-video-studio.bundle.js'),
+    path.join(__dirname, 'tech-video-studio.bundle.js')
+  ];
+  return candidates.find((p) => fs.existsSync(p));
+}
+
+function findChromeExecutable() {
+  if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
+    return process.env.CHROME_PATH;
+  }
+  const candidates = [
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser',
+    '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe'
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  if (!found) {
+    throw new Error('Chrome/Chromium not found. Set CHROME_PATH environment variable.');
+  }
+  return found;
+}
+
+function findFfmpegExecutable() {
+  if (process.env.FFMPEG_PATH && fs.existsSync(process.env.FFMPEG_PATH)) {
+    return process.env.FFMPEG_PATH;
+  }
+  const candidates = [
+    '/opt/homebrew/bin/ffmpeg',
+    '/usr/local/bin/ffmpeg',
+    '/usr/bin/ffmpeg'
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  return found || 'ffmpeg';
+}
+
+function parseFlags(argv) {
+  const positional = [];
+  const flags = {};
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith('--')) {
+      const eq = arg.indexOf('=');
+      if (eq !== -1) {
+        flags[arg.slice(2, eq)] = arg.slice(eq + 1);
+      } else {
+        const key = arg.slice(2);
+        const next = argv[i + 1];
+        if (next && !next.startsWith('-')) {
+          flags[key] = next;
+          i++;
+        } else {
+          flags[key] = true;
+        }
+      }
+    } else if (arg === '-o' && argv[i + 1]) {
+      flags.out = argv[++i];
+    } else {
+      positional.push(arg);
+    }
+  }
+  return { positional, flags };
+}
+
+// ============================================================================
+// COMMAND 1: metaphor <query>
+// ============================================================================
+function cmdMetaphor(positional) {
+  const query = positional.join(' ').trim().toLowerCase();
+  const dataPath = findMetaphorsPath();
+  const catalog = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+
+  if (!query) {
+    console.log(`Available Visual Metaphors (${catalog.length}):\n`);
+    catalog.forEach((m) => {
+      console.log(`- [${m.domain}] ${m.id}: ${m.visualMetaphor}`);
+    });
+    return;
+  }
+
+  const terms = query.split(/\s+/).filter(Boolean);
+  const scored = catalog
+    .map((item) => {
+      const hay = `${item.id} ${item.domain} ${item.keywords.join(' ')} ${item.visualMetaphor}`.toLowerCase();
+      let score = 0;
+      for (const term of terms) {
+        if (item.keywords.some((k) => k.toLowerCase() === term)) score += 5;
+        else if (hay.includes(term)) score += 2;
+      }
+      return { item, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const results = scored.length > 0 ? scored.map((s) => s.item) : catalog.slice(0, 4);
+  console.log(`Visual Metaphor Recommendations for "${query}":\n`);
+  results.slice(0, 5).forEach((m, idx) => {
+    console.log(`${idx + 1}. [${m.domain.toUpperCase()}] ${m.id}`);
+    console.log(`   ❌ Avoid:    ${m.antiPattern}`);
+    console.log(`   ✅ Metaphor: ${m.visualMetaphor}`);
+    console.log(`   🧩 API:      ${m.studioPrimitive}\n`);
+  });
+}
+
+// ============================================================================
+// COMMAND 2: new <dir> [--title "..."]
+// ============================================================================
+function cmdNew(positional, flags) {
+  const targetDir = path.resolve(process.cwd(), positional[0] || 'my-youtube-explainer');
+  const title = flags.title || 'How Modern Systems Work';
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  const bundleSrc = findBundlePath();
+  if (bundleSrc) {
+    fs.copyFileSync(bundleSrc, path.join(targetDir, 'tech-video-studio.bundle.js'));
+  }
+
+  const starterHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1E1E1E; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="./tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Layout, Connectors, Illustrations, createVideo } = window.TechVideoStudio;
+
+    createVideo({
+      title: ${JSON.stringify(title)},
+      fps: 60,
+      scenes: [
+        {
+          id: 'request-flow',
+          chapter: '01. Client Request & Edge Routing',
+          duration: 15,
+          initialState: () => ({ client: 0, net: 0, server: 0 }),
+          build(tl, s) {
+            tl.to(s, { client: 1, duration: 0.6, ease: 'back.out(1.5)' }, 0.3)
+              .to(s, { net: 1, duration: 0.6, ease: 'power2.out' }, 1.1)
+              .to(s, { server: 1, duration: 0.6, ease: 'back.out(1.5)' }, 1.8);
+          },
+          render(ctx, { state, t }) {
+            const split = Layout.splitColumns(360, 360, { gap: 460, centerY: 450, height: 240 });
+            Layout.scaleAround(ctx, split.left.cx, split.left.cy, state.client, () => {
+              Illustrations.browserClient(ctx, split.left.x, split.left.y, split.left.w, split.left.h, {
+                url: 'https://app.example.com',
+                headline: 'Browser Client',
+                status: 'HTTPS / TLS 1.3'
+              });
+            });
+            Connectors.bidirectional(ctx, split.bridge.x1, split.bridge.y1, split.bridge.x2, split.bridge.y2, t, {
+              reqProgress: state.net,
+              resProgress: state.server,
+              reqLabel: 'GET /feed',
+              resLabel: '200 OK (12ms)'
+            });
+            Layout.scaleAround(ctx, split.right.cx, split.right.cy, state.server, () => {
+              Illustrations.hardwareMachine(ctx, split.right.x, split.right.cy, {
+                width: split.right.w,
+                type: 'server',
+                osIcon: 'linuxPenguin',
+                title: 'API Edge Server',
+                status: '⚡ Healthy • 4ms p99'
+              });
+            });
+            if (state.server > 0.5) {
+              Theme.drawTakeawayPill(ctx, 'Low-Latency Edge Routing with Keep-Alive Connections');
+            }
+          }
+        }
+      ]
+    });
+  </script>
+</body>
+</html>
+`;
+
+  const htmlOut = path.join(targetDir, 'index.html');
+  fs.writeFileSync(htmlOut, starterHtml, 'utf8');
+  console.log(`✅ Scaffolded new YouTube explainer project at: ${targetDir}`);
+  console.log(`   1. Preview & QA: node "${__filename}" qa "${htmlOut}"`);
+  console.log(`   2. Render MP4:   node "${__filename}" render "${htmlOut}" -o "${path.join(targetDir, 'video.mp4')}"`);
+}
+
+// ============================================================================
+// COMMAND 3: qa <html-file> [--times 8,22,36,54] [--out-dir <dir>]
+// ============================================================================
+async function cmdQa(positional, flags) {
+  const puppeteer = require('puppeteer-core');
+  const htmlPath = path.resolve(process.cwd(), positional[0]);
+  if (!fs.existsSync(htmlPath)) {
+    throw new Error(`HTML file not found: ${htmlPath}`);
+  }
+
+  const outDir = path.resolve(process.cwd(), flags['out-dir'] || path.join(path.dirname(htmlPath), 'qa_output'));
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const browser = await puppeteer.launch({
+    executablePath: findChromeExecutable(),
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080']
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+    await page.goto('file://' + htmlPath, { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => window.__studioReady === true || window.iconsReady === true, { timeout: 15000 });
+
+    const meta = await page.evaluate(() => window.__studioMeta || null);
+    const times = flags.times
+      ? String(flags.times).split(',').map((n) => parseFloat(n.trim())).filter((n) => !Number.isNaN(n))
+      : (meta && meta.qaTimes && meta.qaTimes.length ? meta.qaTimes : [8, 22, 36, 54]);
+
+    const savedFrames = [];
+    for (let i = 0; i < times.length; i++) {
+      const t = times[i];
+      await page.evaluate((sec) => {
+        if (typeof window.__studioSeek === 'function') {
+          window.__studioSeek(sec);
+        } else if (typeof tl !== 'undefined' && typeof render === 'function') {
+          tl.seek(sec);
+          render(sec);
+        }
+      }, t);
+
+      const framePath = path.join(outDir, `scene_${String(i + 1).padStart(2, '0')}_${t}s.png`);
+      await page.screenshot({ path: framePath });
+      savedFrames.push(framePath);
+      console.log(`📸 Captured QA keyframe [${i + 1}/${times.length}] @ ${t}s -> ${framePath}`);
+    }
+
+    // Stitch 2x2 or Nx2 contact sheet via FFmpeg if >= 2 frames exist
+    if (savedFrames.length >= 2) {
+      const ffmpeg = findFfmpegExecutable();
+      const cols = 2;
+      const rows = Math.ceil(savedFrames.length / cols);
+      const contactPath = path.join(outDir, 'qa_contact_sheet.jpg');
+      const inputs = [];
+      savedFrames.forEach((fp) => inputs.push('-i', fp));
+
+      const scaleParts = savedFrames.map((_, idx) => `[${idx}:v]scale=960:540[v${idx}]`).join(';');
+      const layoutSpec = savedFrames
+        .map((_, idx) => {
+          const c = idx % cols;
+          const r = Math.floor(idx / cols);
+          return `${c * 960}_${r * 540}`;
+        })
+        .join('|');
+      const stackInputs = savedFrames.map((_, idx) => `[v${idx}]`).join('');
+      const filter = `${scaleParts};${stackInputs}xstack=inputs=${savedFrames.length}:layout=${layoutSpec}:fill=black[out]`;
+
+      execFileSync(ffmpeg, [
+        '-y',
+        ...inputs,
+        '-filter_complex', filter,
+        '-map', '[out]',
+        '-frames:v', '1',
+        '-q:v', '2',
+        '-update', '1',
+        contactPath
+      ], { stdio: 'ignore' });
+
+      console.log(`🖼️  Generated Visual QA Contact Sheet (${cols}x${rows}): ${contactPath}`);
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
+// ============================================================================
+// COMMAND 4: render <html-file> -o <output.mp4> [--fps 60] [--mode deterministic|stream] [--audio file.mp3]
+// ============================================================================
+async function cmdRender(positional, flags) {
+  const puppeteer = require('puppeteer-core');
+  const htmlPath = path.resolve(process.cwd(), positional[0]);
+  if (!fs.existsSync(htmlPath)) {
+    throw new Error(`HTML file not found: ${htmlPath}`);
+  }
+
+  const outMp4 = path.resolve(process.cwd(), flags.out || path.join(path.dirname(htmlPath), 'output_1080p60.mp4'));
+  fs.mkdirSync(path.dirname(outMp4), { recursive: true });
+
+  const mode = flags.mode || 'deterministic';
+  const fps = parseInt(flags.fps || '60', 10);
+  const ffmpeg = findFfmpegExecutable();
+  const t0 = Date.now();
+
+  const browser = await puppeteer.launch({
+    executablePath: findChromeExecutable(),
+    headless: 'new',
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--autoplay-policy=no-user-gesture-required',
+      '--window-size=1920,1080'
+    ]
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+    await page.goto('file://' + htmlPath, { waitUntil: 'networkidle0' });
+    await page.waitForFunction(() => window.__studioReady === true || window.iconsReady === true, { timeout: 15000 });
+
+    const meta = await page.evaluate(() => window.__studioMeta || null);
+    const duration = flags.duration
+      ? parseFloat(flags.duration)
+      : (meta && meta.totalDuration ? meta.totalDuration : 60);
+
+    if (mode === 'stream') {
+      console.log(`🎬 Recording ${duration}s stream at ${fps} FPS...`);
+      const b64 = await page.evaluate(async () => window.startRecording());
+      const tmpWebm = outMp4 + '.raw.webm';
+      fs.writeFileSync(tmpWebm, Buffer.from(b64, 'base64'));
+
+      const ffArgs = ['-y', '-i', tmpWebm];
+      if (flags.audio) {
+        ffArgs.push('-i', path.resolve(process.cwd(), flags.audio));
+        ffArgs.push('-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '192k', '-shortest');
+      }
+      ffArgs.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outMp4);
+      execFileSync(ffmpeg, ffArgs, { stdio: 'inherit' });
+      if (fs.existsSync(tmpWebm)) fs.unlinkSync(tmpWebm);
+    } else {
+      const totalFrames = Math.round(duration * fps);
+      console.log(`🎯 Deterministic Frame-Exact Render: ${totalFrames} frames (${duration}s @ ${fps} FPS)...`);
+
+      const ffArgs = [
+        '-y',
+        '-f', 'image2pipe',
+        '-vcodec', 'mjpeg',
+        '-framerate', String(fps),
+        '-i', '-'
+      ];
+      if (flags.audio) {
+        ffArgs.push('-i', path.resolve(process.cwd(), flags.audio));
+        ffArgs.push('-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '192k', '-shortest');
+      }
+      ffArgs.push(
+        '-c:v', 'libx264',
+        '-preset', 'fast',
+        '-crf', '18',
+        '-pix_fmt', 'yuv420p',
+        '-movflags', '+faststart',
+        outMp4
+      );
+
+      const ffProc = spawn(ffmpeg, ffArgs, { stdio: ['pipe', 'ignore', 'pipe'] });
+      let ffErr = '';
+      ffProc.stderr.on('data', (chunk) => { ffErr += chunk.toString(); });
+
+      const hasCanvasFastCapture = await page.evaluate(() => typeof window.__studioCaptureFrameJpeg === 'function');
+      const batchSize = hasCanvasFastCapture ? 12 : 1;
+
+      for (let f = 0; f < totalFrames; f += batchSize) {
+        const count = Math.min(batchSize, totalFrames - f);
+        if (hasCanvasFastCapture) {
+          const dataUrls = await page.evaluate(({ startFrame, countFrames, frameRate }) => {
+            const out = [];
+            for (let i = 0; i < countFrames; i++) {
+              const t = (startFrame + i) / frameRate;
+              out.push(window.__studioCaptureFrameJpeg(t, 0.95));
+            }
+            return out;
+          }, { startFrame: f, countFrames: count, frameRate: fps });
+
+          for (const url of dataUrls) {
+            const commaIdx = url.indexOf(',');
+            const buf = Buffer.from(url.slice(commaIdx + 1), 'base64');
+            if (!ffProc.stdin.write(buf)) {
+              await new Promise((r) => ffProc.stdin.once('drain', r));
+            }
+          }
+        } else {
+          const t = f / fps;
+          await page.evaluate((sec) => {
+            if (typeof window.__studioSeek === 'function') window.__studioSeek(sec);
+            else if (typeof tl !== 'undefined' && typeof render === 'function') { tl.seek(sec); render(sec); }
+          }, t);
+          const buf = await page.screenshot({ type: 'jpeg', quality: 95 });
+          if (!ffProc.stdin.write(buf)) {
+            await new Promise((r) => ffProc.stdin.once('drain', r));
+          }
+        }
+
+        if ((f + count) % (fps * 10) === 0 || f + count === totalFrames) {
+          const pct = (((f + count) / totalFrames) * 100).toFixed(0);
+          console.log(`   ⏳ Rendered ${f + count}/${totalFrames} frames (${pct}%)`);
+        }
+      }
+
+      ffProc.stdin.end();
+      const exitCode = await new Promise((resolve) => ffProc.on('close', resolve));
+      if (exitCode !== 0) {
+        throw new Error(`FFmpeg exited with code ${exitCode}:\n${ffErr.slice(-800)}`);
+      }
+    }
+
+    const sizeMb = (fs.statSync(outMp4).size / 1024 / 1024).toFixed(2);
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    console.log(`✅ Rendered 1080p${fps} H.264 MP4 in ${elapsed}s -> ${outMp4} (${sizeMb} MB)`);
+  } finally {
+    await browser.close();
+  }
+}
+
+// ============================================================================
+// COMMAND 5: install-skill [--target antigravity|claude|cursor|codex] [--dest <dir>]
+// ============================================================================
+function copyDirRecursive(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const s = path.join(src, entry.name);
+    const d = path.join(dest, entry.name);
+    if (entry.isDirectory()) copyDirRecursive(s, d);
+    else fs.copyFileSync(s, d);
+  }
+}
+
+function cmdInstallSkill(flags) {
+  const target = String(flags.target || 'local').toLowerCase();
+  const home = os.homedir();
+
+  const defaultTargets = {
+    antigravity: path.join(home, '.gemini/config/skills/tech-video-studio'),
+    gemini: path.join(home, '.gemini/config/skills/tech-video-studio'),
+    claude: path.join(home, '.claude/skills/tech-video-studio'),
+    codex: path.join(home, '.codex/skills/tech-video-studio'),
+    cursor: path.resolve(process.cwd(), '.agents/skills/tech-video-studio'),
+    local: path.resolve(process.cwd(), '.agents/skills/tech-video-studio')
+  };
+
+  const dest = flags.dest ? path.resolve(process.cwd(), flags.dest) : (defaultTargets[target] || defaultTargets.local);
+  const skillSrc = path.join(ROOT, 'skills/tech-video-studio');
+
+  copyDirRecursive(skillSrc, dest);
+  // Ensure standalone CLI & metaphor DB are bundled inside skill scripts/
+  const scriptsDir = path.join(dest, 'scripts');
+  fs.mkdirSync(scriptsDir, { recursive: true });
+  fs.copyFileSync(__filename, path.join(scriptsDir, 'tech-video-studio.js'));
+  const mPath = findMetaphorsPath();
+  if (mPath) fs.copyFileSync(mPath, path.join(scriptsDir, 'metaphors.json'));
+  const bPath = findBundlePath();
+  if (bPath) fs.copyFileSync(bPath, path.join(scriptsDir, 'tech-video-studio.bundle.js'));
+
+  console.log(`✅ Installed "tech-video-studio" AI Skill to: ${dest}`);
+}
+
+function printHelp() {
+  console.log(`
+Tech Video Studio CLI (v1.0.0) — YouTube 1080p60 Technical Explainer Engine
+
+Usage:
+  techvid metaphor <keywords>                     Search diverse visual metaphors & avoid box monotony
+  techvid new <folder> [--title "Video Title"]    Scaffold a new 1080p60 YouTube explainer project
+  techvid qa <scene.html> [--times 8,22,36,54]    Capture scene keyframes + 2x2 QA contact sheet
+  techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact 60FPS H.264 MP4 render
+          [--fps 60] [--duration 60] [--audio voice.mp3] [--mode deterministic|stream]
+  techvid install-skill [--target antigravity|claude|cursor|codex|local] [--dest <path>]
+`);
+}
+
+(async () => {
+  const [cmd, ...rest] = process.argv.slice(2);
+  const { positional, flags } = parseFlags(rest);
+
+  try {
+    switch (cmd) {
+      case 'metaphor':
+      case 'metaphors':
+        cmdMetaphor(positional);
+        break;
+      case 'new':
+      case 'init':
+        cmdNew(positional, flags);
+        break;
+      case 'qa':
+        await cmdQa(positional, flags);
+        break;
+      case 'render':
+        await cmdRender(positional, flags);
+        break;
+      case 'install-skill':
+        cmdInstallSkill(flags);
+        break;
+      default:
+        printHelp();
+        break;
+    }
+  } catch (err) {
+    console.error(`❌ Error: ${err.message}`);
+    process.exit(1);
+  }
+})();
