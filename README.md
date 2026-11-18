@@ -30,7 +30,7 @@ Version 2.0 was engineered from frame-by-frame inspection of real **ByteByteGo**
 ### 1. Install Dependencies
 Requires **Node.js >= 18**, **Google Chrome / Chromium**, and **FFmpeg**.
 ```bash
-git clone https://github.com/your-username/tech-video-studio.git
+git clone https://github.com/youngcoder-2k/tech-video-studio.git
 cd tech-video-studio
 npm install
 npm test

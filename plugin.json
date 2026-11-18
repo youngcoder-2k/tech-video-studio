@@ -4,7 +4,7 @@
   "description": "Produce high-retention 1080p60 YouTube technical & system design explainer videos with diverse visual metaphors, mathematical symmetry, multimodal QA, and deterministic FFmpeg rendering.",
   "version": "2.0.0",
   "logo": "assets/logo.svg",
-  "repository": "https://github.com/your-username/tech-video-studio",
+  "repository": "https://github.com/youngcoder-2k/tech-video-studio",
   "suggestedPrompts": [
     "Create a 60-second 1080p60 YouTube video explaining How Docker Containers Work Under the Hood",
     "Build a visual explainer video comparing HTTP/1.1 vs HTTP/2 vs HTTP/3 with diverse network metaphors",
