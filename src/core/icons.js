@@ -17,7 +17,13 @@ const BUILTIN_SVGS = {
   lockGold: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M32,44 L32,30 C32,18 68,18 68,30 L68,44" fill="none" stroke="#F59E0B" stroke-width="8" stroke-linecap="round"/><rect x="22" y="44" width="56" height="44" rx="10" fill="#D97706" stroke="#FEF08A" stroke-width="3"/><circle cx="50" cy="64" r="6" fill="#1E1E1E"/></svg>`,
   cloudNode: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><path d="M32,74 L90,74 C104,74 112,64 112,52 C112,41 103,32 92,31 C88,16 74,8 58,8 C40,8 26,20 24,37 C13,39 6,48 6,58 C6,68 16,74 32,74 Z" fill="#0369A1" stroke="#38BDF8" stroke-width="3.5"/></svg>`,
   lightningBolt: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="56,6 22,54 48,54 42,94 78,44 52,44" fill="#F59E0B" stroke="#FEF08A" stroke-width="3" stroke-linejoin="round"/></svg>`,
-  globeNet: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#082F49" stroke="#38BDF8" stroke-width="3.5"/><ellipse cx="50" cy="50" rx="18" ry="40" fill="none" stroke="#38BDF8" stroke-width="2.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="#38BDF8" stroke-width="2.5"/><line x1="16" y1="30" x2="84" y2="30" stroke="#38BDF8" stroke-width="2"/><line x1="16" y1="70" x2="84" y2="70" stroke="#38BDF8" stroke-width="2"/></svg>`
+  globeNet: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#082F49" stroke="#38BDF8" stroke-width="3.5"/><ellipse cx="50" cy="50" rx="18" ry="40" fill="none" stroke="#38BDF8" stroke-width="2.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="#38BDF8" stroke-width="2.5"/><line x1="16" y1="30" x2="84" y2="30" stroke="#38BDF8" stroke-width="2"/><line x1="16" y1="70" x2="84" y2="70" stroke="#38BDF8" stroke-width="2"/></svg>`,
+  kafkaLogo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g stroke="#5CE1E6" stroke-width="5" fill="#1E293B"><line x1="36" y1="50" x2="66" y2="26"/><line x1="36" y1="50" x2="66" y2="74"/><line x1="36" y1="50" x2="36" y2="18"/><line x1="36" y1="50" x2="36" y2="82"/><circle cx="36" cy="50" r="14" fill="#0284C7"/><circle cx="36" cy="16" r="9"/><circle cx="36" cy="84" r="9"/><circle cx="68" cy="24" r="10"/><circle cx="68" cy="76" r="10"/></g></svg>`,
+  redisCube: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,14 88,32 50,50 12,32" fill="#EF4444" stroke="#FCA5A5" stroke-width="2.5"/><polygon points="12,48 50,66 88,48 88,58 50,76 12,58" fill="#DC2626"/><polygon points="12,66 50,84 88,66 88,76 50,94 12,76" fill="#991B1B"/><circle cx="50" cy="31" r="6" fill="#FEF08A"/></svg>`,
+  postgresElephant: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M24,36 C24,18 42,12 56,14 C72,16 82,28 80,46 C78,64 70,84 58,84 C52,84 52,66 54,56 C44,62 32,58 26,48 Z" fill="#0284C7" stroke="#7DD3FC" stroke-width="3.5"/><circle cx="62" cy="34" r="4.5" fill="#FFFFFF"/><path d="M54,54 C58,58 66,58 72,52" fill="none" stroke="#BAE6FD" stroke-width="3" stroke-linecap="round"/></svg>`,
+  kubernetesWheel: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,6 88,26 94,68 68,94 32,94 6,68 12,26" fill="#1D4ED8" stroke="#60A5FA" stroke-width="3.5"/><circle cx="50" cy="52" r="22" fill="none" stroke="#FFFFFF" stroke-width="4.5"/><circle cx="50" cy="52" r="7" fill="#FFFFFF"/><g stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"><line x1="50" y1="20" x2="50" y2="84"/><line x1="20" y1="36" x2="80" y2="68"/><line x1="20" y1="68" x2="80" y2="36"/></g></svg>`,
+  rustGear: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="#F97316" stroke-width="10" stroke-dasharray="12 6"/><circle cx="50" cy="50" r="26" fill="#1E1E1E" stroke="#FB923C" stroke-width="3"/><text x="50" y="61" font-family="-apple-system, sans-serif" font-weight="900" font-size="34" fill="#F97316" text-anchor="middle">R</text></svg>`,
+  goGopher: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="20" y="18" width="60" height="68" rx="30" fill="#06B6D4" stroke="#67E8F9" stroke-width="3.5"/><circle cx="38" cy="40" r="9" fill="#FFFFFF"/><circle cx="62" cy="40" r="9" fill="#FFFFFF"/><circle cx="40" cy="40" r="4" fill="#0F172A"/><circle cx="60" cy="40" r="4" fill="#0F172A"/><ellipse cx="50" cy="54" rx="8" ry="5" fill="#FDE047"/><rect x="45" y="58" width="4" height="7" rx="1" fill="#FFFFFF"/><rect x="51" y="58" width="4" height="7" rx="1" fill="#FFFFFF"/></svg>`
 };
 
 const imageCache = {};
@@ -51,6 +57,26 @@ function get(name) {
   return imageCache[name] || null;
 }
 
+/**
+ * Ergonomic helper to draw a registered SVG icon centered at (cx, cy).
+ */
+function draw(ctx, name, cx, cy, size = 48, opts = {}) {
+  const img = get(name);
+  if (!img) return false;
+  const alpha = opts.alpha !== undefined ? opts.alpha : 1;
+  if (alpha <= 0.01) return false;
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  if (opts.glowColor) {
+    ctx.shadowColor = opts.glowColor;
+    ctx.shadowBlur = opts.glowBlur || 14;
+  }
+  ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+  ctx.restore();
+  return true;
+}
+
 function listNames() {
   return Object.keys(BUILTIN_SVGS);
 }
@@ -60,5 +86,6 @@ module.exports = {
   register,
   initBuiltinIcons,
   get,
+  draw,
   listNames
 };

@@ -245,7 +245,12 @@ function drawGlassCard(ctx, x, y, w, h, opts = {}) {
     ctx.font = `600 18px ${FONTS.sans}`;
     const bw = Math.max(150, ctx.measureText(opts.badge).width + 44);
     const bh = 38;
-    const bx = x + (w - bw) / 2;
+    let bx = x + (w - bw) / 2;
+    if (opts.badgeSide === 'left') {
+      bx = x + Math.min(28, Math.max(12, (w - bw) / 2));
+    } else if (opts.badgeSide === 'right') {
+      bx = x + w - bw - Math.min(28, Math.max(12, (w - bw) / 2));
+    }
     const by = y + (opts.badgeInside ? 18 : -bh / 2);
 
     ctx.beginPath();
@@ -319,8 +324,30 @@ function drawTakeawayPill(ctx, text, options = {}) {
 
 /**
  * Dims everything outside a spotlight rectangle to guide viewer focus.
+ * Supports both drawSpotlightMask(ctx, { x, y, w, h }, strength) and drawSpotlightMask(ctx, width, height, { x, y, rx, ry, alpha }).
  */
-function drawSpotlightMask(ctx, focusRect, strength = 0.65, width = 1920, height = 1080) {
+function drawSpotlightMask(ctx, arg1, arg2 = 0.65, arg3 = 1920, arg4 = 1080) {
+  let focusRect = arg1;
+  let strength = arg2;
+  let width = arg3;
+  let height = arg4;
+
+  if (typeof arg1 === 'number' && typeof arg2 === 'number' && typeof arg3 === 'object' && arg3 !== null) {
+    width = arg1;
+    height = arg2;
+    const spec = arg3;
+    strength = spec.alpha !== undefined ? spec.alpha : 0.65;
+    const rw = spec.w !== undefined ? spec.w : (spec.rx || 180) * 2;
+    const rh = spec.h !== undefined ? spec.h : (spec.ry || 140) * 2;
+    focusRect = {
+      x: spec.w !== undefined ? spec.x : (spec.x || 960) - rw / 2,
+      y: spec.h !== undefined ? spec.y : (spec.y || 540) - rh / 2,
+      w: rw,
+      h: rh,
+      pad: spec.pad
+    };
+  }
+
   if (!focusRect || strength <= 0.01) return;
   const pad = focusRect.pad !== undefined ? focusRect.pad : 20;
   const rx = focusRect.x - pad;
@@ -337,6 +364,37 @@ function drawSpotlightMask(ctx, focusRect, strength = 0.65, width = 1920, height
   ctx.restore();
 }
 
+/**
+ * Broadcast Subtitles / Synchronized Voiceover Caption Bar.
+ */
+function drawCaptionBar(ctx, text, options = {}) {
+  if (!text) return;
+  const canvasWidth = options.canvasWidth || 1920;
+  const y = options.y || 988;
+  const alpha = options.alpha !== undefined ? options.alpha : 1;
+  if (alpha <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.font = `500 21px ${FONTS.sans}`;
+  const tw = ctx.measureText(text).width + 48;
+  const th = 44;
+  const tx = (canvasWidth - tw) / 2;
+
+  ctx.beginPath();
+  ctx.roundRect(tx, y, tw, th, 10);
+  ctx.fillStyle = 'rgba(15, 15, 15, 0.84)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  ctx.fillStyle = options.color || '#F8FAFC';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, canvasWidth / 2, y + 29);
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
   GLASS_TINTS,
@@ -346,5 +404,6 @@ module.exports = {
   drawTopHeader,
   drawGlassCard,
   drawTakeawayPill,
-  drawSpotlightMask
+  drawSpotlightMask,
+  drawCaptionBar
 };

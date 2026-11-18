@@ -7,8 +7,8 @@ const Connectors = require('../core/connectors');
 const { FONTS, GLASS_TINTS } = Theme;
 
 /**
- * Signature ByteByteGo Line-Art Primitives & High-Retention Scene Archetypes (v2.0).
- * Every primitive supports progressive self-drawing (`progress: 0 -> 1`).
+ * Signature ByteByteGo Line-Art Primitives & High-Retention Scene Archetypes (v2.1).
+ * Every primitive supports progressive self-drawing (`progress: 0 -> 1`) and dual calling conventions.
  */
 
 // 1. AUTHENTIC 3D STACKED ISOMETRIC WIREFRAME SERVER (Matches ByteByteGo HTTP video)
@@ -22,7 +22,7 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
   const progress = opts.progress !== undefined ? opts.progress : 1;
   const label = opts.label || '';
 
-  if (progress <= 0.01) return;
+  if (progress <= 0.01) return { leftX: cx - rx, rightX: cx + rx, cy };
 
   const totalHeight = (slabs - 1) * gap;
   const startY = cy - totalHeight / 2;
@@ -33,7 +33,6 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
     const localP = Math.max(0, Math.min(1, (progress * slabs) - (slabs - 1 - i) * 0.45));
     if (localP <= 0.01) continue;
 
-    // Fill dark background so lower slabs occlude cleanly
     ctx.save();
     ctx.fillStyle = '#242424';
     ctx.beginPath();
@@ -47,7 +46,6 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
     ctx.fill();
     ctx.restore();
 
-    // Top isometric diamond
     Effects.strokeDraw(ctx, (c) => {
       c.moveTo(cx, sy - ry);
       c.lineTo(cx + rx, sy);
@@ -55,7 +53,6 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
       c.lineTo(cx - rx, sy);
       c.closePath();
 
-      // Side extrusions
       c.moveTo(cx - rx, sy);
       c.lineTo(cx - rx, sy + slabThickness);
       c.lineTo(cx, sy + ry + slabThickness);
@@ -63,7 +60,6 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
       c.lineTo(cx + rx, sy);
     }, localP, { stroke, lineWidth: 2, pathLength: 620 });
 
-    // Front-left status LEDs
     if (localP > 0.75) {
       ctx.fillStyle = stroke;
       ctx.beginPath();
@@ -89,7 +85,9 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
 }
 
 // 2. FOLDED-CORNER DOCUMENT WITH RIBBON BADGE (HTML, LOG, JSON, SQL, CLASS)
-function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
+function foldedFileBadge(ctx, cx, cy, tagOrOpts = 'LOG', maybeOpts = {}) {
+  const opts = typeof tagOrOpts === 'object' && tagOrOpts !== null ? tagOrOpts : maybeOpts;
+  const tag = typeof tagOrOpts === 'string' ? tagOrOpts : (opts.badge || opts.tag || 'LOG');
   const w = opts.width || 96;
   const h = opts.height || 118;
   const fold = opts.fold || 24;
@@ -97,7 +95,7 @@ function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
   const y = cy - h / 2;
   const progress = opts.progress !== undefined ? opts.progress : 1;
   const outlineColor = opts.outlineColor || '#FFFFFF';
-  const ribbonBg = opts.ribbonBg || '#3B82F6';
+  const ribbonBg = opts.ribbonBg || opts.badgeColor || '#3B82F6';
   const ribbonStroke = opts.ribbonStroke || '';
 
   if (progress <= 0.01) return;
@@ -114,7 +112,6 @@ function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
     c.lineTo(x, y + 10);
     c.quadraticCurveTo(x, y, x + 10, y);
 
-    // Folded corner crease
     c.moveTo(x + w - fold, y);
     c.lineTo(x + w - fold, y + fold);
     c.lineTo(x + w, y + fold);
@@ -155,11 +152,11 @@ function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
   ctx.restore();
 }
 
-// 3. THIN-LINE NEON WIREFRAME BROWSER (`www` — Matches ByteByteGo HTTP video)
+// 3. THIN-LINE NEON WIREFRAME BROWSER (`WWW` — Matches ByteByteGo HTTP video)
 function wireframeBrowser(ctx, x, y, w = 176, h = 122, opts = {}) {
   const stroke = opts.color || '#5CE1E6';
   const progress = opts.progress !== undefined ? opts.progress : 1;
-  const centerLabel = opts.label !== undefined ? opts.label : 'WWW';
+  const centerLabel = opts.label !== undefined ? opts.label : (opts.centerText !== undefined ? opts.centerText : 'WWW');
 
   if (progress <= 0.01) return;
 
@@ -190,7 +187,10 @@ function wireframeBrowser(ctx, x, y, w = 176, h = 122, opts = {}) {
 }
 
 // 4. THIN-LINE WIREFRAME CYLINDER DATABASE (Self-drawing, matches ACID video)
-function wireframeCylinderDb(ctx, cx, cy, opts = {}) {
+function wireframeCylinderDb(ctx, cx, cy, wOrOpts = {}, hOrUndefined, maybeOpts = {}) {
+  const opts = typeof wOrOpts === 'number'
+    ? Object.assign({}, maybeOpts, { width: wOrOpts, height: hOrUndefined || 116 })
+    : wOrOpts;
   const w = opts.width || 108;
   const h = opts.height || 116;
   const ry = opts.ry || 18;
@@ -209,7 +209,6 @@ function wireframeCylinderDb(ctx, cx, cy, opts = {}) {
     c.lineTo(x, y + h - ry);
     c.ellipse(cx, y + h - ry, w / 2, ry, 0, Math.PI, 0, true);
     c.lineTo(x + w, y + ry);
-    // Middle tier band
     c.moveTo(x, cy);
     c.ellipse(cx, cy, w / 2, ry, 0, Math.PI, 0, true);
   }, progress, { stroke, lineWidth: 2, fill: 'rgba(56, 189, 248, 0.08)', pathLength: 820 });
@@ -237,7 +236,6 @@ function lineArtUser(ctx, cx, cy, opts = {}) {
   ctx.scale(scale, scale);
 
   Effects.strokeDraw(ctx, (c) => {
-    // Head + stylized hair crest
     c.moveTo(-22, -16);
     c.lineTo(-22, -38);
     c.quadraticCurveTo(0, -48, 22, -40);
@@ -245,12 +243,10 @@ function lineArtUser(ctx, cx, cy, opts = {}) {
     c.quadraticCurveTo(22, 10, 0, 10);
     c.quadraticCurveTo(-22, 10, -22, -16);
 
-    // Hair wave line
     c.moveTo(-22, -22);
     c.quadraticCurveTo(-4, -18, 8, -28);
     c.quadraticCurveTo(16, -20, 22, -20);
 
-    // Shoulders & collar
     c.moveTo(-10, 10);
     c.lineTo(-10, 20);
     c.moveTo(10, 10);
@@ -298,17 +294,28 @@ function stateMutationCard(ctx, x, y, w, h, opts = {}) {
     ctx.fillText(title, x + w / 2, y - 16);
   }
 
-  Theme.drawGlassCard(ctx, x, y, w, h, { tint, radius: 12, progress });
+  Theme.drawGlassCard(ctx, x, y, w, h, {
+    tint,
+    radius: 12,
+    badge: opts.badge,
+    badgeSide: opts.badgeSide,
+    progress
+  });
 
-  const rowStart = y + 38;
-  const rowGap = Math.min(34, (h - 32) / Math.max(1, rows.length));
+  const rowStart = y + (opts.badge ? 54 : 38);
+  const rowGap = Math.min(34, (h - 36) / Math.max(1, rows.length));
 
   rows.forEach((r, idx) => {
     const rp = Math.max(0, Math.min(1, (progress - idx * 0.18) / 0.55));
     if (rp <= 0.01) return;
-    Effects.typeText(ctx, r.text, x + w / 2, rowStart + idx * rowGap, rp, {
-      font: `${r.highlight ? '700' : '500'} 18px ${FONTS.sans}`,
-      color: r.highlight ? '#FACC15' : '#FFFFFF'
+    const text = typeof r === 'string'
+      ? r
+      : (r.text || `${r.actor || 'State'}: ${r.before || ''} -> ${r.after || ''}`);
+    const isHighlight = Boolean(r.highlight);
+    const col = typeof r.highlight === 'string' ? r.highlight : (isHighlight ? '#FACC15' : '#FFFFFF');
+    Effects.typeText(ctx, text, x + w / 2, rowStart + idx * rowGap, rp, {
+      font: `${isHighlight ? '700' : '500'} 18px ${FONTS.sans}`,
+      color: col
     });
   });
   ctx.restore();
@@ -316,26 +323,27 @@ function stateMutationCard(ctx, x, y, w, h, opts = {}) {
 
 // 7. BROKEN LINK PLUG + RED FAILURE CROSS-OUT (Matches ByteByteGo ACID failure state)
 function brokenLinkPlug(ctx, cx, cy, opts = {}) {
-  const sep = (opts.separation !== undefined ? opts.separation : 1) * 14;
-  const crossProgress = opts.crossProgress !== undefined ? opts.crossProgress : 1;
+  const baseP = opts.progress !== undefined ? opts.progress : 1;
+  const sep = (opts.separation !== undefined ? opts.separation : baseP) * 14;
+  const crossProgress = opts.crossProgress !== undefined ? opts.crossProgress : baseP;
+
+  if (baseP <= 0.01) return;
 
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(-Math.PI / 4);
 
-  // Left plug body
   ctx.strokeStyle = '#E2E8F0';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.roundRect(-42 - sep, -14, 28, 28, 5);
   ctx.stroke();
-  // Prongs
+
   ctx.beginPath();
   ctx.moveTo(-14 - sep, -6); ctx.lineTo(-4 - sep, -6);
   ctx.moveTo(-14 - sep, 6); ctx.lineTo(-4 - sep, 6);
   ctx.stroke();
 
-  // Right socket body
   ctx.strokeStyle = '#C084FC';
   ctx.beginPath();
   ctx.roundRect(10 + sep, -14, 28, 28, 5);
@@ -345,6 +353,13 @@ function brokenLinkPlug(ctx, cx, cy, opts = {}) {
   if (crossProgress > 0.01) {
     Effects.crossOutFailure(ctx, cx, cy, crossProgress, { size: 42 });
   }
+
+  if (opts.caption && baseP > 0.4) {
+    Effects.typeText(ctx, opts.caption, cx, cy + 68, (baseP - 0.4) / 0.6, {
+      font: `600 16px ${FONTS.sans}`,
+      color: '#FCA5A5'
+    });
+  }
 }
 
 // ============================================================================
@@ -352,7 +367,13 @@ function brokenLinkPlug(ctx, cx, cy, opts = {}) {
 // ============================================================================
 
 // 8. EVOLUTION / MILESTONE TIMELINE STRIP (`HTTP/1 o──▶ HTTP/1.1 o──▶ HTTP/2 o──▶ HTTP/3`)
-function evolutionTimeline(ctx, items, opts = {}) {
+function evolutionTimeline(ctx, itemsOrCx, yOrOpts = {}, maybeOpts = {}) {
+  let items = itemsOrCx;
+  let opts = yOrOpts;
+  if (typeof itemsOrCx === 'number') {
+    opts = Object.assign({}, maybeOpts, { centerY: yOrOpts });
+    items = opts.items || ['v1.0', 'v2.0', 'v3.0'];
+  }
   const canvasWidth = opts.canvasWidth || 1920;
   const cy = opts.centerY || 540;
   const nodeW = opts.nodeWidth || 186;
@@ -411,12 +432,18 @@ function evolutionTimeline(ctx, items, opts = {}) {
 }
 
 // 9. GIANT KINETIC STAT / YEAR HERO SLAM (`2010`, `< 1 ms`, `10,000x` — Matches HTTP 38s)
-function heroMetricSlam(ctx, mainText, opts = {}) {
+function heroMetricSlam(ctx, textOrCx, cyOrOpts = {}, maybeOpts = {}) {
+  let mainText = textOrCx;
+  let opts = cyOrOpts;
+  if (typeof textOrCx === 'number' && typeof cyOrOpts === 'number') {
+    opts = Object.assign({}, maybeOpts, { cx: textOrCx, cy: cyOrOpts });
+    mainText = String(opts.value || opts.text || '2015');
+  }
   const cx = opts.cx || 960;
   const cy = opts.cy || 530;
   const color = opts.color || '#2CE5FF';
-  const subText = opts.subtitle || '';
-  const scale = opts.scale !== undefined ? opts.scale : 1;
+  const subText = opts.subtitle || opts.sub || '';
+  const scale = opts.scale !== undefined ? opts.scale : (opts.progress !== undefined ? opts.progress : 1);
   const fontSize = opts.fontSize || 230;
 
   if (scale <= 0.01) return;
@@ -442,13 +469,40 @@ function heroMetricSlam(ctx, mainText, opts = {}) {
 }
 
 // 10. SIDE-BY-SIDE TRANSLUCENT COMPARISON TABLE (Matches Linux BIOS vs UEFI frame 42s)
-function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
+function comparisonSplitTable(ctx, a1, a2, a3 = {}, a4, a5 = {}) {
+  let leftSpec = a1;
+  let rightSpec = a2;
+  let opts = a3;
+
+  // Support (ctx, x, y, w, h, { leftHeader, rightHeader, rows, progress })
+  if (typeof a1 === 'number' && typeof a2 === 'number' && typeof a3 === 'number' && typeof a4 === 'number') {
+    const spec = a5 || {};
+    const gap = spec.gap || 28;
+    const cardW = Math.floor((a3 - gap) / 2);
+    const p = spec.progress !== undefined ? spec.progress : 1;
+    leftSpec = {
+      title: spec.leftHeader || 'Option A',
+      headerFill: '#6B7B3A',
+      bodyFill: 'rgba(34, 68, 62, 0.72)',
+      bullets: (spec.rows || []).map((r) => r.left),
+      progress: p
+    };
+    rightSpec = {
+      title: spec.rightHeader || 'Option B',
+      headerFill: '#0F766E',
+      bodyFill: 'rgba(22, 62, 72, 0.72)',
+      bullets: (spec.rows || []).map((r) => r.right),
+      progress: p
+    };
+    opts = { startX: a1, y: a2, cardWidth: cardW, cardHeight: a4, gap };
+  }
+
   const canvasWidth = opts.canvasWidth || 1920;
   const cardW = opts.cardWidth || 620;
   const cardH = opts.cardHeight || 420;
   const gap = opts.gap || 32;
   const y = opts.y || 300;
-  const startX = Math.round((canvasWidth - (cardW * 2 + gap)) / 2);
+  const startX = opts.startX !== undefined ? opts.startX : Math.round((canvasWidth - (cardW * 2 + gap)) / 2);
 
   const cards = [
     { spec: leftSpec, x: startX },
@@ -462,7 +516,6 @@ function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
     ctx.save();
     ctx.globalAlpha *= progress;
 
-    // Outer body
     ctx.beginPath();
     ctx.roundRect(x, y, cardW, cardH, 16);
     ctx.fillStyle = spec.bodyFill || 'rgba(34, 68, 62, 0.72)';
@@ -471,43 +524,40 @@ function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
     ctx.lineWidth = 1.8;
     ctx.stroke();
 
-    // Olive/Gold top header bar
     ctx.beginPath();
     ctx.roundRect(x, y, cardW, 56, [16, 16, 12, 12]);
     ctx.fillStyle = spec.headerFill || '#6B7B3A';
     ctx.fill();
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `600 24px ${FONTS.sans}`;
+    ctx.font = `600 22px ${FONTS.sans}`;
     ctx.textAlign = 'center';
     ctx.fillText(spec.title || '', x + cardW / 2, y + 36);
 
-    // Bullet points with optional active yellow highlight
     ctx.textAlign = 'left';
-    let cursorY = y + 102;
+    let cursorY = y + 100;
     (spec.bullets || []).forEach((b, idx) => {
       const text = typeof b === 'string' ? b : b.text;
       const isHighlighted = (typeof b === 'object' && b.highlight) || spec.highlightIndex === idx;
       ctx.fillStyle = isHighlighted ? '#FACC15' : '#F8FAFC';
-      ctx.font = `${isHighlighted ? '600' : '500'} 21px ${FONTS.sans}`;
+      ctx.font = `${isHighlighted ? '600' : '500'} 19px ${FONTS.sans}`;
 
-      // Word-wrap cleanly inside cardW - 68
-      const words = (`-  ${text}`).split(' ');
+      const words = (`•  ${text}`).split(' ');
       let line = '';
-      const maxW = cardW - 68;
+      const maxW = cardW - 56;
       for (const word of words) {
         const testLine = line ? `${line} ${word}` : word;
         if (ctx.measureText(testLine).width > maxW) {
-          ctx.fillText(line, x + 34, cursorY);
+          ctx.fillText(line, x + 28, cursorY);
           line = '    ' + word;
-          cursorY += 32;
+          cursorY += 28;
         } else {
           line = testLine;
         }
       }
       if (line) {
-        ctx.fillText(line, x + 34, cursorY);
-        cursorY += 42;
+        ctx.fillText(line, x + 28, cursorY);
+        cursorY += 38;
       }
     });
 
@@ -516,19 +566,36 @@ function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
 }
 
 // 11. SWIMLANE PROTOCOL SEQUENCE DIAGRAM (TCP Handshake, OAuth2, Raft, 2PC)
-function swimlaneSequence(ctx, actors, messages, opts = {}) {
+function swimlaneSequence(ctx, a1, a2, a3 = {}, a4, a5 = {}) {
+  let actors = a1;
+  let messages = a2;
+  let opts = a3;
+
+  // Support (ctx, x, y, w, h, { actors, messages, progress })
+  if (typeof a1 === 'number' && typeof a2 === 'number' && typeof a3 === 'number' && typeof a4 === 'number') {
+    const spec = a5 || {};
+    actors = spec.actors || [];
+    messages = spec.messages || [];
+    opts = {
+      startX: a1 + 95,
+      topY: a2 + 30,
+      bottomY: a2 + a4 - 20,
+      spanWidth: Math.max(200, a3 - 190),
+      progress: spec.progress
+    };
+  }
+
   const canvasWidth = opts.canvasWidth || 1920;
   const topY = opts.topY || 220;
   const bottomY = opts.bottomY || 780;
   const spanW = opts.spanWidth || 1240;
-  const startX = Math.round((canvasWidth - spanW) / 2);
+  const startX = opts.startX !== undefined ? opts.startX : Math.round((canvasWidth - spanW) / 2);
   const stepX = actors.length > 1 ? spanW / (actors.length - 1) : 0;
   const progress = opts.progress !== undefined ? opts.progress : 1;
 
   const actorXs = actors.map((_, i) => Math.round(startX + i * stepX));
 
   ctx.save();
-  // Draw actor headers & vertical dashed lifelines
   actors.forEach((act, i) => {
     const ax = actorXs[i];
     const name = typeof act === 'string' ? act : act.name;
@@ -547,7 +614,6 @@ function swimlaneSequence(ctx, actors, messages, opts = {}) {
     ctx.textAlign = 'center';
     ctx.fillText(name, ax, topY + 6);
 
-    // Lifeline
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
     ctx.lineWidth = 2;
     ctx.setLineDash([7, 6]);
@@ -558,7 +624,6 @@ function swimlaneSequence(ctx, actors, messages, opts = {}) {
     ctx.setLineDash([]);
   });
 
-  // Draw chronological messages
   const msgAreaStart = topY + 78;
   const msgGap = Math.min(92, (bottomY - msgAreaStart - 30) / Math.max(1, messages.length));
 
@@ -574,11 +639,14 @@ function swimlaneSequence(ctx, actors, messages, opts = {}) {
     const y2 = y1 + (m.slope !== undefined ? m.slope : 22);
     const col = m.color || '#5CE1E6';
 
-    if (m.dashed) {
-      Connectors.dashedArrow(ctx, x1, y1, x2, y2, { progress: mp, label: m.label, color: col, labelOffset: -12 });
-    } else {
-      Connectors.solidArrow(ctx, x1, y1, x2, y2, { progress: mp, label: m.label, color: col, labelOffset: -12 });
-    }
+    Connectors.solidArrow(ctx, x1, y1, x2, y2, {
+      progress: mp,
+      dashed: Boolean(m.dashed),
+      label: m.label,
+      color: col,
+      labelOffset: -14,
+      labelBg: false
+    });
 
     if (m.failed && mp > 0.7) {
       Effects.crossOutFailure(ctx, (x1 + x2) / 2, (y1 + y2) / 2, (mp - 0.7) / 0.3, { size: 32 });
@@ -588,9 +656,14 @@ function swimlaneSequence(ctx, actors, messages, opts = {}) {
 }
 
 // 12. CONSISTENT HASH RING (Distributed Systems: DynamoDB, Cassandra, Sharding)
-function consistentHashRing(ctx, cx, cy, radius, nodes, opts = {}) {
+function consistentHashRing(ctx, cx, cy, radius, nodesOrOpts = [], maybeOpts = {}) {
+  const isArray = Array.isArray(nodesOrOpts);
+  const opts = isArray ? maybeOpts : (nodesOrOpts || {});
+  const nodes = isArray ? nodesOrOpts : (opts.nodes || []);
   const progress = opts.progress !== undefined ? opts.progress : 1;
-  const tokenAngle = opts.tokenAngle !== undefined ? opts.tokenAngle : 0;
+  const tokenAngle = opts.tokenAngle !== undefined ? opts.tokenAngle : (opts.keyAngle !== undefined ? opts.keyAngle : 0);
+
+  if (progress <= 0.01) return;
 
   ctx.save();
   Effects.strokeDraw(ctx, (c) => {
@@ -640,13 +713,18 @@ function consistentHashRing(ctx, cx, cy, radius, nodes, opts = {}) {
 
 // 13. B-TREE / INDEX HIERARCHY (Database Indexes, File Systems, Compilers)
 function bTreeHierarchy(ctx, cx, topY, opts = {}) {
-  const rootKeys = opts.root || ['30', '70'];
-  const children = opts.children || [
+  const rootKeys = (opts.root || opts.rootKeys || ['30', '70']).map(String);
+  const children = (opts.children || [
     { keys: ['10', '20'], active: false },
     { keys: ['42', '55'], active: true },
     { keys: ['80', '95'], active: false }
-  ];
+  ]).map((c, idx) => ({
+    keys: (c.keys || []).map(String),
+    active: c.active !== undefined ? c.active : opts.highlightBranch === idx
+  }));
   const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (progress <= 0.01) return;
 
   function drawKeyNode(nx, ny, keys, active) {
     const cellW = 54;
@@ -698,11 +776,32 @@ function bTreeHierarchy(ctx, cx, topY, opts = {}) {
 }
 
 // 14. SEGMENTED NETWORK PACKET / PROTOCOL FRAME (`[ IP | TCP | TLS | HTTP Payload ]`)
-function networkPacketFrame(ctx, cx, cy, segments, opts = {}) {
+function networkPacketFrame(ctx, a1, a2, a3, a4 = {}, a5 = {}) {
+  let cx = a1;
+  let cy = a2;
+  let segments = a3;
+  let opts = a4;
+
+  // Support (ctx, x, y, w, h, { segments, progress })
+  if (typeof a3 === 'number' && typeof a4 === 'number') {
+    opts = Object.assign({}, a5, { height: a4 });
+    cx = a1 + a3 / 2;
+    cy = a2 + a4 / 2;
+    segments = (opts.segments || []).map((s) => ({
+      label: s.label,
+      sub: s.sub,
+      width: s.width || Math.round((s.ratio || 0.25) * a3),
+      border: s.border || s.color || '#38BDF8',
+      bg: s.bg || 'rgba(30, 41, 59, 0.72)'
+    }));
+  }
+
   const h = opts.height || 64;
   const totalW = segments.reduce((s, seg) => s + (seg.width || 160), 0);
   let cursorX = cx - totalW / 2;
   const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (progress <= 0.01) return;
 
   ctx.save();
   segments.forEach((seg, i) => {
@@ -740,6 +839,272 @@ function networkPacketFrame(ctx, cx, cy, segments, opts = {}) {
   ctx.restore();
 }
 
+// 15. API GATEWAY / REVERSE PROXY LOAD BALANCER ROUTER (1 -> 3 Fan-out distributor)
+function loadBalancerRouter(ctx, cx, cy, opts = {}) {
+  const radius = opts.radius || 58;
+  const stroke = opts.color || '#5CE1E6';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label !== undefined ? opts.label : 'Load Balancer';
+  const algorithm = opts.algorithm || 'Round-Robin';
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Effects.strokeDraw(ctx, (c) => {
+    c.arc(cx, cy, radius, 0, Math.PI * 2);
+    // Internal diamond router symbol
+    c.moveTo(cx - 28, cy);
+    c.lineTo(cx + 22, cy - 22);
+    c.moveTo(cx - 28, cy);
+    c.lineTo(cx + 24, cy);
+    c.moveTo(cx - 28, cy);
+    c.lineTo(cx + 22, cy + 22);
+  }, progress, { stroke, lineWidth: 2.4, fill: 'rgba(15, 23, 42, 0.85)', pathLength: 520 });
+
+  if (progress > 0.6) {
+    ctx.fillStyle = '#FACC15';
+    ctx.beginPath();
+    ctx.arc(cx - 28, cy, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    [-22, 0, 22].forEach((dy) => {
+      ctx.fillStyle = '#4ADE80';
+      ctx.beginPath();
+      ctx.arc(cx + 23, cy + dy, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = `600 12px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(algorithm, cx, cy + radius - 14);
+  }
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, cy + radius + 28, progress, {
+      font: `600 17px ${FONTS.sans}`,
+      color: '#FFFFFF'
+    });
+  }
+  ctx.restore();
+}
+
+// 16. KAFKA / PUB-SUB PARTITIONED OFFSET LOG STREAM
+function pubSubTopicBox(ctx, x, y, w = 460, h = 110, opts = {}) {
+  const title = opts.title || 'Topic: orders-stream (Partition 0)';
+  const offsets = opts.offsets || ['#101', '#102', '#103', '#104', 'HEAD'];
+  const activeSlot = opts.activeSlot !== undefined ? opts.activeSlot : offsets.length - 1;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Theme.drawGlassCard(ctx, x, y, w, h, {
+    tint: opts.tint || 'teal',
+    radius: 12,
+    progress
+  });
+
+  ctx.fillStyle = '#E2E8F0';
+  ctx.font = `600 15px ${FONTS.sans}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(title, x + 20, y + 26);
+
+  const cellGap = 8;
+  const padX = 20;
+  const cellW = Math.floor((w - padX * 2 - (offsets.length - 1) * cellGap) / offsets.length);
+  const cellH = 46;
+  const cellY = y + 42;
+
+  offsets.forEach((slotText, idx) => {
+    const sp = Math.max(0, Math.min(1, (progress * offsets.length) - idx * 0.4));
+    if (sp <= 0.01) return;
+    const cx = x + padX + idx * (cellW + cellGap);
+    const isHead = idx === activeSlot;
+
+    ctx.save();
+    ctx.globalAlpha *= sp;
+    ctx.beginPath();
+    ctx.roundRect(cx, cellY, cellW, cellH, 7);
+    ctx.fillStyle = isHead ? 'rgba(250, 204, 21, 0.24)' : 'rgba(15, 23, 42, 0.78)';
+    ctx.fill();
+    ctx.strokeStyle = isHead ? '#FACC15' : '#38BDF8';
+    ctx.lineWidth = isHead ? 2.4 : 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = isHead ? '#FEF08A' : '#FFFFFF';
+    ctx.font = `700 14px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(slotText, cx + cellW / 2, cellY + 28);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// 17. MICROSERVICE CIRCUIT BREAKER KNIFE-SWITCH (`CLOSED` vs `OPEN (TRIPPED)`)
+function circuitBreakerSwitch(ctx, cx, cy, opts = {}) {
+  const isOpen = opts.state === 'OPEN' || Boolean(opts.tripped);
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label || (isOpen ? 'OPEN (Fast Fail 503)' : 'CLOSED (Healthy Flow)');
+  const color = isOpen ? '#F87171' : '#4ADE80';
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  // Left and right terminal posts
+  const leftX = cx - 56;
+  const rightX = cx + 56;
+
+  ctx.strokeStyle = '#94A3B8';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(leftX - 36, cy);
+  ctx.lineTo(leftX, cy);
+  ctx.moveTo(rightX, cy);
+  ctx.lineTo(rightX + 36, cy);
+  ctx.stroke();
+
+  // Switch pivot blade
+  const angle = isOpen ? -0.58 : 0;
+  ctx.save();
+  ctx.translate(leftX, cy);
+  ctx.rotate(angle);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(110, 0);
+  ctx.stroke();
+  ctx.restore();
+
+  // Terminal nodes
+  [leftX, rightX].forEach((tx) => {
+    ctx.fillStyle = '#1E293B';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(tx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  ctx.fillStyle = color;
+  ctx.font = `700 16px ${FONTS.sans}`;
+  ctx.textAlign = 'center';
+  ctx.fillText(label, cx, cy + 40);
+  ctx.restore();
+}
+
+// 18. CDN GLOBAL EDGE POP WIREFRAME GLOBE
+function cdnEdgeGlobe(ctx, cx, cy, radius = 85, opts = {}) {
+  const stroke = opts.color || '#38BDF8';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label !== undefined ? opts.label : 'Global Edge CDN';
+  const pops = opts.pops || [
+    { x: -0.45, y: -0.25, name: 'US-East' },
+    { x: 0.15, y: -0.35, name: 'EU-West' },
+    { x: 0.52, y: 0.22, name: 'AP-East' }
+  ];
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Effects.strokeDraw(ctx, (c) => {
+    c.arc(cx, cy, radius, 0, Math.PI * 2);
+    c.ellipse(cx, cy, radius * 0.48, radius, 0, 0, Math.PI * 2);
+    c.ellipse(cx, cy, radius, radius * 0.38, 0, 0, Math.PI * 2);
+  }, progress, { stroke, lineWidth: 2, fill: 'rgba(12, 74, 110, 0.22)', pathLength: 960 });
+
+  if (progress > 0.55) {
+    pops.forEach((p) => {
+      const px = cx + p.x * radius;
+      const py = cy + p.y * radius;
+      ctx.fillStyle = '#4ADE80';
+      ctx.beginPath();
+      ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.name) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `600 13px ${FONTS.sans}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(p.name, px, py - 11);
+      }
+    });
+  }
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, cy + radius + 28, progress, {
+      font: `600 17px ${FONTS.sans}`,
+      color: '#FFFFFF'
+    });
+  }
+  ctx.restore();
+}
+
+// 19. TOKEN BUCKET RATE LIMITER VISUALIZER
+function rateLimiterBucket(ctx, cx, cy, opts = {}) {
+  const w = opts.width || 116;
+  const h = opts.height || 126;
+  const fillLevel = opts.fillLevel !== undefined ? opts.fillLevel : 0.65;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const tokens = opts.tokens !== undefined ? opts.tokens : 4;
+  const label = opts.label !== undefined ? opts.label : 'Token Bucket (100 req/s)';
+
+  if (progress <= 0.01) return;
+
+  const topW = w;
+  const botW = w * 0.78;
+  const yTop = cy - h / 2;
+  const yBot = cy + h / 2;
+
+  ctx.save();
+  // Liquid capacity fill
+  if (progress > 0.4) {
+    const fh = h * Math.max(0.1, Math.min(1, fillLevel)) * progress;
+    const fy = yBot - fh;
+    ctx.fillStyle = fillLevel > 0.25 ? 'rgba(56, 189, 248, 0.26)' : 'rgba(248, 113, 113, 0.28)';
+    ctx.beginPath();
+    ctx.moveTo(cx - topW * 0.44, fy);
+    ctx.lineTo(cx + topW * 0.44, fy);
+    ctx.lineTo(cx + botW / 2, yBot);
+    ctx.lineTo(cx - botW / 2, yBot);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Bucket wireframe trapezoid
+  Effects.strokeDraw(ctx, (c) => {
+    c.moveTo(cx - topW / 2, yTop);
+    c.lineTo(cx - botW / 2, yBot);
+    c.lineTo(cx + botW / 2, yBot);
+    c.lineTo(cx + topW / 2, yTop);
+  }, progress, { stroke: '#5CE1E6', lineWidth: 2.6, pathLength: 420 });
+
+  // Gold tokens inside bucket
+  if (progress > 0.6) {
+    for (let i = 0; i < tokens; i++) {
+      const tx = cx - 26 + (i % 3) * 26;
+      const ty = yBot - 22 - Math.floor(i / 3) * 24;
+      ctx.fillStyle = '#FACC15';
+      ctx.beginPath();
+      ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, yBot + 28, progress, {
+      font: `600 16px ${FONTS.sans}`,
+      color: '#FFFFFF'
+    });
+  }
+  ctx.restore();
+}
+
 module.exports = {
   isometricServerStack,
   foldedFileBadge,
@@ -754,5 +1119,10 @@ module.exports = {
   swimlaneSequence,
   consistentHashRing,
   bTreeHierarchy,
-  networkPacketFrame
+  networkPacketFrame,
+  loadBalancerRouter,
+  pubSubTopicBox,
+  circuitBreakerSwitch,
+  cdnEdgeGlobe,
+  rateLimiterBucket
 };

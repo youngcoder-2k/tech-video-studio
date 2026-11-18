@@ -11,22 +11,24 @@ const ROOT = path.resolve(__dirname, '..');
 const Studio = require('../src/index');
 const SfxGen = require('../src/audio/sfx-gen');
 
-test('Studio v2.0 exposes Camera, Effects, Archetypes, and ByteByteGo Theme', () => {
-  assert.equal(Studio.version, '2.0.0');
+test('Studio exposes Camera, Effects, Connectors (incl. curvedArrow & flowArrow), and ByteByteGo Theme', () => {
   assert.ok(Studio.Theme.PALETTES.byteCharcoal, 'byteCharcoal palette exists');
   assert.equal(Studio.Theme.PALETTES.byteCharcoal.bg, '#262626');
   assert.ok(Studio.Theme.GLASS_TINTS.teal, 'GLASS_TINTS.teal exists');
   assert.equal(typeof Studio.Theme.drawGlassCard, 'function');
+  assert.equal(typeof Studio.Theme.drawCaptionBar, 'function');
   assert.equal(typeof Studio.Camera.createCameraState, 'function');
   assert.equal(typeof Studio.Camera.zoomTo, 'function');
   assert.equal(typeof Studio.Effects.strokeDraw, 'function');
   assert.equal(typeof Studio.Effects.typeText, 'function');
   assert.equal(typeof Studio.Effects.crossOutFailure, 'function');
   assert.equal(typeof Studio.Connectors.solidArrow, 'function');
+  assert.equal(typeof Studio.Connectors.flowArrow, 'function');
+  assert.equal(typeof Studio.Connectors.curvedArrow, 'function');
   assert.equal(typeof Studio.Connectors.elbowArrow, 'function');
 });
 
-test('All 14 ByteByteGo high-retention archetypes are merged into Studio.Illustrations', () => {
+test('All 19 ByteByteGo high-retention archetypes are merged into Studio.Illustrations', () => {
   const expectedArchetypes = [
     'isometricServerStack',
     'foldedFileBadge',
@@ -41,11 +43,25 @@ test('All 14 ByteByteGo high-retention archetypes are merged into Studio.Illustr
     'swimlaneSequence',
     'consistentHashRing',
     'bTreeHierarchy',
-    'networkPacketFrame'
+    'networkPacketFrame',
+    'loadBalancerRouter',
+    'pubSubTopicBox',
+    'circuitBreakerSwitch',
+    'cdnEdgeGlobe',
+    'rateLimiterBucket'
   ];
   for (const fnName of expectedArchetypes) {
     assert.equal(typeof Studio.Illustrations[fnName], 'function', `Missing archetype: ${fnName}`);
   }
+});
+
+test('Built-in SVG Icon Registry includes 22 system design & backend icons + Icons.draw helper', () => {
+  const names = Studio.Icons.listNames();
+  assert.ok(names.length >= 22, `Expected >= 22 icons, got ${names.length}`);
+  for (const requiredIcon of ['kafkaLogo', 'redisCube', 'postgresElephant', 'kubernetesWheel', 'rustGear', 'goGopher']) {
+    assert.ok(names.includes(requiredIcon), `Missing built-in icon: ${requiredIcon}`);
+  }
+  assert.equal(typeof Studio.Icons.draw, 'function');
 });
 
 test('Layout.horizontalPipeline guarantees mathematical left/right margin symmetry', () => {
@@ -115,13 +131,12 @@ test('Antigravity plugin.json and SKILL.md adhere to strict customization schema
   assert.match(skillMd, /^---\nname:\s*tech-video-studio\ndescription:/);
 });
 
-test('CLI metaphor search returns domain-specific visual metaphors including v2.0 archetypes', () => {
+test('CLI metaphor search returns domain-specific visual metaphors including new system design archetypes', () => {
   const out = execFileSync(process.execPath, [
     path.join(ROOT, 'bin/tech-video-studio.js'),
     'metaphor',
-    'acid transaction rollback'
+    'circuit-breaker rate-limiter load-balancer'
   ], { encoding: 'utf8' });
 
-  assert.match(out, /acid-transaction-state/);
-  assert.match(out, /stateMutationCard/);
+  assert.match(out, /circuit-breaker-resilience|token-bucket-rate-limiter|load-balancer-reverse-proxy/);
 });

@@ -54,7 +54,7 @@
             Camera.zoomTo(tl, s, { x: 1020, y: 560, zoom: 1.08, duration: 1.2 }, 3.2);
             Camera.reset(tl, s, 9.5, 1.0);
           },
-          render(ctx, { state }) {
+          render(ctx, { state, t }) {
             // Top protocol evolution strip (authentic ByteByteGo HTTP video style)
             Illustrations.evolutionTimeline(ctx, [
               { label: 'HTTP/1.0', sub: '1996' },
@@ -83,11 +83,13 @@
             // Request & Response solid/dashed connectors + folded HTML badge
             Connectors.solidArrow(ctx, 640, 480, 1250, 480, {
               progress: state.reqArrow,
+              timeSec: t,
               label: 'GET /index.html'
             });
             Connectors.solidArrow(ctx, 1250, 565, 640, 565, {
               progress: state.resArrow,
               dashed: true,
+              timeSec: t,
               color: '#5CE1E6',
               label: 'Binary Frames (TLS 1.3)'
             });

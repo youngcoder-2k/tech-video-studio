@@ -262,7 +262,12 @@ function drawGlassCard(ctx, x, y, w, h, opts = {}) {
     ctx.font = `600 18px ${FONTS.sans}`;
     const bw = Math.max(150, ctx.measureText(opts.badge).width + 44);
     const bh = 38;
-    const bx = x + (w - bw) / 2;
+    let bx = x + (w - bw) / 2;
+    if (opts.badgeSide === 'left') {
+      bx = x + Math.min(28, Math.max(12, (w - bw) / 2));
+    } else if (opts.badgeSide === 'right') {
+      bx = x + w - bw - Math.min(28, Math.max(12, (w - bw) / 2));
+    }
     const by = y + (opts.badgeInside ? 18 : -bh / 2);
 
     ctx.beginPath();
@@ -336,8 +341,30 @@ function drawTakeawayPill(ctx, text, options = {}) {
 
 /**
  * Dims everything outside a spotlight rectangle to guide viewer focus.
+ * Supports both drawSpotlightMask(ctx, { x, y, w, h }, strength) and drawSpotlightMask(ctx, width, height, { x, y, rx, ry, alpha }).
  */
-function drawSpotlightMask(ctx, focusRect, strength = 0.65, width = 1920, height = 1080) {
+function drawSpotlightMask(ctx, arg1, arg2 = 0.65, arg3 = 1920, arg4 = 1080) {
+  let focusRect = arg1;
+  let strength = arg2;
+  let width = arg3;
+  let height = arg4;
+
+  if (typeof arg1 === 'number' && typeof arg2 === 'number' && typeof arg3 === 'object' && arg3 !== null) {
+    width = arg1;
+    height = arg2;
+    const spec = arg3;
+    strength = spec.alpha !== undefined ? spec.alpha : 0.65;
+    const rw = spec.w !== undefined ? spec.w : (spec.rx || 180) * 2;
+    const rh = spec.h !== undefined ? spec.h : (spec.ry || 140) * 2;
+    focusRect = {
+      x: spec.w !== undefined ? spec.x : (spec.x || 960) - rw / 2,
+      y: spec.h !== undefined ? spec.y : (spec.y || 540) - rh / 2,
+      w: rw,
+      h: rh,
+      pad: spec.pad
+    };
+  }
+
   if (!focusRect || strength <= 0.01) return;
   const pad = focusRect.pad !== undefined ? focusRect.pad : 20;
   const rx = focusRect.x - pad;
@@ -354,6 +381,37 @@ function drawSpotlightMask(ctx, focusRect, strength = 0.65, width = 1920, height
   ctx.restore();
 }
 
+/**
+ * Broadcast Subtitles / Synchronized Voiceover Caption Bar.
+ */
+function drawCaptionBar(ctx, text, options = {}) {
+  if (!text) return;
+  const canvasWidth = options.canvasWidth || 1920;
+  const y = options.y || 988;
+  const alpha = options.alpha !== undefined ? options.alpha : 1;
+  if (alpha <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.font = `500 21px ${FONTS.sans}`;
+  const tw = ctx.measureText(text).width + 48;
+  const th = 44;
+  const tx = (canvasWidth - tw) / 2;
+
+  ctx.beginPath();
+  ctx.roundRect(tx, y, tw, th, 10);
+  ctx.fillStyle = 'rgba(15, 15, 15, 0.84)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+
+  ctx.fillStyle = options.color || '#F8FAFC';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, canvasWidth / 2, y + 29);
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
   GLASS_TINTS,
@@ -363,7 +421,8 @@ module.exports = {
   drawTopHeader,
   drawGlassCard,
   drawTakeawayPill,
-  drawSpotlightMask
+  drawSpotlightMask,
+  drawCaptionBar
 };
 
   },
@@ -748,8 +807,69 @@ function drawArrowhead(ctx, x, y, angle, headlen = 12) {
   ctx.fill();
 }
 
+function drawConnectorLabel(ctx, label, mx, my, dx, dy, opts = {}) {
+  const len = Math.hypot(dx, dy) || 1;
+  const isDiagonal = Math.abs(dy) > 18 && Math.abs(dx) > 18;
+  const offset = opts.labelOffset !== undefined ? opts.labelOffset : (isDiagonal ? -18 : -14);
+
+  // Use upward normal vector so label always sits cleanly above horizontal or diagonal lines
+  let nx = -dy / len;
+  let ny = dx / len;
+  if (ny > 0) {
+    nx = -nx;
+    ny = -ny;
+  }
+
+  const lx = isDiagonal ? mx + nx * Math.abs(offset) : mx;
+  const ly = isDiagonal ? my + ny * Math.abs(offset) : my + offset;
+
+  ctx.save();
+  ctx.font = opts.labelFont || `600 15.5px ${FONTS.sans}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (opts.labelBg !== false && isDiagonal) {
+    const tw = ctx.measureText(label).width + 16;
+    const th = 24;
+    ctx.fillStyle = 'rgba(38, 38, 38, 0.88)';
+    ctx.beginPath();
+    ctx.roundRect(lx - tw / 2, ly - th / 2, tw, th, 6);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = opts.labelColor || opts.color || '#FFFFFF';
+  ctx.fillText(label, lx, isDiagonal ? ly : ly - 2);
+  ctx.restore();
+}
+
 /**
- * Crisp Solid ByteByteGo Arrow: Origin dot o──────▶ Clean Arrowhead (like HTTP GET & Linux Boot).
+ * Traveling data packet orb along a linear connector segment.
+ */
+function pulseOrb(ctx, x1, y1, x2, y2, timeSec = 0, opts = {}) {
+  const color = opts.color || '#38BDF8';
+  const speed = opts.speed || 1.4;
+  const offset = opts.phase || 0;
+  const p = (((timeSec || 0) * speed) + offset) % 1.0;
+  const px = x1 + (x2 - x1) * p;
+  const py = y1 + (y2 - y1) * p;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(px, py, 7.5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.globalAlpha = 0.38;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(px, py, 3.8, 0, Math.PI * 2);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.globalAlpha = 1.0;
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * Crisp ByteByteGo Arrow: Origin dot o──────▶ Clean Arrowhead (supports solid or dashed + optional traveling packet).
  */
 function solidArrow(ctx, x1, y1, x2, y2, opts = {}) {
   const progress = opts.progress !== undefined ? opts.progress : 1;
@@ -758,7 +878,7 @@ function solidArrow(ctx, x1, y1, x2, y2, opts = {}) {
   const color = opts.color || '#FFFFFF';
   const lw = opts.lineWidth || 2.5;
   const label = opts.label || '';
-  const labelOffset = opts.labelOffset !== undefined ? opts.labelOffset : -14;
+  const dashed = Boolean(opts.dashed);
   const p = Math.min(1, progress);
 
   ctx.save();
@@ -766,7 +886,7 @@ function solidArrow(ctx, x1, y1, x2, y2, opts = {}) {
   ctx.fillStyle = color;
   ctx.lineWidth = lw;
 
-  if (opts.originDot !== false) {
+  if (opts.originDot !== false && opts.startDot !== false) {
     ctx.beginPath();
     ctx.arc(x1, y1, 4.8, 0, Math.PI * 2);
     ctx.fill();
@@ -776,34 +896,72 @@ function solidArrow(ctx, x1, y1, x2, y2, opts = {}) {
   const curY = y1 + (y2 - y1) * p;
 
   ctx.beginPath();
+  if (dashed) {
+    ctx.setLineDash(opts.dash || [7, 5]);
+  }
   ctx.moveTo(x1, y1);
   ctx.lineTo(curX, curY);
   ctx.stroke();
+  ctx.setLineDash([]);
 
   const angle = Math.atan2(y2 - y1, x2 - x1);
   drawArrowhead(ctx, curX, curY, angle, 11.5);
 
   if (label && p > 0.35) {
-    ctx.font = opts.labelFont || `600 16px ${FONTS.sans}`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = opts.labelColor || color;
-    ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 + labelOffset);
+    drawConnectorLabel(ctx, label, (x1 + x2) / 2, (y1 + y2) / 2, x2 - x1, y2 - y1, {
+      ...opts,
+      color
+    });
   }
   ctx.restore();
+
+  if (opts.timeSec !== undefined && p > 0.85 && opts.packets !== false) {
+    pulseOrb(ctx, x1, y1, x2, y2, opts.timeSec, { color: opts.orbColor || color, speed: opts.speed });
+  }
 }
 
 /**
  * Signature Dashed ByteByteGo Arrow: Origin dot o- - - -▶ Clean Arrowhead.
  */
 function dashedArrow(ctx, x1, y1, x2, y2, opts = {}) {
+  return solidArrow(ctx, x1, y1, x2, y2, {
+    ...opts,
+    color: opts.color || '#38BDF8',
+    dashed: true
+  });
+}
+
+/**
+ * One-call animated Flow Arrow (draws progressive arrow + live traveling packet orb).
+ */
+function flowArrow(ctx, x1, y1, x2, y2, timeSec = 0, opts = {}) {
+  return solidArrow(ctx, x1, y1, x2, y2, {
+    ...opts,
+    timeSec
+  });
+}
+
+/**
+ * Quadratic Bezier Curved Arrow for feedback loops, retries, and cache look-aside paths.
+ */
+function curvedArrow(ctx, x1, y1, x2, y2, opts = {}) {
   const progress = opts.progress !== undefined ? opts.progress : 1;
   if (progress <= 0.01) return;
 
-  const color = opts.color || '#38BDF8';
-  const lw = opts.lineWidth || 2.6;
-  const label = opts.label || '';
-  const labelOffset = opts.labelOffset !== undefined ? opts.labelOffset : -14;
+  const color = opts.color || '#5CE1E6';
+  const lw = opts.lineWidth || 2.5;
+  const curvature = opts.curvature !== undefined ? opts.curvature : 0.25;
+  const dashed = Boolean(opts.dashed);
   const p = Math.min(1, progress);
+
+  const mx = (x1 + x2) / 2;
+  const my = (y1 + y2) / 2;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const cx = opts.cpX !== undefined ? opts.cpX : mx - dy * curvature;
+  const cy = opts.cpY !== undefined ? opts.cpY : my + dx * curvature;
+
+  const estLen = Math.hypot(dx, dy) * (1 + Math.abs(curvature) * 0.65);
 
   ctx.save();
   ctx.strokeStyle = color;
@@ -816,26 +974,34 @@ function dashedArrow(ctx, x1, y1, x2, y2, opts = {}) {
     ctx.fill();
   }
 
-  const curX = x1 + (x2 - x1) * p;
-  const curY = y1 + (y2 - y1) * p;
-
   ctx.beginPath();
-  ctx.setLineDash(opts.dash || [7, 5]);
   ctx.moveTo(x1, y1);
-  ctx.lineTo(curX, curY);
+  ctx.quadraticCurveTo(cx, cy, x2, y2);
+  if (dashed) {
+    ctx.setLineDash([7, 5]);
+  } else if (p < 0.999) {
+    ctx.setLineDash([estLen * p, estLen]);
+  }
   ctx.stroke();
   ctx.setLineDash([]);
 
-  if (p >= 0.92) {
-    const angle = Math.atan2(y2 - y1, x2 - x1);
-    drawArrowhead(ctx, x2, y2, angle, 11.5);
-  }
+  // Compute point and tangent at progress p on quadratic Bezier
+  const u = 1 - p;
+  const tipX = u * u * x1 + 2 * u * p * cx + p * p * x2;
+  const tipY = u * u * y1 + 2 * u * p * cy + p * p * y2;
+  const tx = 2 * u * (cx - x1) + 2 * p * (x2 - cx);
+  const ty = 2 * u * (cy - y1) + 2 * p * (y2 - cy);
+  drawArrowhead(ctx, tipX, tipY, Math.atan2(ty, tx), 11.5);
 
-  if (label && p > 0.4) {
-    ctx.font = opts.labelFont || `600 15px ${FONTS.sans}`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = opts.labelColor || color;
-    ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 + labelOffset);
+  if (opts.label && p > 0.45) {
+    const peakX = 0.25 * x1 + 0.5 * cx + 0.25 * x2;
+    const peakY = 0.25 * y1 + 0.5 * cy + 0.25 * y2;
+    drawConnectorLabel(ctx, opts.label, peakX, peakY, dx, dy, {
+      ...opts,
+      labelBg: true,
+      labelOffset: curvature >= 0 ? 18 : -18,
+      color
+    });
   }
   ctx.restore();
 }
@@ -854,7 +1020,6 @@ function elbowArrow(ctx, points, opts = {}) {
   const radius = opts.radius !== undefined ? opts.radius : 12;
   const dashed = Boolean(opts.dashed);
 
-  // Calculate total polyline length
   let totalLen = 0;
   for (let i = 0; i < points.length - 1; i++) {
     totalLen += Math.hypot(points[i + 1][0] - points[i][0], points[i + 1][1] - points[i][1]);
@@ -905,32 +1070,6 @@ function elbowArrow(ctx, points, opts = {}) {
 }
 
 /**
- * Traveling data packet orb along a connector segment.
- */
-function pulseOrb(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
-  const color = opts.color || '#38BDF8';
-  const speed = opts.speed || 1.4;
-  const offset = opts.phase || 0;
-  const p = ((timeSec * speed) + offset) % 1.0;
-  const px = x1 + (x2 - x1) * p;
-  const py = y1 + (y2 - y1) * p;
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(px, py, 7.5, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.38;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(px, py, 3.8, 0, Math.PI * 2);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.globalAlpha = 1.0;
-  ctx.fill();
-  ctx.restore();
-}
-
-/**
  * Glowing fiber-optic pointer laser beam.
  */
 function laserBeam(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
@@ -956,7 +1095,7 @@ function laserBeam(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
 
   ctx.beginPath();
   ctx.setLineDash([10, 8]);
-  ctx.lineDashOffset = -timeSec * 48;
+  ctx.lineDashOffset = -(timeSec || 0) * 48;
   ctx.moveTo(x1, y1);
   ctx.lineTo(ex, ey);
   ctx.stroke();
@@ -1005,6 +1144,7 @@ function bidirectional(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
   fn(ctx, x2, y2 + gap, x1, y1 + gap, {
     progress: resProgress,
     color: resColor,
+    dashed: opts.resDashed !== undefined ? opts.resDashed : !solid,
     label: opts.resLabel || '',
     labelOffset: 24
   });
@@ -1016,6 +1156,8 @@ function bidirectional(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
 module.exports = {
   solidArrow,
   dashedArrow,
+  flowArrow,
+  curvedArrow,
   elbowArrow,
   pulseOrb,
   laserBeam,
@@ -1044,7 +1186,13 @@ const BUILTIN_SVGS = {
   lockGold: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M32,44 L32,30 C32,18 68,18 68,30 L68,44" fill="none" stroke="#F59E0B" stroke-width="8" stroke-linecap="round"/><rect x="22" y="44" width="56" height="44" rx="10" fill="#D97706" stroke="#FEF08A" stroke-width="3"/><circle cx="50" cy="64" r="6" fill="#1E1E1E"/></svg>`,
   cloudNode: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><path d="M32,74 L90,74 C104,74 112,64 112,52 C112,41 103,32 92,31 C88,16 74,8 58,8 C40,8 26,20 24,37 C13,39 6,48 6,58 C6,68 16,74 32,74 Z" fill="#0369A1" stroke="#38BDF8" stroke-width="3.5"/></svg>`,
   lightningBolt: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="56,6 22,54 48,54 42,94 78,44 52,44" fill="#F59E0B" stroke="#FEF08A" stroke-width="3" stroke-linejoin="round"/></svg>`,
-  globeNet: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#082F49" stroke="#38BDF8" stroke-width="3.5"/><ellipse cx="50" cy="50" rx="18" ry="40" fill="none" stroke="#38BDF8" stroke-width="2.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="#38BDF8" stroke-width="2.5"/><line x1="16" y1="30" x2="84" y2="30" stroke="#38BDF8" stroke-width="2"/><line x1="16" y1="70" x2="84" y2="70" stroke="#38BDF8" stroke-width="2"/></svg>`
+  globeNet: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#082F49" stroke="#38BDF8" stroke-width="3.5"/><ellipse cx="50" cy="50" rx="18" ry="40" fill="none" stroke="#38BDF8" stroke-width="2.5"/><line x1="10" y1="50" x2="90" y2="50" stroke="#38BDF8" stroke-width="2.5"/><line x1="16" y1="30" x2="84" y2="30" stroke="#38BDF8" stroke-width="2"/><line x1="16" y1="70" x2="84" y2="70" stroke="#38BDF8" stroke-width="2"/></svg>`,
+  kafkaLogo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g stroke="#5CE1E6" stroke-width="5" fill="#1E293B"><line x1="36" y1="50" x2="66" y2="26"/><line x1="36" y1="50" x2="66" y2="74"/><line x1="36" y1="50" x2="36" y2="18"/><line x1="36" y1="50" x2="36" y2="82"/><circle cx="36" cy="50" r="14" fill="#0284C7"/><circle cx="36" cy="16" r="9"/><circle cx="36" cy="84" r="9"/><circle cx="68" cy="24" r="10"/><circle cx="68" cy="76" r="10"/></g></svg>`,
+  redisCube: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,14 88,32 50,50 12,32" fill="#EF4444" stroke="#FCA5A5" stroke-width="2.5"/><polygon points="12,48 50,66 88,48 88,58 50,76 12,58" fill="#DC2626"/><polygon points="12,66 50,84 88,66 88,76 50,94 12,76" fill="#991B1B"/><circle cx="50" cy="31" r="6" fill="#FEF08A"/></svg>`,
+  postgresElephant: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M24,36 C24,18 42,12 56,14 C72,16 82,28 80,46 C78,64 70,84 58,84 C52,84 52,66 54,56 C44,62 32,58 26,48 Z" fill="#0284C7" stroke="#7DD3FC" stroke-width="3.5"/><circle cx="62" cy="34" r="4.5" fill="#FFFFFF"/><path d="M54,54 C58,58 66,58 72,52" fill="none" stroke="#BAE6FD" stroke-width="3" stroke-linecap="round"/></svg>`,
+  kubernetesWheel: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,6 88,26 94,68 68,94 32,94 6,68 12,26" fill="#1D4ED8" stroke="#60A5FA" stroke-width="3.5"/><circle cx="50" cy="52" r="22" fill="none" stroke="#FFFFFF" stroke-width="4.5"/><circle cx="50" cy="52" r="7" fill="#FFFFFF"/><g stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"><line x1="50" y1="20" x2="50" y2="84"/><line x1="20" y1="36" x2="80" y2="68"/><line x1="20" y1="68" x2="80" y2="36"/></g></svg>`,
+  rustGear: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="#F97316" stroke-width="10" stroke-dasharray="12 6"/><circle cx="50" cy="50" r="26" fill="#1E1E1E" stroke="#FB923C" stroke-width="3"/><text x="50" y="61" font-family="-apple-system, sans-serif" font-weight="900" font-size="34" fill="#F97316" text-anchor="middle">R</text></svg>`,
+  goGopher: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="20" y="18" width="60" height="68" rx="30" fill="#06B6D4" stroke="#67E8F9" stroke-width="3.5"/><circle cx="38" cy="40" r="9" fill="#FFFFFF"/><circle cx="62" cy="40" r="9" fill="#FFFFFF"/><circle cx="40" cy="40" r="4" fill="#0F172A"/><circle cx="60" cy="40" r="4" fill="#0F172A"/><ellipse cx="50" cy="54" rx="8" ry="5" fill="#FDE047"/><rect x="45" y="58" width="4" height="7" rx="1" fill="#FFFFFF"/><rect x="51" y="58" width="4" height="7" rx="1" fill="#FFFFFF"/></svg>`
 };
 
 const imageCache = {};
@@ -1078,6 +1226,26 @@ function get(name) {
   return imageCache[name] || null;
 }
 
+/**
+ * Ergonomic helper to draw a registered SVG icon centered at (cx, cy).
+ */
+function draw(ctx, name, cx, cy, size = 48, opts = {}) {
+  const img = get(name);
+  if (!img) return false;
+  const alpha = opts.alpha !== undefined ? opts.alpha : 1;
+  if (alpha <= 0.01) return false;
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  if (opts.glowColor) {
+    ctx.shadowColor = opts.glowColor;
+    ctx.shadowBlur = opts.glowBlur || 14;
+  }
+  ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+  ctx.restore();
+  return true;
+}
+
 function listNames() {
   return Object.keys(BUILTIN_SVGS);
 }
@@ -1087,6 +1255,7 @@ module.exports = {
   register,
   initBuiltinIcons,
   get,
+  draw,
   listNames
 };
 
@@ -2120,8 +2289,8 @@ const Connectors = require('../core/connectors');
 const { FONTS, GLASS_TINTS } = Theme;
 
 /**
- * Signature ByteByteGo Line-Art Primitives & High-Retention Scene Archetypes (v2.0).
- * Every primitive supports progressive self-drawing (`progress: 0 -> 1`).
+ * Signature ByteByteGo Line-Art Primitives & High-Retention Scene Archetypes (v2.1).
+ * Every primitive supports progressive self-drawing (`progress: 0 -> 1`) and dual calling conventions.
  */
 
 // 1. AUTHENTIC 3D STACKED ISOMETRIC WIREFRAME SERVER (Matches ByteByteGo HTTP video)
@@ -2135,7 +2304,7 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
   const progress = opts.progress !== undefined ? opts.progress : 1;
   const label = opts.label || '';
 
-  if (progress <= 0.01) return;
+  if (progress <= 0.01) return { leftX: cx - rx, rightX: cx + rx, cy };
 
   const totalHeight = (slabs - 1) * gap;
   const startY = cy - totalHeight / 2;
@@ -2146,7 +2315,6 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
     const localP = Math.max(0, Math.min(1, (progress * slabs) - (slabs - 1 - i) * 0.45));
     if (localP <= 0.01) continue;
 
-    // Fill dark background so lower slabs occlude cleanly
     ctx.save();
     ctx.fillStyle = '#242424';
     ctx.beginPath();
@@ -2160,7 +2328,6 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
     ctx.fill();
     ctx.restore();
 
-    // Top isometric diamond
     Effects.strokeDraw(ctx, (c) => {
       c.moveTo(cx, sy - ry);
       c.lineTo(cx + rx, sy);
@@ -2168,7 +2335,6 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
       c.lineTo(cx - rx, sy);
       c.closePath();
 
-      // Side extrusions
       c.moveTo(cx - rx, sy);
       c.lineTo(cx - rx, sy + slabThickness);
       c.lineTo(cx, sy + ry + slabThickness);
@@ -2176,7 +2342,6 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
       c.lineTo(cx + rx, sy);
     }, localP, { stroke, lineWidth: 2, pathLength: 620 });
 
-    // Front-left status LEDs
     if (localP > 0.75) {
       ctx.fillStyle = stroke;
       ctx.beginPath();
@@ -2202,7 +2367,9 @@ function isometricServerStack(ctx, cx, cy, opts = {}) {
 }
 
 // 2. FOLDED-CORNER DOCUMENT WITH RIBBON BADGE (HTML, LOG, JSON, SQL, CLASS)
-function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
+function foldedFileBadge(ctx, cx, cy, tagOrOpts = 'LOG', maybeOpts = {}) {
+  const opts = typeof tagOrOpts === 'object' && tagOrOpts !== null ? tagOrOpts : maybeOpts;
+  const tag = typeof tagOrOpts === 'string' ? tagOrOpts : (opts.badge || opts.tag || 'LOG');
   const w = opts.width || 96;
   const h = opts.height || 118;
   const fold = opts.fold || 24;
@@ -2210,7 +2377,7 @@ function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
   const y = cy - h / 2;
   const progress = opts.progress !== undefined ? opts.progress : 1;
   const outlineColor = opts.outlineColor || '#FFFFFF';
-  const ribbonBg = opts.ribbonBg || '#3B82F6';
+  const ribbonBg = opts.ribbonBg || opts.badgeColor || '#3B82F6';
   const ribbonStroke = opts.ribbonStroke || '';
 
   if (progress <= 0.01) return;
@@ -2227,7 +2394,6 @@ function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
     c.lineTo(x, y + 10);
     c.quadraticCurveTo(x, y, x + 10, y);
 
-    // Folded corner crease
     c.moveTo(x + w - fold, y);
     c.lineTo(x + w - fold, y + fold);
     c.lineTo(x + w, y + fold);
@@ -2268,11 +2434,11 @@ function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
   ctx.restore();
 }
 
-// 3. THIN-LINE NEON WIREFRAME BROWSER (`www` — Matches ByteByteGo HTTP video)
+// 3. THIN-LINE NEON WIREFRAME BROWSER (`WWW` — Matches ByteByteGo HTTP video)
 function wireframeBrowser(ctx, x, y, w = 176, h = 122, opts = {}) {
   const stroke = opts.color || '#5CE1E6';
   const progress = opts.progress !== undefined ? opts.progress : 1;
-  const centerLabel = opts.label !== undefined ? opts.label : 'WWW';
+  const centerLabel = opts.label !== undefined ? opts.label : (opts.centerText !== undefined ? opts.centerText : 'WWW');
 
   if (progress <= 0.01) return;
 
@@ -2303,7 +2469,10 @@ function wireframeBrowser(ctx, x, y, w = 176, h = 122, opts = {}) {
 }
 
 // 4. THIN-LINE WIREFRAME CYLINDER DATABASE (Self-drawing, matches ACID video)
-function wireframeCylinderDb(ctx, cx, cy, opts = {}) {
+function wireframeCylinderDb(ctx, cx, cy, wOrOpts = {}, hOrUndefined, maybeOpts = {}) {
+  const opts = typeof wOrOpts === 'number'
+    ? Object.assign({}, maybeOpts, { width: wOrOpts, height: hOrUndefined || 116 })
+    : wOrOpts;
   const w = opts.width || 108;
   const h = opts.height || 116;
   const ry = opts.ry || 18;
@@ -2322,7 +2491,6 @@ function wireframeCylinderDb(ctx, cx, cy, opts = {}) {
     c.lineTo(x, y + h - ry);
     c.ellipse(cx, y + h - ry, w / 2, ry, 0, Math.PI, 0, true);
     c.lineTo(x + w, y + ry);
-    // Middle tier band
     c.moveTo(x, cy);
     c.ellipse(cx, cy, w / 2, ry, 0, Math.PI, 0, true);
   }, progress, { stroke, lineWidth: 2, fill: 'rgba(56, 189, 248, 0.08)', pathLength: 820 });
@@ -2350,7 +2518,6 @@ function lineArtUser(ctx, cx, cy, opts = {}) {
   ctx.scale(scale, scale);
 
   Effects.strokeDraw(ctx, (c) => {
-    // Head + stylized hair crest
     c.moveTo(-22, -16);
     c.lineTo(-22, -38);
     c.quadraticCurveTo(0, -48, 22, -40);
@@ -2358,12 +2525,10 @@ function lineArtUser(ctx, cx, cy, opts = {}) {
     c.quadraticCurveTo(22, 10, 0, 10);
     c.quadraticCurveTo(-22, 10, -22, -16);
 
-    // Hair wave line
     c.moveTo(-22, -22);
     c.quadraticCurveTo(-4, -18, 8, -28);
     c.quadraticCurveTo(16, -20, 22, -20);
 
-    // Shoulders & collar
     c.moveTo(-10, 10);
     c.lineTo(-10, 20);
     c.moveTo(10, 10);
@@ -2411,17 +2576,28 @@ function stateMutationCard(ctx, x, y, w, h, opts = {}) {
     ctx.fillText(title, x + w / 2, y - 16);
   }
 
-  Theme.drawGlassCard(ctx, x, y, w, h, { tint, radius: 12, progress });
+  Theme.drawGlassCard(ctx, x, y, w, h, {
+    tint,
+    radius: 12,
+    badge: opts.badge,
+    badgeSide: opts.badgeSide,
+    progress
+  });
 
-  const rowStart = y + 38;
-  const rowGap = Math.min(34, (h - 32) / Math.max(1, rows.length));
+  const rowStart = y + (opts.badge ? 54 : 38);
+  const rowGap = Math.min(34, (h - 36) / Math.max(1, rows.length));
 
   rows.forEach((r, idx) => {
     const rp = Math.max(0, Math.min(1, (progress - idx * 0.18) / 0.55));
     if (rp <= 0.01) return;
-    Effects.typeText(ctx, r.text, x + w / 2, rowStart + idx * rowGap, rp, {
-      font: `${r.highlight ? '700' : '500'} 18px ${FONTS.sans}`,
-      color: r.highlight ? '#FACC15' : '#FFFFFF'
+    const text = typeof r === 'string'
+      ? r
+      : (r.text || `${r.actor || 'State'}: ${r.before || ''} -> ${r.after || ''}`);
+    const isHighlight = Boolean(r.highlight);
+    const col = typeof r.highlight === 'string' ? r.highlight : (isHighlight ? '#FACC15' : '#FFFFFF');
+    Effects.typeText(ctx, text, x + w / 2, rowStart + idx * rowGap, rp, {
+      font: `${isHighlight ? '700' : '500'} 18px ${FONTS.sans}`,
+      color: col
     });
   });
   ctx.restore();
@@ -2429,26 +2605,27 @@ function stateMutationCard(ctx, x, y, w, h, opts = {}) {
 
 // 7. BROKEN LINK PLUG + RED FAILURE CROSS-OUT (Matches ByteByteGo ACID failure state)
 function brokenLinkPlug(ctx, cx, cy, opts = {}) {
-  const sep = (opts.separation !== undefined ? opts.separation : 1) * 14;
-  const crossProgress = opts.crossProgress !== undefined ? opts.crossProgress : 1;
+  const baseP = opts.progress !== undefined ? opts.progress : 1;
+  const sep = (opts.separation !== undefined ? opts.separation : baseP) * 14;
+  const crossProgress = opts.crossProgress !== undefined ? opts.crossProgress : baseP;
+
+  if (baseP <= 0.01) return;
 
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(-Math.PI / 4);
 
-  // Left plug body
   ctx.strokeStyle = '#E2E8F0';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.roundRect(-42 - sep, -14, 28, 28, 5);
   ctx.stroke();
-  // Prongs
+
   ctx.beginPath();
   ctx.moveTo(-14 - sep, -6); ctx.lineTo(-4 - sep, -6);
   ctx.moveTo(-14 - sep, 6); ctx.lineTo(-4 - sep, 6);
   ctx.stroke();
 
-  // Right socket body
   ctx.strokeStyle = '#C084FC';
   ctx.beginPath();
   ctx.roundRect(10 + sep, -14, 28, 28, 5);
@@ -2458,6 +2635,13 @@ function brokenLinkPlug(ctx, cx, cy, opts = {}) {
   if (crossProgress > 0.01) {
     Effects.crossOutFailure(ctx, cx, cy, crossProgress, { size: 42 });
   }
+
+  if (opts.caption && baseP > 0.4) {
+    Effects.typeText(ctx, opts.caption, cx, cy + 68, (baseP - 0.4) / 0.6, {
+      font: `600 16px ${FONTS.sans}`,
+      color: '#FCA5A5'
+    });
+  }
 }
 
 // ============================================================================
@@ -2465,7 +2649,13 @@ function brokenLinkPlug(ctx, cx, cy, opts = {}) {
 // ============================================================================
 
 // 8. EVOLUTION / MILESTONE TIMELINE STRIP (`HTTP/1 o──▶ HTTP/1.1 o──▶ HTTP/2 o──▶ HTTP/3`)
-function evolutionTimeline(ctx, items, opts = {}) {
+function evolutionTimeline(ctx, itemsOrCx, yOrOpts = {}, maybeOpts = {}) {
+  let items = itemsOrCx;
+  let opts = yOrOpts;
+  if (typeof itemsOrCx === 'number') {
+    opts = Object.assign({}, maybeOpts, { centerY: yOrOpts });
+    items = opts.items || ['v1.0', 'v2.0', 'v3.0'];
+  }
   const canvasWidth = opts.canvasWidth || 1920;
   const cy = opts.centerY || 540;
   const nodeW = opts.nodeWidth || 186;
@@ -2524,12 +2714,18 @@ function evolutionTimeline(ctx, items, opts = {}) {
 }
 
 // 9. GIANT KINETIC STAT / YEAR HERO SLAM (`2010`, `< 1 ms`, `10,000x` — Matches HTTP 38s)
-function heroMetricSlam(ctx, mainText, opts = {}) {
+function heroMetricSlam(ctx, textOrCx, cyOrOpts = {}, maybeOpts = {}) {
+  let mainText = textOrCx;
+  let opts = cyOrOpts;
+  if (typeof textOrCx === 'number' && typeof cyOrOpts === 'number') {
+    opts = Object.assign({}, maybeOpts, { cx: textOrCx, cy: cyOrOpts });
+    mainText = String(opts.value || opts.text || '2015');
+  }
   const cx = opts.cx || 960;
   const cy = opts.cy || 530;
   const color = opts.color || '#2CE5FF';
-  const subText = opts.subtitle || '';
-  const scale = opts.scale !== undefined ? opts.scale : 1;
+  const subText = opts.subtitle || opts.sub || '';
+  const scale = opts.scale !== undefined ? opts.scale : (opts.progress !== undefined ? opts.progress : 1);
   const fontSize = opts.fontSize || 230;
 
   if (scale <= 0.01) return;
@@ -2555,13 +2751,40 @@ function heroMetricSlam(ctx, mainText, opts = {}) {
 }
 
 // 10. SIDE-BY-SIDE TRANSLUCENT COMPARISON TABLE (Matches Linux BIOS vs UEFI frame 42s)
-function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
+function comparisonSplitTable(ctx, a1, a2, a3 = {}, a4, a5 = {}) {
+  let leftSpec = a1;
+  let rightSpec = a2;
+  let opts = a3;
+
+  // Support (ctx, x, y, w, h, { leftHeader, rightHeader, rows, progress })
+  if (typeof a1 === 'number' && typeof a2 === 'number' && typeof a3 === 'number' && typeof a4 === 'number') {
+    const spec = a5 || {};
+    const gap = spec.gap || 28;
+    const cardW = Math.floor((a3 - gap) / 2);
+    const p = spec.progress !== undefined ? spec.progress : 1;
+    leftSpec = {
+      title: spec.leftHeader || 'Option A',
+      headerFill: '#6B7B3A',
+      bodyFill: 'rgba(34, 68, 62, 0.72)',
+      bullets: (spec.rows || []).map((r) => r.left),
+      progress: p
+    };
+    rightSpec = {
+      title: spec.rightHeader || 'Option B',
+      headerFill: '#0F766E',
+      bodyFill: 'rgba(22, 62, 72, 0.72)',
+      bullets: (spec.rows || []).map((r) => r.right),
+      progress: p
+    };
+    opts = { startX: a1, y: a2, cardWidth: cardW, cardHeight: a4, gap };
+  }
+
   const canvasWidth = opts.canvasWidth || 1920;
   const cardW = opts.cardWidth || 620;
   const cardH = opts.cardHeight || 420;
   const gap = opts.gap || 32;
   const y = opts.y || 300;
-  const startX = Math.round((canvasWidth - (cardW * 2 + gap)) / 2);
+  const startX = opts.startX !== undefined ? opts.startX : Math.round((canvasWidth - (cardW * 2 + gap)) / 2);
 
   const cards = [
     { spec: leftSpec, x: startX },
@@ -2575,7 +2798,6 @@ function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
     ctx.save();
     ctx.globalAlpha *= progress;
 
-    // Outer body
     ctx.beginPath();
     ctx.roundRect(x, y, cardW, cardH, 16);
     ctx.fillStyle = spec.bodyFill || 'rgba(34, 68, 62, 0.72)';
@@ -2584,43 +2806,40 @@ function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
     ctx.lineWidth = 1.8;
     ctx.stroke();
 
-    // Olive/Gold top header bar
     ctx.beginPath();
     ctx.roundRect(x, y, cardW, 56, [16, 16, 12, 12]);
     ctx.fillStyle = spec.headerFill || '#6B7B3A';
     ctx.fill();
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = `600 24px ${FONTS.sans}`;
+    ctx.font = `600 22px ${FONTS.sans}`;
     ctx.textAlign = 'center';
     ctx.fillText(spec.title || '', x + cardW / 2, y + 36);
 
-    // Bullet points with optional active yellow highlight
     ctx.textAlign = 'left';
-    let cursorY = y + 102;
+    let cursorY = y + 100;
     (spec.bullets || []).forEach((b, idx) => {
       const text = typeof b === 'string' ? b : b.text;
       const isHighlighted = (typeof b === 'object' && b.highlight) || spec.highlightIndex === idx;
       ctx.fillStyle = isHighlighted ? '#FACC15' : '#F8FAFC';
-      ctx.font = `${isHighlighted ? '600' : '500'} 21px ${FONTS.sans}`;
+      ctx.font = `${isHighlighted ? '600' : '500'} 19px ${FONTS.sans}`;
 
-      // Word-wrap cleanly inside cardW - 68
-      const words = (`-  ${text}`).split(' ');
+      const words = (`•  ${text}`).split(' ');
       let line = '';
-      const maxW = cardW - 68;
+      const maxW = cardW - 56;
       for (const word of words) {
         const testLine = line ? `${line} ${word}` : word;
         if (ctx.measureText(testLine).width > maxW) {
-          ctx.fillText(line, x + 34, cursorY);
+          ctx.fillText(line, x + 28, cursorY);
           line = '    ' + word;
-          cursorY += 32;
+          cursorY += 28;
         } else {
           line = testLine;
         }
       }
       if (line) {
-        ctx.fillText(line, x + 34, cursorY);
-        cursorY += 42;
+        ctx.fillText(line, x + 28, cursorY);
+        cursorY += 38;
       }
     });
 
@@ -2629,19 +2848,36 @@ function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
 }
 
 // 11. SWIMLANE PROTOCOL SEQUENCE DIAGRAM (TCP Handshake, OAuth2, Raft, 2PC)
-function swimlaneSequence(ctx, actors, messages, opts = {}) {
+function swimlaneSequence(ctx, a1, a2, a3 = {}, a4, a5 = {}) {
+  let actors = a1;
+  let messages = a2;
+  let opts = a3;
+
+  // Support (ctx, x, y, w, h, { actors, messages, progress })
+  if (typeof a1 === 'number' && typeof a2 === 'number' && typeof a3 === 'number' && typeof a4 === 'number') {
+    const spec = a5 || {};
+    actors = spec.actors || [];
+    messages = spec.messages || [];
+    opts = {
+      startX: a1 + 95,
+      topY: a2 + 30,
+      bottomY: a2 + a4 - 20,
+      spanWidth: Math.max(200, a3 - 190),
+      progress: spec.progress
+    };
+  }
+
   const canvasWidth = opts.canvasWidth || 1920;
   const topY = opts.topY || 220;
   const bottomY = opts.bottomY || 780;
   const spanW = opts.spanWidth || 1240;
-  const startX = Math.round((canvasWidth - spanW) / 2);
+  const startX = opts.startX !== undefined ? opts.startX : Math.round((canvasWidth - spanW) / 2);
   const stepX = actors.length > 1 ? spanW / (actors.length - 1) : 0;
   const progress = opts.progress !== undefined ? opts.progress : 1;
 
   const actorXs = actors.map((_, i) => Math.round(startX + i * stepX));
 
   ctx.save();
-  // Draw actor headers & vertical dashed lifelines
   actors.forEach((act, i) => {
     const ax = actorXs[i];
     const name = typeof act === 'string' ? act : act.name;
@@ -2660,7 +2896,6 @@ function swimlaneSequence(ctx, actors, messages, opts = {}) {
     ctx.textAlign = 'center';
     ctx.fillText(name, ax, topY + 6);
 
-    // Lifeline
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
     ctx.lineWidth = 2;
     ctx.setLineDash([7, 6]);
@@ -2671,7 +2906,6 @@ function swimlaneSequence(ctx, actors, messages, opts = {}) {
     ctx.setLineDash([]);
   });
 
-  // Draw chronological messages
   const msgAreaStart = topY + 78;
   const msgGap = Math.min(92, (bottomY - msgAreaStart - 30) / Math.max(1, messages.length));
 
@@ -2687,11 +2921,14 @@ function swimlaneSequence(ctx, actors, messages, opts = {}) {
     const y2 = y1 + (m.slope !== undefined ? m.slope : 22);
     const col = m.color || '#5CE1E6';
 
-    if (m.dashed) {
-      Connectors.dashedArrow(ctx, x1, y1, x2, y2, { progress: mp, label: m.label, color: col, labelOffset: -12 });
-    } else {
-      Connectors.solidArrow(ctx, x1, y1, x2, y2, { progress: mp, label: m.label, color: col, labelOffset: -12 });
-    }
+    Connectors.solidArrow(ctx, x1, y1, x2, y2, {
+      progress: mp,
+      dashed: Boolean(m.dashed),
+      label: m.label,
+      color: col,
+      labelOffset: -14,
+      labelBg: false
+    });
 
     if (m.failed && mp > 0.7) {
       Effects.crossOutFailure(ctx, (x1 + x2) / 2, (y1 + y2) / 2, (mp - 0.7) / 0.3, { size: 32 });
@@ -2701,9 +2938,14 @@ function swimlaneSequence(ctx, actors, messages, opts = {}) {
 }
 
 // 12. CONSISTENT HASH RING (Distributed Systems: DynamoDB, Cassandra, Sharding)
-function consistentHashRing(ctx, cx, cy, radius, nodes, opts = {}) {
+function consistentHashRing(ctx, cx, cy, radius, nodesOrOpts = [], maybeOpts = {}) {
+  const isArray = Array.isArray(nodesOrOpts);
+  const opts = isArray ? maybeOpts : (nodesOrOpts || {});
+  const nodes = isArray ? nodesOrOpts : (opts.nodes || []);
   const progress = opts.progress !== undefined ? opts.progress : 1;
-  const tokenAngle = opts.tokenAngle !== undefined ? opts.tokenAngle : 0;
+  const tokenAngle = opts.tokenAngle !== undefined ? opts.tokenAngle : (opts.keyAngle !== undefined ? opts.keyAngle : 0);
+
+  if (progress <= 0.01) return;
 
   ctx.save();
   Effects.strokeDraw(ctx, (c) => {
@@ -2753,13 +2995,18 @@ function consistentHashRing(ctx, cx, cy, radius, nodes, opts = {}) {
 
 // 13. B-TREE / INDEX HIERARCHY (Database Indexes, File Systems, Compilers)
 function bTreeHierarchy(ctx, cx, topY, opts = {}) {
-  const rootKeys = opts.root || ['30', '70'];
-  const children = opts.children || [
+  const rootKeys = (opts.root || opts.rootKeys || ['30', '70']).map(String);
+  const children = (opts.children || [
     { keys: ['10', '20'], active: false },
     { keys: ['42', '55'], active: true },
     { keys: ['80', '95'], active: false }
-  ];
+  ]).map((c, idx) => ({
+    keys: (c.keys || []).map(String),
+    active: c.active !== undefined ? c.active : opts.highlightBranch === idx
+  }));
   const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (progress <= 0.01) return;
 
   function drawKeyNode(nx, ny, keys, active) {
     const cellW = 54;
@@ -2811,11 +3058,32 @@ function bTreeHierarchy(ctx, cx, topY, opts = {}) {
 }
 
 // 14. SEGMENTED NETWORK PACKET / PROTOCOL FRAME (`[ IP | TCP | TLS | HTTP Payload ]`)
-function networkPacketFrame(ctx, cx, cy, segments, opts = {}) {
+function networkPacketFrame(ctx, a1, a2, a3, a4 = {}, a5 = {}) {
+  let cx = a1;
+  let cy = a2;
+  let segments = a3;
+  let opts = a4;
+
+  // Support (ctx, x, y, w, h, { segments, progress })
+  if (typeof a3 === 'number' && typeof a4 === 'number') {
+    opts = Object.assign({}, a5, { height: a4 });
+    cx = a1 + a3 / 2;
+    cy = a2 + a4 / 2;
+    segments = (opts.segments || []).map((s) => ({
+      label: s.label,
+      sub: s.sub,
+      width: s.width || Math.round((s.ratio || 0.25) * a3),
+      border: s.border || s.color || '#38BDF8',
+      bg: s.bg || 'rgba(30, 41, 59, 0.72)'
+    }));
+  }
+
   const h = opts.height || 64;
   const totalW = segments.reduce((s, seg) => s + (seg.width || 160), 0);
   let cursorX = cx - totalW / 2;
   const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (progress <= 0.01) return;
 
   ctx.save();
   segments.forEach((seg, i) => {
@@ -2853,6 +3121,272 @@ function networkPacketFrame(ctx, cx, cy, segments, opts = {}) {
   ctx.restore();
 }
 
+// 15. API GATEWAY / REVERSE PROXY LOAD BALANCER ROUTER (1 -> 3 Fan-out distributor)
+function loadBalancerRouter(ctx, cx, cy, opts = {}) {
+  const radius = opts.radius || 58;
+  const stroke = opts.color || '#5CE1E6';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label !== undefined ? opts.label : 'Load Balancer';
+  const algorithm = opts.algorithm || 'Round-Robin';
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Effects.strokeDraw(ctx, (c) => {
+    c.arc(cx, cy, radius, 0, Math.PI * 2);
+    // Internal diamond router symbol
+    c.moveTo(cx - 28, cy);
+    c.lineTo(cx + 22, cy - 22);
+    c.moveTo(cx - 28, cy);
+    c.lineTo(cx + 24, cy);
+    c.moveTo(cx - 28, cy);
+    c.lineTo(cx + 22, cy + 22);
+  }, progress, { stroke, lineWidth: 2.4, fill: 'rgba(15, 23, 42, 0.85)', pathLength: 520 });
+
+  if (progress > 0.6) {
+    ctx.fillStyle = '#FACC15';
+    ctx.beginPath();
+    ctx.arc(cx - 28, cy, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    [-22, 0, 22].forEach((dy) => {
+      ctx.fillStyle = '#4ADE80';
+      ctx.beginPath();
+      ctx.arc(cx + 23, cy + dy, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = `600 12px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(algorithm, cx, cy + radius - 14);
+  }
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, cy + radius + 28, progress, {
+      font: `600 17px ${FONTS.sans}`,
+      color: '#FFFFFF'
+    });
+  }
+  ctx.restore();
+}
+
+// 16. KAFKA / PUB-SUB PARTITIONED OFFSET LOG STREAM
+function pubSubTopicBox(ctx, x, y, w = 460, h = 110, opts = {}) {
+  const title = opts.title || 'Topic: orders-stream (Partition 0)';
+  const offsets = opts.offsets || ['#101', '#102', '#103', '#104', 'HEAD'];
+  const activeSlot = opts.activeSlot !== undefined ? opts.activeSlot : offsets.length - 1;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Theme.drawGlassCard(ctx, x, y, w, h, {
+    tint: opts.tint || 'teal',
+    radius: 12,
+    progress
+  });
+
+  ctx.fillStyle = '#E2E8F0';
+  ctx.font = `600 15px ${FONTS.sans}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(title, x + 20, y + 26);
+
+  const cellGap = 8;
+  const padX = 20;
+  const cellW = Math.floor((w - padX * 2 - (offsets.length - 1) * cellGap) / offsets.length);
+  const cellH = 46;
+  const cellY = y + 42;
+
+  offsets.forEach((slotText, idx) => {
+    const sp = Math.max(0, Math.min(1, (progress * offsets.length) - idx * 0.4));
+    if (sp <= 0.01) return;
+    const cx = x + padX + idx * (cellW + cellGap);
+    const isHead = idx === activeSlot;
+
+    ctx.save();
+    ctx.globalAlpha *= sp;
+    ctx.beginPath();
+    ctx.roundRect(cx, cellY, cellW, cellH, 7);
+    ctx.fillStyle = isHead ? 'rgba(250, 204, 21, 0.24)' : 'rgba(15, 23, 42, 0.78)';
+    ctx.fill();
+    ctx.strokeStyle = isHead ? '#FACC15' : '#38BDF8';
+    ctx.lineWidth = isHead ? 2.4 : 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = isHead ? '#FEF08A' : '#FFFFFF';
+    ctx.font = `700 14px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(slotText, cx + cellW / 2, cellY + 28);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+// 17. MICROSERVICE CIRCUIT BREAKER KNIFE-SWITCH (`CLOSED` vs `OPEN (TRIPPED)`)
+function circuitBreakerSwitch(ctx, cx, cy, opts = {}) {
+  const isOpen = opts.state === 'OPEN' || Boolean(opts.tripped);
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label || (isOpen ? 'OPEN (Fast Fail 503)' : 'CLOSED (Healthy Flow)');
+  const color = isOpen ? '#F87171' : '#4ADE80';
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  // Left and right terminal posts
+  const leftX = cx - 56;
+  const rightX = cx + 56;
+
+  ctx.strokeStyle = '#94A3B8';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(leftX - 36, cy);
+  ctx.lineTo(leftX, cy);
+  ctx.moveTo(rightX, cy);
+  ctx.lineTo(rightX + 36, cy);
+  ctx.stroke();
+
+  // Switch pivot blade
+  const angle = isOpen ? -0.58 : 0;
+  ctx.save();
+  ctx.translate(leftX, cy);
+  ctx.rotate(angle);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 4.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(110, 0);
+  ctx.stroke();
+  ctx.restore();
+
+  // Terminal nodes
+  [leftX, rightX].forEach((tx) => {
+    ctx.fillStyle = '#1E293B';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(tx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  ctx.fillStyle = color;
+  ctx.font = `700 16px ${FONTS.sans}`;
+  ctx.textAlign = 'center';
+  ctx.fillText(label, cx, cy + 40);
+  ctx.restore();
+}
+
+// 18. CDN GLOBAL EDGE POP WIREFRAME GLOBE
+function cdnEdgeGlobe(ctx, cx, cy, radius = 85, opts = {}) {
+  const stroke = opts.color || '#38BDF8';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label !== undefined ? opts.label : 'Global Edge CDN';
+  const pops = opts.pops || [
+    { x: -0.45, y: -0.25, name: 'US-East' },
+    { x: 0.15, y: -0.35, name: 'EU-West' },
+    { x: 0.52, y: 0.22, name: 'AP-East' }
+  ];
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Effects.strokeDraw(ctx, (c) => {
+    c.arc(cx, cy, radius, 0, Math.PI * 2);
+    c.ellipse(cx, cy, radius * 0.48, radius, 0, 0, Math.PI * 2);
+    c.ellipse(cx, cy, radius, radius * 0.38, 0, 0, Math.PI * 2);
+  }, progress, { stroke, lineWidth: 2, fill: 'rgba(12, 74, 110, 0.22)', pathLength: 960 });
+
+  if (progress > 0.55) {
+    pops.forEach((p) => {
+      const px = cx + p.x * radius;
+      const py = cy + p.y * radius;
+      ctx.fillStyle = '#4ADE80';
+      ctx.beginPath();
+      ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (p.name) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `600 13px ${FONTS.sans}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(p.name, px, py - 11);
+      }
+    });
+  }
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, cy + radius + 28, progress, {
+      font: `600 17px ${FONTS.sans}`,
+      color: '#FFFFFF'
+    });
+  }
+  ctx.restore();
+}
+
+// 19. TOKEN BUCKET RATE LIMITER VISUALIZER
+function rateLimiterBucket(ctx, cx, cy, opts = {}) {
+  const w = opts.width || 116;
+  const h = opts.height || 126;
+  const fillLevel = opts.fillLevel !== undefined ? opts.fillLevel : 0.65;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const tokens = opts.tokens !== undefined ? opts.tokens : 4;
+  const label = opts.label !== undefined ? opts.label : 'Token Bucket (100 req/s)';
+
+  if (progress <= 0.01) return;
+
+  const topW = w;
+  const botW = w * 0.78;
+  const yTop = cy - h / 2;
+  const yBot = cy + h / 2;
+
+  ctx.save();
+  // Liquid capacity fill
+  if (progress > 0.4) {
+    const fh = h * Math.max(0.1, Math.min(1, fillLevel)) * progress;
+    const fy = yBot - fh;
+    ctx.fillStyle = fillLevel > 0.25 ? 'rgba(56, 189, 248, 0.26)' : 'rgba(248, 113, 113, 0.28)';
+    ctx.beginPath();
+    ctx.moveTo(cx - topW * 0.44, fy);
+    ctx.lineTo(cx + topW * 0.44, fy);
+    ctx.lineTo(cx + botW / 2, yBot);
+    ctx.lineTo(cx - botW / 2, yBot);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Bucket wireframe trapezoid
+  Effects.strokeDraw(ctx, (c) => {
+    c.moveTo(cx - topW / 2, yTop);
+    c.lineTo(cx - botW / 2, yBot);
+    c.lineTo(cx + botW / 2, yBot);
+    c.lineTo(cx + topW / 2, yTop);
+  }, progress, { stroke: '#5CE1E6', lineWidth: 2.6, pathLength: 420 });
+
+  // Gold tokens inside bucket
+  if (progress > 0.6) {
+    for (let i = 0; i < tokens; i++) {
+      const tx = cx - 26 + (i % 3) * 26;
+      const ty = yBot - 22 - Math.floor(i / 3) * 24;
+      ctx.fillStyle = '#FACC15';
+      ctx.beginPath();
+      ctx.arc(tx, ty, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, yBot + 28, progress, {
+      font: `600 16px ${FONTS.sans}`,
+      color: '#FFFFFF'
+    });
+  }
+  ctx.restore();
+}
+
 module.exports = {
   isometricServerStack,
   foldedFileBadge,
@@ -2867,7 +3401,12 @@ module.exports = {
   swimlaneSequence,
   consistentHashRing,
   bTreeHierarchy,
-  networkPacketFrame
+  networkPacketFrame,
+  loadBalancerRouter,
+  pubSubTopicBox,
+  circuitBreakerSwitch,
+  cdnEdgeGlobe,
+  rateLimiterBucket
 };
 
   },
@@ -2880,14 +3419,16 @@ const Camera = require('./camera');
 const Icons = require('./icons');
 
 /**
- * Elastic Multi-Scene Timeline Engine & Cinematic Camera Runner (v2.0).
+ * Elastic Multi-Scene Timeline Engine & Cinematic Camera Runner (v2.1).
  *
  * Features:
  * - Authentic #262626 ByteByteGo palette + per-scene backdrop ('waves'|'speedlines'|'blueprint')
  * - Built-in 2D Virtual Camera (`camX`, `camY`, `camZoom`) per scene
  * - Smooth cross-scene transitions ('fade' | 'slideLeft' | 'zoomThrough')
  * - Declarative Motion SFX cue timeline (`sfx: [{ time, type, volume }]`)
- * - Interactive browser scrubber & HUD controls when opened manually in Chrome!
+ * - Synchronized voiceover captions (`captions: [{ start, end, text }]`)
+ * - Multi-metric Visual QA Telemetry (`__studioAnalyzeFrame`)
+ * - Interactive browser scrubber & keyboard shortcuts (Space, Left/Right, 1-9) when opened in Chrome
  */
 function createVideo(config) {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -2905,8 +3446,7 @@ function createVideo(config) {
     ? document.querySelector(config.canvas)
     : (config.canvas || document.getElementById('canvas'));
 
-  // Support optional 2x Retina supersampling configured by CLI
-  const scaleFactor = window.__studioScaleFactor || 1;
+  let scaleFactor = window.__studioScaleFactor || 1;
   canvas.width = width * scaleFactor;
   canvas.height = height * scaleFactor;
   const ctx = canvas.getContext('2d');
@@ -2919,6 +3459,7 @@ function createVideo(config) {
 
   let cursor = 0;
   const allSfxCues = [];
+  const allCaptions = Array.isArray(config.captions) ? [...config.captions] : [];
 
   const scenes = (config.scenes || []).map((sc, idx) => {
     const duration = sc.duration || 15;
@@ -2936,7 +3477,6 @@ function createVideo(config) {
     const qaTime = sc.qaTime !== undefined ? start + sc.qaTime : Number((start + duration * 0.65).toFixed(2));
     const transition = sc.transition || 'fade';
 
-    // Collect scene SFX cues + automatic subtle scene-transition whoosh
     if (idx > 0) {
       allSfxCues.push({ time: start, type: 'whoosh', volume: 0.14 });
     }
@@ -2946,6 +3486,15 @@ function createVideo(config) {
           time: Number((start + (cue.time || 0)).toFixed(3)),
           type: cue.type || 'pop',
           volume: cue.volume
+        });
+      });
+    }
+    if (Array.isArray(sc.captions)) {
+      sc.captions.forEach((cap) => {
+        allCaptions.push({
+          start: start + (cap.start || 0),
+          end: start + (cap.end !== undefined ? cap.end : duration),
+          text: cap.text
         });
       });
     }
@@ -2992,8 +3541,12 @@ function createVideo(config) {
     masterTl.to(sc.state, { __alpha: 0, duration: fadeDur, ease: 'power2.in' }, Math.max(sc.start + fadeDur, sc.end - fadeDur));
   });
 
+  let currentTimeSec = 0;
+
   function renderAt(timeSec) {
-    const clamped = Math.max(0, Math.min(totalDuration - 0.001, timeSec));
+    const safeSec = Number.isFinite(timeSec) ? timeSec : currentTimeSec;
+    const clamped = Math.max(0, Math.min(totalDuration - 0.001, safeSec));
+    currentTimeSec = clamped;
     masterTl.seek(clamped);
 
     const activeScene = scenes.find((s) => clamped >= s.start && clamped < s.end) || scenes[scenes.length - 1];
@@ -3012,7 +3565,6 @@ function createVideo(config) {
       ctx.save();
       ctx.globalAlpha = activeScene.state.__alpha;
 
-      // World-space diagram layer (with Virtual Camera + Slide offset)
       ctx.save();
       if (activeScene.state.__offsetX) {
         ctx.translate(activeScene.state.__offsetX, 0);
@@ -3031,11 +3583,15 @@ function createVideo(config) {
       Camera.restore(ctx);
       ctx.restore();
 
-      // Screen-space crisp Top Header (unaffected by camera zoom!)
       Theme.drawTopHeader(ctx, title, activeScene.chapter, {
         width,
         progress: showProgressBar ? (clamped / totalDuration) : 0
       });
+
+      const activeCap = allCaptions.find((c) => clamped >= c.start && clamped <= c.end);
+      if (activeCap && activeCap.text) {
+        Theme.drawCaptionBar(ctx, activeCap.text, { canvasWidth: width });
+      }
 
       ctx.restore();
     }
@@ -3044,7 +3600,7 @@ function createVideo(config) {
   }
 
   window.__studioMeta = {
-    version: '2.0.0',
+    version: '2.1.0',
     title,
     width,
     height,
@@ -3065,9 +3621,11 @@ function createVideo(config) {
   };
 
   window.__studioSetScaleFactor = function (factor) {
-    window.__studioScaleFactor = factor;
-    canvas.width = width * factor;
-    canvas.height = height * factor;
+    scaleFactor = Math.max(1, Number(factor) || 1);
+    window.__studioScaleFactor = scaleFactor;
+    canvas.width = width * scaleFactor;
+    canvas.height = height * scaleFactor;
+    renderAt(currentTimeSec);
   };
 
   window.__studioSeek = function (timeSec) {
@@ -3080,28 +3638,77 @@ function createVideo(config) {
     return canvas.toDataURL('image/jpeg', quality);
   };
 
-  // Compute negative-space telemetry (% of pixels matching dark background) for automated QA linting
+  /**
+   * Comprehensive Visual QA Linter & Telemetry Analyzer:
+   * - negativeSpacePct: % of canvas remaining clean charcoal backdrop (target: 35% - 88%)
+   * - headerZoneClear: checks that diagram elements don't collide with top header bar
+   * - activeHueBuckets: verifies visual color diversity (cyan, green, amber, purple, etc.)
+   */
   window.__studioAnalyzeFrame = function (timeSec) {
-    renderAt(timeSec);
-    const sampleStep = 8 * scaleFactor;
+    if (timeSec !== undefined) {
+      renderAt(timeSec);
+    }
+    const sampleStep = Math.max(4, Math.round(8 * scaleFactor));
     const img = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let bgPixels = 0;
     let totalSampled = 0;
+    let headerBleedPixels = 0;
+    let headerSampled = 0;
+    const hueBuckets = new Set();
+
+    const headerYMin = Math.round(84 * scaleFactor);
+    const headerYMax = Math.round(108 * scaleFactor);
+
     for (let y = 0; y < canvas.height; y += sampleStep) {
       for (let x = 0; x < canvas.width; x += sampleStep) {
         const idx = (y * canvas.width + x) * 4;
         const r = img[idx];
         const g = img[idx + 1];
         const b = img[idx + 2];
-        // Dark neutral charcoal/wave pixel check
-        if (Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r >= 18 && r <= 62) {
+
+        const isBg = Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r >= 16 && r <= 64;
+        if (isBg) {
           bgPixels++;
+        } else {
+          const maxC = Math.max(r, g, b);
+          const minC = Math.min(r, g, b);
+          if (maxC - minC > 40) {
+            if (r > g && g > b) hueBuckets.add('amber');
+            else if (g >= r && g >= b) hueBuckets.add('emerald');
+            else if (b >= g && g > r) hueBuckets.add('cyan');
+            else if (r > g && b > g) hueBuckets.add('plum');
+            else hueBuckets.add('accent');
+          }
         }
         totalSampled++;
+
+        if (y >= headerYMin && y <= headerYMax) {
+          headerSampled++;
+          if (!isBg) headerBleedPixels++;
+        }
       }
     }
+
+    const negativeSpacePct = Number(((bgPixels / Math.max(1, totalSampled)) * 100).toFixed(1));
+    const headerBleedPct = Number(((headerBleedPixels / Math.max(1, headerSampled)) * 100).toFixed(1));
+    const headerZoneClear = headerBleedPct < 8.0;
+    const warnings = [];
+
+    if (negativeSpacePct < 30) {
+      warnings.push(`Crowded canvas (${negativeSpacePct}% negative space < 30% minimum)`);
+    } else if (negativeSpacePct > 92) {
+      warnings.push(`Nearly empty frame (${negativeSpacePct}% negative space > 92%)`);
+    }
+    if (!headerZoneClear) {
+      warnings.push(`Diagram bleeds into top header safety zone (${headerBleedPct}%)`);
+    }
+
     return {
-      negativeSpacePct: Number(((bgPixels / Math.max(1, totalSampled)) * 100).toFixed(1))
+      negativeSpacePct,
+      headerZoneClear,
+      activeHueCount: hueBuckets.size,
+      status: warnings.length === 0 ? 'PASS' : 'WARN',
+      warnings
     };
   };
 
@@ -3138,6 +3745,96 @@ function createVideo(config) {
     });
   };
 
+  function setupInteractivePlayer() {
+    if (navigator.webdriver) return;
+
+    let playing = new URLSearchParams(window.location.search).get('play') === '1';
+    let lastWall = performance.now();
+
+    const hud = document.createElement('div');
+    hud.style.cssText = [
+      'position:fixed', 'bottom:14px', 'left:50%', 'transform:translateX(-50%)',
+      'background:rgba(20,20,20,0.88)', 'border:1px solid rgba(92,225,230,0.35)',
+      'border-radius:999px', 'padding:8px 20px', 'display:flex', 'align-items:center',
+      'gap:14px', 'color:#fff', 'font:600 13px -apple-system,sans-serif',
+      'z-index:9999', 'opacity:0', 'transition:opacity 0.2s', 'backdrop-filter:blur(8px)'
+    ].join(';');
+
+    const btn = document.createElement('button');
+    btn.textContent = playing ? '⏸ Pause' : '▶ Play';
+    btn.style.cssText = 'background:#0284C7;color:#fff;border:none;border-radius:999px;padding:4px 12px;cursor:pointer;font-weight:600';
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '0';
+    slider.max = String(totalDuration);
+    slider.step = '0.05';
+    slider.value = String(currentTimeSec);
+    slider.style.cssText = 'width:320px;cursor:pointer;accent-color:#5CE1E6';
+
+    const label = document.createElement('span');
+    label.style.cssText = 'font-family:monospace;min-width:110px';
+    const updateLabel = () => {
+      label.textContent = `${currentTimeSec.toFixed(1)}s / ${totalDuration.toFixed(1)}s`;
+      slider.value = String(currentTimeSec);
+      btn.textContent = playing ? '⏸ Pause' : '▶ Play';
+    };
+    updateLabel();
+
+    btn.onclick = () => {
+      playing = !playing;
+      lastWall = performance.now();
+      updateLabel();
+    };
+    slider.oninput = () => {
+      playing = false;
+      renderAt(parseFloat(slider.value));
+      updateLabel();
+    };
+
+    hud.appendChild(btn);
+    hud.appendChild(slider);
+    hud.appendChild(label);
+    document.body.appendChild(hud);
+
+    window.addEventListener('mousemove', (e) => {
+      hud.style.opacity = e.clientY > window.innerHeight - 110 ? '1' : '0';
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        btn.onclick();
+      } else if (e.code === 'ArrowRight') {
+        playing = false;
+        renderAt(currentTimeSec + 0.5);
+        updateLabel();
+      } else if (e.code === 'ArrowLeft') {
+        playing = false;
+        renderAt(currentTimeSec - 0.5);
+        updateLabel();
+      } else if (e.key >= '1' && e.key <= '9') {
+        const idx = parseInt(e.key, 10) - 1;
+        if (scenes[idx]) {
+          playing = false;
+          renderAt(scenes[idx].qaTime);
+          updateLabel();
+        }
+      }
+    });
+
+    function tick(now) {
+      if (playing) {
+        const dt = (now - lastWall) / 1000;
+        lastWall = now;
+        renderAt((currentTimeSec + dt) % totalDuration);
+        updateLabel();
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
   const readyPromise = Promise.all([
     Icons.initBuiltinIcons(),
     document.fonts ? document.fonts.ready : Promise.resolve()
@@ -3145,17 +3842,7 @@ function createVideo(config) {
     renderAt(scenes[0] ? scenes[0].qaTime : 0);
     window.__studioReady = true;
     window.iconsReady = true;
-
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('play') === '1') {
-      let t0 = performance.now();
-      const loop = (now) => {
-        const sec = ((now - t0) / 1000) % totalDuration;
-        renderAt(sec);
-        requestAnimationFrame(loop);
-      };
-      requestAnimationFrame(loop);
-    }
+    setupInteractivePlayer();
   });
 
   return {

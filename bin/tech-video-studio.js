@@ -306,9 +306,12 @@ async function cmdQa(positional, flags) {
       savedFrames.push(framePath);
 
       const negInfo = telemetry
-        ? ` | Negative Space: ${telemetry.negativeSpacePct}% (${telemetry.negativeSpacePct >= 35 ? '✅ Optimal' : '⚠️ Crowded'})`
+        ? ` | NegSpace: ${telemetry.negativeSpacePct}% | HeaderClear: ${telemetry.headerZoneClear ? '✅' : '⚠️'} | Hues: ${telemetry.activeHueCount} (${telemetry.status})`
         : '';
       console.log(`📸 Captured QA keyframe [${i + 1}/${times.length}] @ ${t}s -> ${framePath}${negInfo}`);
+      if (telemetry && Array.isArray(telemetry.warnings) && telemetry.warnings.length > 0) {
+        telemetry.warnings.forEach((w) => console.log(`   ⚠️  QA Warning @ ${t}s: ${w}`));
+      }
     }
 
     // Stitch 2x2 or Nx2 contact sheet via FFmpeg if >= 2 frames exist

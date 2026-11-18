@@ -61,7 +61,7 @@
     "keywords": ["evolution", "history", "versions", "http1", "http2", "http3", "quic", "timeline", "roadmap", "lịch sử", "tiến hóa"],
     "antiPattern": "Bullet list of protocol versions and years.",
     "visualMetaphor": "ByteByteGo horizontal Evolution Timeline strip with glowing active version node, dimmed historical nodes, and a Hero Metric Slam ('1997', '2015') with diagonal speed-line backdrop.",
-    "studioPrimitive": "Illustrations.evolutionTimeline(ctx, cx, y, { items, activeIndex }) + Illustrations.heroMetricSlam(ctx, cx, cy, { value, sub })"
+    "studioPrimitive": "Illustrations.evolutionTimeline(ctx, items, { centerY, activeIndex }) + Illustrations.heroMetricSlam(ctx, '2015', { subtitle })"
   },
   {
     "id": "acid-transaction-state",
@@ -76,8 +76,8 @@
     "domain": "architecture",
     "keywords": ["vs", "compare", "comparison", "bios", "uefi", "sql-vs-nosql", "rest-vs-grpc", "tradeoff", "so sánh"],
     "antiPattern": "Wall of text comparing two technologies.",
-    "visualMetaphor": "ByteByteGo translucent Split Comparison Table with emerald and plum glass column headers, crisp grid dividers, and progressive row-by-row reveals.",
-    "studioPrimitive": "Illustrations.comparisonSplitTable(ctx, x, y, w, h, { leftHeader, rightHeader, rows, progress })"
+    "visualMetaphor": "ByteByteGo translucent Split Comparison Table with emerald and olive glass column headers, crisp grid dividers, and progressive row-by-row reveals.",
+    "studioPrimitive": "Illustrations.comparisonSplitTable(ctx, leftSpec, rightSpec, opts)"
   },
   {
     "id": "distributed-protocol-swimlane",
@@ -85,7 +85,7 @@
     "keywords": ["handshake", "tcp", "syn", "ack", "raft", "paxos", "2pc", "oauth", "sequence", "swimlane"],
     "antiPattern": "Static arrows between two boxes without temporal ordering.",
     "visualMetaphor": "Vertical Actor Swimlane Sequence Diagram where diagonal signal arrows draw progressively downwards across time with live packet orbs.",
-    "studioPrimitive": "Illustrations.swimlaneSequence(ctx, x, y, w, h, { actors, messages, progress })"
+    "studioPrimitive": "Illustrations.swimlaneSequence(ctx, actors, messages, opts)"
   },
   {
     "id": "consistent-hashing-ring",
@@ -93,7 +93,7 @@
     "keywords": ["sharding", "consistent-hashing", "ring", "partition", "dynamo", "cassandra", "load-balancing", "phân mảnh"],
     "antiPattern": "Plain boxes labeled Shard 1, Shard 2, Shard 3.",
     "visualMetaphor": "Circular Hash Ring with virtual node tokens placed around the perimeter and a sweeping clockwise lookup arc resolving a key to its owning shard.",
-    "studioPrimitive": "Illustrations.consistentHashRing(ctx, cx, cy, radius, { nodes, keyAngle, progress })"
+    "studioPrimitive": "Illustrations.consistentHashRing(ctx, cx, cy, radius, nodes, opts)"
   },
   {
     "id": "btree-index-hierarchy",
@@ -101,7 +101,7 @@
     "keywords": ["btree", "b-tree", "lsm", "index", "query-plan", "binary-tree", "lookup", "chỉ mục"],
     "antiPattern": "Single box labeled 'Database Index'.",
     "visualMetaphor": "Multi-key B-Tree Index Hierarchy with root key slots branching via glowing search pointers into child leaf pages.",
-    "studioPrimitive": "Illustrations.bTreeHierarchy(ctx, cx, y, { rootKeys, children, highlightBranch, progress })"
+    "studioPrimitive": "Illustrations.bTreeHierarchy(ctx, cx, topY, { root, children, highlightBranch, progress })"
   },
   {
     "id": "network-packet-encapsulation",
@@ -109,30 +109,62 @@
     "keywords": ["packet", "frame", "header", "payload", "tcp-ip", "osi", "encapsulation", "tls-record", "gói tin"],
     "antiPattern": "Single rectangle labeled 'Network Packet'.",
     "visualMetaphor": "Segmented horizontal Network Packet Frame showing color-coded protocol headers (IP | TCP | TLS | HTTP Payload) with byte-size annotations.",
-    "studioPrimitive": "Illustrations.networkPacketFrame(ctx, x, y, w, h, { segments, progress })"
+    "studioPrimitive": "Illustrations.networkPacketFrame(ctx, cx, cy, segments, opts)"
+  },
+  {
+    "id": "load-balancer-reverse-proxy",
+    "domain": "networking",
+    "keywords": ["load-balancer", "nginx", "envoy", "haproxy", "api-gateway", "reverse-proxy", "ingress", "round-robin", "cân bằng tải"],
+    "antiPattern": "Plain rectangle labeled 'Load Balancer'.",
+    "visualMetaphor": "Circular Wireframe Router Node with 1 incoming yellow ingress port fanning out to 3 emerald egress ports (`Round-Robin` / `Least-Conn`) feeding a 3-node `isometricServerStack` cluster.",
+    "studioPrimitive": "Illustrations.loadBalancerRouter(ctx, cx, cy, { label, algorithm, progress }) + Layout.fanOutTargets(3, ...)"
+  },
+  {
+    "id": "circuit-breaker-resilience",
+    "domain": "distributed",
+    "keywords": ["circuit-breaker", "resilience", "fallback", "retry", "timeout", "failover", "bulkhead", "chịu lỗi"],
+    "antiPattern": "Text label saying 'Circuit Breaker trips on error'.",
+    "visualMetaphor": "Mechanical Electrical Knife-Switch (`CLOSED (Healthy Flow)` in emerald green vs `OPEN (Fast Fail 503)` tilted upward in crimson red) between upstream caller and downstream service.",
+    "studioPrimitive": "Illustrations.circuitBreakerSwitch(ctx, cx, cy, { state: 'CLOSED' | 'OPEN', progress })"
+  },
+  {
+    "id": "cdn-global-edge",
+    "domain": "networking",
+    "keywords": ["cdn", "cloudflare", "cloudfront", "edge", "pop", "anycast", "geo-dns", "global-latency"],
+    "antiPattern": "Single box labeled 'CDN'.",
+    "visualMetaphor": "Wireframe Latitude/Longitude Globe with glowing regional Edge PoP nodes (`US-East`, `EU-West`, `AP-East`) serving cached assets near the user.",
+    "studioPrimitive": "Illustrations.cdnEdgeGlobe(ctx, cx, cy, radius, { pops, label, progress })"
+  },
+  {
+    "id": "token-bucket-rate-limiter",
+    "domain": "security",
+    "keywords": ["rate-limiter", "token-bucket", "leaky-bucket", "throttling", "429", "quota", "ddos", "giới hạn tốc độ"],
+    "antiPattern": "Static box labeled 'Rate Limiter'.",
+    "visualMetaphor": "Translucent Wireframe Trapezoid Bucket filled with dynamic cyan fluid capacity and glowing gold token coins (`Token Bucket 100 req/s`).",
+    "studioPrimitive": "Illustrations.rateLimiterBucket(ctx, cx, cy, { fillLevel, tokens, label, progress })"
   },
   {
     "id": "in-memory-caching",
     "domain": "database",
     "keywords": ["redis", "memcached", "cdn", "cache", "cache-hit", "cache-miss", "ttl", "eviction", "lru"],
     "antiPattern": "Single box labeled 'Redis Cache'.",
-    "visualMetaphor": "High-Speed 3x3 RAM Cache Matrix Grid where hot key-value cells light up emerald green ('HIT ⚡') in sub-millisecond O(1) lookups.",
-    "studioPrimitive": "Illustrations.cacheMemoryMatrix(ctx, x, y, w, h, timeSec, { header: 'Redis RAM Matrix' })"
+    "visualMetaphor": "High-Speed 3x3 RAM Cache Matrix Grid where hot key-value cells light up emerald green ('HIT ⚡') in sub-millisecond O(1) lookups, paired with `Connectors.curvedArrow` for cache-miss fallback.",
+    "studioPrimitive": "Illustrations.cacheMemoryMatrix(ctx, x, y, w, h, timeSec, { header: 'Redis RAM Matrix' }) + Connectors.curvedArrow(...)"
   },
   {
     "id": "event-streaming-queue",
     "domain": "distributed",
     "keywords": ["kafka", "rabbitmq", "sqs", "pubsub", "queue", "event-driven", "stream", "broker", "partition", "hàng đợi"],
     "antiPattern": "Static rectangle labeled 'Message Queue'.",
-    "visualMetaphor": "Transparent horizontal partitioned pipeline tube where discrete message capsules glide smoothly from Producer nodes to Consumer workers.",
-    "studioPrimitive": "Illustrations.messageQueuePipe(ctx, x, y, w, h, timeSec, { title: 'Kafka Partition Log' })"
+    "visualMetaphor": "Partitioned Kafka Offset Log (`Illustrations.pubSubTopicBox`) with indexed offset slots (`#101 | #102 | #103 | HEAD`) and `Icons.draw(ctx, 'kafkaLogo', ...)`.",
+    "studioPrimitive": "Illustrations.pubSubTopicBox(ctx, x, y, w, h, { title, offsets, activeSlot, progress })"
   },
   {
     "id": "containers-vs-vms",
     "domain": "containers",
     "keywords": ["docker", "kubernetes", "k8s", "container", "vm", "hypervisor", "namespace", "cgroups", "ảo hóa"],
     "antiPattern": "Identical stacked text boxes.",
-    "visualMetaphor": "Split comparison: Heavy Virtual Machines (each carrying full Guest OS weight on a Hypervisor) vs Lightweight Shipping Containers (`dockerContainer` icon) sharing a single Linux Kernel (`linuxPenguin`) over Bare-Metal Silicon (`siliconCpuDie`).",
-    "studioPrimitive": "Layout.splitColumns(...) + Icons.get('dockerContainer') + Illustrations.siliconCpuDie(...)"
+    "visualMetaphor": "Split comparison: Heavy Virtual Machines (each carrying full Guest OS weight on a Hypervisor) vs Lightweight Shipping Containers (`dockerContainer` & `kubernetesWheel` icons) sharing a single Linux Kernel (`linuxPenguin`) over Bare-Metal Silicon (`siliconCpuDie`).",
+    "studioPrimitive": "Layout.splitColumns(...) + Icons.draw(ctx, 'kubernetesWheel', ...) + Illustrations.siliconCpuDie(...)"
   }
 ]

@@ -71,28 +71,34 @@ node skills/tech-video-studio/scripts/tech-video-studio.js render ./my-video/ind
 - `Effects.sparkBurst(ctx, cx, cy, progress, { radius, color })`
 
 ### `Connectors` (Animated Packet Flows)
-- `Connectors.solidArrow(ctx, x1, y1, x2, y2, { progress, dashed, label, color, startDot })`
+- `Connectors.solidArrow(ctx, x1, y1, x2, y2, { progress, dashed, label, color, timeSec })`
+- `Connectors.flowArrow(ctx, x1, y1, x2, y2, timeSec, { progress, dashed, color, label })`
+- `Connectors.curvedArrow(ctx, x1, y1, x2, y2, { curvature: 0.25, progress, dashed, label, color })`
 - `Connectors.elbowArrow(ctx, points, { progress, dashed, label, color })`
-- `Connectors.flowArrow(ctx, x1, y1, x2, y2, timeSec, { progress, color, label })`
 - `Connectors.bidirectional(ctx, x1, y1, x2, y2, timeSec, { reqProgress, resProgress, reqLabel, resLabel })`
 - `Connectors.laserBeam(ctx, x1, y1, x2, y2, timeSec, { progress, label })`
 
-### `Illustrations` (28 Built-In Archetypes & Hardware Primitives)
-- **ByteByteGo v2.0 Archetypes**:
+### `Illustrations` (33 Built-In Archetypes & Hardware Primitives)
+- **ByteByteGo System Design Archetypes (19)**:
   - `isometricServerStack(ctx, cx, cy, { slabs: 3, progress, label })`
-  - `foldedFileBadge(ctx, cx, cy, { badge: 'HTML', badgeColor: '#F97316', progress })`
-  - `wireframeBrowser(ctx, x, y, w, h, { centerText: 'WWW', progress })`
-  - `wireframeCylinderDb(ctx, cx, cy, w, h, { color, label, progress })`
+  - `foldedFileBadge(ctx, cx, cy, 'HTML', { ribbonBg: '#F97316', caption, progress })`
+  - `wireframeBrowser(ctx, x, y, w, h, { label: 'WWW', progress })`
+  - `wireframeCylinderDb(ctx, cx, cy, { width, height, color, label, progress })`
   - `lineArtUser(ctx, cx, cy, { label: 'User A', color, progress })`
   - `stateMutationCard(ctx, x, y, w, h, { title, badge, tint, rows, progress })`
   - `brokenLinkPlug(ctx, cx, cy, { caption, progress })`
-  - `evolutionTimeline(ctx, cx, y, { items, activeIndex, progress })`
-  - `heroMetricSlam(ctx, cx, cy, { value: '2015', sub, progress })`
-  - `comparisonSplitTable(ctx, x, y, w, h, { leftHeader, rightHeader, rows, progress })`
-  - `swimlaneSequence(ctx, x, y, w, h, { actors, messages, progress })`
-  - `consistentHashRing(ctx, cx, cy, radius, { nodes, keyAngle, progress })`
-  - `bTreeHierarchy(ctx, cx, y, { rootKeys, children, highlightBranch, progress })`
-  - `networkPacketFrame(ctx, x, y, w, h, { segments, progress })`
+  - `evolutionTimeline(ctx, items, { centerY, activeIndex, progress })`
+  - `heroMetricSlam(ctx, '2015', { cx, cy, subtitle, scale })`
+  - `comparisonSplitTable(ctx, leftSpec, rightSpec, { cardWidth, cardHeight, y })`
+  - `swimlaneSequence(ctx, actors, messages, { topY, bottomY, spanWidth, progress })`
+  - `consistentHashRing(ctx, cx, cy, radius, nodes, { tokenAngle, sweepToAngle, progress })`
+  - `bTreeHierarchy(ctx, cx, topY, { root, children, highlightBranch, progress })`
+  - `networkPacketFrame(ctx, cx, cy, segments, { height, progress })`
+  - `loadBalancerRouter(ctx, cx, cy, { label, algorithm, progress })`
+  - `pubSubTopicBox(ctx, x, y, w, h, { title, offsets, activeSlot, progress })`
+  - `circuitBreakerSwitch(ctx, cx, cy, { state: 'CLOSED'|'OPEN', label, progress })`
+  - `cdnEdgeGlobe(ctx, cx, cy, radius, { pops, label, progress })`
+  - `rateLimiterBucket(ctx, cx, cy, { fillLevel, tokens, label, progress })`
 - **Hardware & Runtime Primitives**:
   - `codeEditorWindow`, `compilerGear`, `bytecodeCapsule`, `hardwareMachine`, `tieredVault`, `xraySecurityScanner`, `lifoStackChamber`, `memoryHeapGrid`, `sequentialReader`, `turboForge`, `nativeAssemblyBlock`, `siliconCpuDie`, `isometricDatabase`, `cacheMemoryMatrix`, `messageQueuePipe`, `browserClient`
 
