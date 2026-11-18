@@ -13,10 +13,13 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 const modules = {
   './core/theme': fs.readFileSync(path.join(ROOT, 'src/core/theme.js'), 'utf8'),
+  './core/camera': fs.readFileSync(path.join(ROOT, 'src/core/camera.js'), 'utf8'),
+  './core/draw-effects': fs.readFileSync(path.join(ROOT, 'src/core/draw-effects.js'), 'utf8'),
   './core/layout': fs.readFileSync(path.join(ROOT, 'src/core/layout.js'), 'utf8'),
   './core/connectors': fs.readFileSync(path.join(ROOT, 'src/core/connectors.js'), 'utf8'),
   './core/icons': fs.readFileSync(path.join(ROOT, 'src/core/icons.js'), 'utf8'),
   './illustrations/primitives': fs.readFileSync(path.join(ROOT, 'src/illustrations/primitives.js'), 'utf8'),
+  './illustrations/archetypes': fs.readFileSync(path.join(ROOT, 'src/illustrations/archetypes.js'), 'utf8'),
   './core/runner': fs.readFileSync(path.join(ROOT, 'src/core/runner.js'), 'utf8'),
   './index': fs.readFileSync(path.join(ROOT, 'src/index.js'), 'utf8')
 };
@@ -38,7 +41,7 @@ const moduleEntries = Object.entries(modules)
   })
   .join(',\n');
 
-const bundle = `/* TechVideoStudio Standalone Bundle v1.0.0 (Includes GSAP + Studio Primitives) */\n` +
+const bundle = `/* TechVideoStudio Standalone Bundle v2.0.0 (Includes GSAP + Studio Primitives) */\n` +
   `${gsapCode}\n` +
   `;(function() {\n` +
   `  const __modules = {\n${moduleEntries}\n  };\n` +
@@ -76,6 +79,7 @@ const skillScriptsDir = path.join(ROOT, 'skills/tech-video-studio/scripts');
 fs.mkdirSync(skillScriptsDir, { recursive: true });
 fs.writeFileSync(path.join(skillScriptsDir, 'tech-video-studio.bundle.js'), bundle, 'utf8');
 fs.copyFileSync(path.join(ROOT, 'bin/tech-video-studio.js'), path.join(skillScriptsDir, 'tech-video-studio.js'));
+fs.copyFileSync(path.join(ROOT, 'src/audio/sfx-gen.js'), path.join(skillScriptsDir, 'sfx-gen.js'));
 fs.copyFileSync(path.join(ROOT, 'data/metaphors.json'), path.join(skillScriptsDir, 'metaphors.json'));
 
 console.log(`Built ${outPath} (${(Buffer.byteLength(bundle) / 1024).toFixed(1)} KB) & synced standalone skill scripts.`);

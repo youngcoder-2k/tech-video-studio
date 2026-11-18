@@ -1,10 +1,28 @@
 'use strict';
 
+/**
+ * Authentic ByteByteGo-Caliber Dark Studio Design System (v2.0)
+ * Forensically tuned to #262626 charcoal, two-layer organic corner waves,
+ * translucent tinted glass cards, and crisp geometric technical typography.
+ */
+
 const PALETTES = {
+  byteCharcoal: {
+    bg: '#262626',
+    blobOuter: '#2E2E2E',
+    blobInner: '#353535',
+    surface: '#1C1C1C',
+    surfaceElevated: '#2A2E37',
+    border: '#475569',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#E2E8F0',
+    textMuted: '#9CA3AF'
+  },
   charcoal: {
-    bg: '#1E1E1E',
-    bgWave: '#171717',
-    surface: '#111827',
+    bg: '#222222',
+    blobOuter: '#2A2A2A',
+    blobInner: '#313131',
+    surface: '#141821',
     surfaceElevated: '#1E293B',
     border: '#334155',
     textPrimary: '#FFFFFF',
@@ -13,7 +31,8 @@ const PALETTES = {
   },
   midnight: {
     bg: '#0F172A',
-    bgWave: '#0B1120',
+    blobOuter: '#15203B',
+    blobInner: '#1E293B',
     surface: '#1E293B',
     surfaceElevated: '#334155',
     border: '#475569',
@@ -23,59 +42,244 @@ const PALETTES = {
   }
 };
 
+// Signature ByteByteGo Translucent Glass Tints (rgba fill + high-contrast stroke)
+const GLASS_TINTS = {
+  teal: {
+    fill: 'rgba(24, 128, 138, 0.28)',
+    headerBg: '#2A8C96',
+    stroke: '#38BDF8',
+    highlight: '#5EEAD4'
+  },
+  olive: {
+    fill: 'rgba(168, 152, 48, 0.28)',
+    headerBg: '#B8A428',
+    stroke: '#EAB308',
+    highlight: '#FEF08A'
+  },
+  plum: {
+    fill: 'rgba(132, 68, 122, 0.28)',
+    headerBg: '#8A4F80',
+    stroke: '#C084FC',
+    highlight: '#F5D0FE'
+  },
+  emerald: {
+    fill: 'rgba(18, 132, 98, 0.28)',
+    headerBg: '#10B981',
+    stroke: '#34D399',
+    highlight: '#A7F3D0'
+  },
+  slate: {
+    fill: 'rgba(38, 72, 68, 0.52)',
+    headerBg: '#6B7B3A',
+    stroke: '#475569',
+    highlight: '#FDE047'
+  },
+  crimson: {
+    fill: 'rgba(153, 27, 27, 0.30)',
+    headerBg: '#DC2626',
+    stroke: '#F87171',
+    highlight: '#FCA5A5'
+  }
+};
+
 const ACCENTS = {
-  cyan: { primary: '#0284C7', bright: '#38BDF8', dark: '#082F49', soft: '#E0F2FE' },
+  cyan: { primary: '#0284C7', bright: '#38E8FF', line: '#5CE1E6', dark: '#082F49', soft: '#E0F2FE' },
   emerald: { primary: '#059669', bright: '#10B981', light: '#34D399', dark: '#022C22', mid: '#064E3B', soft: '#A7F3D0' },
-  amber: { primary: '#D97706', bright: '#F59E0B', dark: '#451A03', mid: '#78350F', soft: '#FEF08A' },
+  amber: { primary: '#D97706', bright: '#F59E0B', yellow: '#FACC15', dark: '#451A03', mid: '#78350F', soft: '#FEF08A' },
   purple: { primary: '#8A4F80', bright: '#A855F7', dark: '#311E2D', mid: '#701A75', soft: '#F5D0FE' },
   indigo: { primary: '#4F46E5', bright: '#6366F1', dark: '#1E1B4B', mid: '#4338CA', soft: '#C7D2FE' },
   rose: { primary: '#E11D48', bright: '#EF4444', dark: '#450A0A', mid: '#881337', soft: '#FCA5A5' }
 };
 
 const FONTS = {
-  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
+  sans: '"DIN Alternate", "Bahnschrift", "Plus Jakarta Sans", "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
 };
 
-function drawBackground(ctx, width = 1920, height = 1080, paletteName = 'charcoal') {
-  const p = PALETTES[paletteName] || PALETTES.charcoal;
+/**
+ * Draws the studio background with authentic organic bezier waves or atmospheric speedlines.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} width
+ * @param {number} height
+ * @param {string} paletteName
+ * @param {object} [opts] - { backdrop: 'waves'|'speedlines'|'blueprint'|'clean', timeSec: 0 }
+ */
+function drawBackground(ctx, width = 1920, height = 1080, paletteName = 'byteCharcoal', opts = {}) {
+  const p = PALETTES[paletteName] || PALETTES.byteCharcoal;
+  const backdrop = opts.backdrop || 'waves';
+  const t = opts.timeSec || 0;
+
   ctx.save();
   ctx.fillStyle = p.bg;
   ctx.fillRect(0, 0, width, height);
 
-  // Signature subtle organic background waves (adds depth without visual clutter)
-  ctx.fillStyle = p.bgWave;
-  ctx.beginPath();
-  ctx.arc(width * 0.91, height * 0.88, height * 0.44, 0, Math.PI * 2);
-  ctx.fill();
+  if (backdrop === 'waves') {
+    // Authentic ByteByteGo two-layer organic wave silhouette in bottom-right
+    ctx.fillStyle = p.blobOuter;
+    ctx.beginPath();
+    ctx.moveTo(width * 0.56, height);
+    ctx.bezierCurveTo(width * 0.58, height * 0.80, width * 0.72, height * 0.82, width * 0.77, height * 0.66);
+    ctx.bezierCurveTo(width * 0.83, height * 0.48, width * 0.94, height * 0.52, width, height * 0.62);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
 
-  ctx.beginPath();
-  ctx.arc(width * 0.08, height * 0.14, height * 0.3, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = p.blobInner;
+    ctx.beginPath();
+    ctx.moveTo(width * 0.73, height);
+    ctx.bezierCurveTo(width * 0.76, height * 0.88, width * 0.85, height * 0.76, width * 0.92, height * 0.80);
+    ctx.bezierCurveTo(width * 0.96, height * 0.82, width * 0.98, height * 0.78, width, height * 0.76);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+  } else if (backdrop === 'speedlines') {
+    // Atmospheric high-speed streaks (for Evolution / Performance scenes)
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 18; i++) {
+      const y = ((i * 63) % (height - 160)) + 100;
+      const len = 180 + (i % 5) * 90;
+      const speed = 220 + (i % 4) * 80;
+      const x = ((t * speed + i * 210) % (width + len)) - len;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + len, y);
+      ctx.stroke();
+    }
+  } else if (backdrop === 'blueprint') {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.lineWidth = 1;
+    const step = 60;
+    for (let x = 0; x < width; x += step) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+    }
+    for (let y = 0; y < height; y += step) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+  }
+
   ctx.restore();
 }
 
 /**
- * Clean Top Header — Strictly NO third-party channel watermarks.
- * Left: Crisp topic title. Right: Chapter breadcrumb (e.g., "01. Compilation & Portability").
+ * Clean Top Header — Strictly NO third-party watermarks.
+ * Includes optional subtle progress indicator pill on top-right.
  */
 function drawTopHeader(ctx, title, chapterText = '', options = {}) {
   const width = options.width || 1920;
-  const accentColor = options.accentColor || ACCENTS.cyan.bright;
-  const marginX = options.marginX || 80;
+  const accentColor = options.accentColor || '#38BDF8';
+  const marginX = options.marginX || 64;
 
   ctx.save();
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `600 36px ${FONTS.sans}`;
   ctx.textAlign = 'left';
-  ctx.fillText(title, marginX, 72);
+  ctx.fillText(title, marginX, 68);
 
   if (chapterText) {
+    ctx.font = `600 16px ${FONTS.sans}`;
+    const textW = ctx.measureText(chapterText).width;
+    const pillW = textW + 36;
+    const pillH = 34;
+    const pillX = width - marginX - pillW;
+    const pillY = 40;
+
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillW, pillH, 17);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
     ctx.fillStyle = accentColor;
-    ctx.font = `600 18px ${FONTS.sans}`;
-    ctx.textAlign = 'right';
-    ctx.fillText(chapterText, width - marginX, 68);
+    ctx.textAlign = 'center';
+    ctx.fillText(chapterText, pillX + pillW / 2, pillY + 22.5);
   }
+
+  // Optional thin timeline progress bar at very bottom edge
+  if (typeof options.progress === 'number' && options.progress > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(0, 1076, width, 4);
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(0, 1076, width * Math.min(1, options.progress), 4);
+  }
+  ctx.restore();
+}
+
+/**
+ * Authentic ByteByteGo Translucent Glass Container (supports solid or dashed border + self-draw progress).
+ */
+function drawGlassCard(ctx, x, y, w, h, opts = {}) {
+  const tint = GLASS_TINTS[opts.tint || 'teal'] || GLASS_TINTS.teal;
+  const radius = opts.radius !== undefined ? opts.radius : 14;
+  const dashed = opts.dashed !== undefined ? opts.dashed : false;
+  const drawProgress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (drawProgress <= 0.01) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, radius);
+
+  if (opts.fill !== false) {
+    ctx.save();
+    ctx.globalAlpha *= Math.min(1, drawProgress * 1.25);
+    ctx.fillStyle = opts.fillColor || tint.fill;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.strokeStyle = opts.strokeColor || tint.stroke;
+  ctx.lineWidth = opts.lineWidth || 2;
+  if (dashed) {
+    ctx.setLineDash([7, 5]);
+  } else if (drawProgress < 0.999) {
+    const perim = 2 * (w + h);
+    ctx.setLineDash([perim * drawProgress, perim]);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (opts.badge) {
+    ctx.font = `600 18px ${FONTS.sans}`;
+    const bw = Math.max(150, ctx.measureText(opts.badge).width + 44);
+    const bh = 38;
+    const bx = x + (w - bw) / 2;
+    const by = y + (opts.badgeInside ? 18 : -bh / 2);
+
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 10);
+    ctx.fillStyle = opts.badgeBg || tint.headerBg;
+    ctx.fill();
+
+    ctx.fillStyle = opts.badgeTextColor || '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.badge, bx + bw / 2, by + 25);
+  }
+
+  if (opts.subtitle) {
+    const sw = w - 44;
+    const sh = 36;
+    const sx = x + 22;
+    const sy = y + (opts.badgeInside ? 68 : 30);
+
+    ctx.beginPath();
+    ctx.roundRect(sx, sy, sw, sh, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.fill();
+    ctx.strokeStyle = opts.strokeColor || tint.stroke;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#F8FAFC';
+    ctx.font = `500 14.5px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.subtitle, sx + sw / 2, sy + 23);
+  }
+
   ctx.restore();
 }
 
@@ -84,23 +288,23 @@ function drawTopHeader(ctx, title, chapterText = '', options = {}) {
  */
 function drawTakeawayPill(ctx, text, options = {}) {
   const canvasWidth = options.canvasWidth || 1920;
-  const y = options.y || 855;
-  const bg = options.bg || ACCENTS.cyan.primary;
-  const border = options.border || ACCENTS.cyan.bright;
+  const y = options.y || 865;
+  const bg = options.bg || 'rgba(2, 132, 199, 0.28)';
+  const border = options.border || '#38BDF8';
   const alpha = options.alpha !== undefined ? options.alpha : 1;
 
-  if (alpha <= 0) return;
+  if (alpha <= 0.01) return;
 
   ctx.save();
   ctx.globalAlpha *= alpha;
   ctx.font = `600 19px ${FONTS.sans}`;
   const measured = ctx.measureText(text).width;
-  const w = Math.max(540, Math.min(canvasWidth - 240, measured + 96));
-  const h = 58;
+  const w = Math.max(500, Math.min(canvasWidth - 240, measured + 88));
+  const h = 54;
   const x = (canvasWidth - w) / 2;
 
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 29);
+  ctx.roundRect(x, y, w, h, 27);
   ctx.fillStyle = bg;
   ctx.fill();
   ctx.strokeStyle = border;
@@ -113,11 +317,34 @@ function drawTakeawayPill(ctx, text, options = {}) {
   ctx.restore();
 }
 
+/**
+ * Dims everything outside a spotlight rectangle to guide viewer focus.
+ */
+function drawSpotlightMask(ctx, focusRect, strength = 0.65, width = 1920, height = 1080) {
+  if (!focusRect || strength <= 0.01) return;
+  const pad = focusRect.pad !== undefined ? focusRect.pad : 20;
+  const rx = focusRect.x - pad;
+  const ry = focusRect.y - pad;
+  const rw = focusRect.w + pad * 2;
+  const rh = focusRect.h + pad * 2;
+
+  ctx.save();
+  ctx.fillStyle = `rgba(18, 18, 18, ${Math.min(0.85, strength)})`;
+  ctx.beginPath();
+  ctx.rect(0, 0, width, height);
+  ctx.roundRect(rx, ry, rw, rh, 18);
+  ctx.fill('evenodd');
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
+  GLASS_TINTS,
   ACCENTS,
   FONTS,
   drawBackground,
   drawTopHeader,
-  drawTakeawayPill
+  drawGlassCard,
+  drawTakeawayPill,
+  drawSpotlightMask
 };

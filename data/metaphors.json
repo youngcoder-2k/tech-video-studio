@@ -52,16 +52,64 @@
     "domain": "networking",
     "keywords": ["http", "https", "rest", "graphql", "grpc", "websocket", "api", "tls", "browser", "request-response", "mạng"],
     "antiPattern": "Box 'Client' -> Box 'Server'.",
-    "visualMetaphor": "Modern Web Browser Viewport (with lock icon & URL bar) exchanging bidirectional glowing packet orbs ('GET /api' -> '200 OK JSON') with a Datacenter Rack Server or Load Balancer.",
-    "studioPrimitive": "Illustrations.browserClient(...) + Connectors.bidirectional(...) + Illustrations.hardwareMachine(..., { type: 'server' })"
+    "visualMetaphor": "Authentic ByteByteGo thin-line neon Wireframe Browser ('WWW') exchanging solid white arrows and folded document badges ('HTML', 'JSON') with a 3D stacked Isometric Server Stack.",
+    "studioPrimitive": "Illustrations.wireframeBrowser(...) + Connectors.solidArrow(...) + Illustrations.foldedFileBadge(...) + Illustrations.isometricServerStack(...)"
   },
   {
-    "id": "database-acid-storage",
+    "id": "protocol-evolution-timeline",
+    "domain": "networking",
+    "keywords": ["evolution", "history", "versions", "http1", "http2", "http3", "quic", "timeline", "roadmap", "lịch sử", "tiến hóa"],
+    "antiPattern": "Bullet list of protocol versions and years.",
+    "visualMetaphor": "ByteByteGo horizontal Evolution Timeline strip with glowing active version node, dimmed historical nodes, and a Hero Metric Slam ('1997', '2015') with diagonal speed-line backdrop.",
+    "studioPrimitive": "Illustrations.evolutionTimeline(ctx, cx, y, { items, activeIndex }) + Illustrations.heroMetricSlam(ctx, cx, cy, { value, sub })"
+  },
+  {
+    "id": "acid-transaction-state",
     "domain": "database",
-    "keywords": ["database", "sql", "postgres", "mysql", "acid", "transaction", "wal", "sharding", "replication", "b-tree", "cơ sở dữ liệu"],
-    "antiPattern": "Flat rectangle labeled 'Database'.",
-    "visualMetaphor": "3D Isometric Multi-Platter Database Cylinder paired with a Sequential WAL Log Tape (`sequentialReader`) or Primary-Replica Laser Replication Stream.",
-    "studioPrimitive": "Illustrations.isometricDatabase(ctx, x, y, w, h, { title, sub, platters: 3 })"
+    "keywords": ["acid", "atomicity", "isolation", "consistency", "durability", "transaction", "rollback", "commit", "balance", "giao dịch"],
+    "antiPattern": "Text paragraphs defining Atomicity, Consistency, Isolation, Durability.",
+    "visualMetaphor": "Line-art user actors ('User A', 'User B') inside translucent tinted glass cards (`Theme.drawGlassCard`), mutating live account balance badges (`$600 -> $400`) into a Wireframe Cylinder DB, with a Broken Link Plug + Red Cross-out (`✕`) demonstrating atomic rollback on failure.",
+    "studioPrimitive": "Illustrations.lineArtUser(...) + Illustrations.stateMutationCard(...) + Illustrations.wireframeCylinderDb(...) + Illustrations.brokenLinkPlug(...)"
+  },
+  {
+    "id": "architecture-comparison-table",
+    "domain": "architecture",
+    "keywords": ["vs", "compare", "comparison", "bios", "uefi", "sql-vs-nosql", "rest-vs-grpc", "tradeoff", "so sánh"],
+    "antiPattern": "Wall of text comparing two technologies.",
+    "visualMetaphor": "ByteByteGo translucent Split Comparison Table with emerald and plum glass column headers, crisp grid dividers, and progressive row-by-row reveals.",
+    "studioPrimitive": "Illustrations.comparisonSplitTable(ctx, x, y, w, h, { leftHeader, rightHeader, rows, progress })"
+  },
+  {
+    "id": "distributed-protocol-swimlane",
+    "domain": "distributed",
+    "keywords": ["handshake", "tcp", "syn", "ack", "raft", "paxos", "2pc", "oauth", "sequence", "swimlane"],
+    "antiPattern": "Static arrows between two boxes without temporal ordering.",
+    "visualMetaphor": "Vertical Actor Swimlane Sequence Diagram where diagonal signal arrows draw progressively downwards across time with live packet orbs.",
+    "studioPrimitive": "Illustrations.swimlaneSequence(ctx, x, y, w, h, { actors, messages, progress })"
+  },
+  {
+    "id": "consistent-hashing-ring",
+    "domain": "distributed",
+    "keywords": ["sharding", "consistent-hashing", "ring", "partition", "dynamo", "cassandra", "load-balancing", "phân mảnh"],
+    "antiPattern": "Plain boxes labeled Shard 1, Shard 2, Shard 3.",
+    "visualMetaphor": "Circular Hash Ring with virtual node tokens placed around the perimeter and a sweeping clockwise lookup arc resolving a key to its owning shard.",
+    "studioPrimitive": "Illustrations.consistentHashRing(ctx, cx, cy, radius, { nodes, keyAngle, progress })"
+  },
+  {
+    "id": "btree-index-hierarchy",
+    "domain": "database",
+    "keywords": ["btree", "b-tree", "lsm", "index", "query-plan", "binary-tree", "lookup", "chỉ mục"],
+    "antiPattern": "Single box labeled 'Database Index'.",
+    "visualMetaphor": "Multi-key B-Tree Index Hierarchy with root key slots branching via glowing search pointers into child leaf pages.",
+    "studioPrimitive": "Illustrations.bTreeHierarchy(ctx, cx, y, { rootKeys, children, highlightBranch, progress })"
+  },
+  {
+    "id": "network-packet-encapsulation",
+    "domain": "networking",
+    "keywords": ["packet", "frame", "header", "payload", "tcp-ip", "osi", "encapsulation", "tls-record", "gói tin"],
+    "antiPattern": "Single rectangle labeled 'Network Packet'.",
+    "visualMetaphor": "Segmented horizontal Network Packet Frame showing color-coded protocol headers (IP | TCP | TLS | HTTP Payload) with byte-size annotations.",
+    "studioPrimitive": "Illustrations.networkPacketFrame(ctx, x, y, w, h, { segments, progress })"
   },
   {
     "id": "in-memory-caching",

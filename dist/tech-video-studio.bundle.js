@@ -1,4 +1,4 @@
-/* TechVideoStudio Standalone Bundle v1.0.0 (Includes GSAP + Studio Primitives) */
+/* TechVideoStudio Standalone Bundle v2.0.0 (Includes GSAP + Studio Primitives) */
 /*!
  * GSAP 3.12.5
  * https://gsap.com
@@ -17,11 +17,29 @@
     const require = (r) => __require("./core/theme", r);
 'use strict';
 
+/**
+ * Authentic ByteByteGo-Caliber Dark Studio Design System (v2.0)
+ * Forensically tuned to #262626 charcoal, two-layer organic corner waves,
+ * translucent tinted glass cards, and crisp geometric technical typography.
+ */
+
 const PALETTES = {
+  byteCharcoal: {
+    bg: '#262626',
+    blobOuter: '#2E2E2E',
+    blobInner: '#353535',
+    surface: '#1C1C1C',
+    surfaceElevated: '#2A2E37',
+    border: '#475569',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#E2E8F0',
+    textMuted: '#9CA3AF'
+  },
   charcoal: {
-    bg: '#1E1E1E',
-    bgWave: '#171717',
-    surface: '#111827',
+    bg: '#222222',
+    blobOuter: '#2A2A2A',
+    blobInner: '#313131',
+    surface: '#141821',
     surfaceElevated: '#1E293B',
     border: '#334155',
     textPrimary: '#FFFFFF',
@@ -30,7 +48,8 @@ const PALETTES = {
   },
   midnight: {
     bg: '#0F172A',
-    bgWave: '#0B1120',
+    blobOuter: '#15203B',
+    blobInner: '#1E293B',
     surface: '#1E293B',
     surfaceElevated: '#334155',
     border: '#475569',
@@ -40,59 +59,244 @@ const PALETTES = {
   }
 };
 
+// Signature ByteByteGo Translucent Glass Tints (rgba fill + high-contrast stroke)
+const GLASS_TINTS = {
+  teal: {
+    fill: 'rgba(24, 128, 138, 0.28)',
+    headerBg: '#2A8C96',
+    stroke: '#38BDF8',
+    highlight: '#5EEAD4'
+  },
+  olive: {
+    fill: 'rgba(168, 152, 48, 0.28)',
+    headerBg: '#B8A428',
+    stroke: '#EAB308',
+    highlight: '#FEF08A'
+  },
+  plum: {
+    fill: 'rgba(132, 68, 122, 0.28)',
+    headerBg: '#8A4F80',
+    stroke: '#C084FC',
+    highlight: '#F5D0FE'
+  },
+  emerald: {
+    fill: 'rgba(18, 132, 98, 0.28)',
+    headerBg: '#10B981',
+    stroke: '#34D399',
+    highlight: '#A7F3D0'
+  },
+  slate: {
+    fill: 'rgba(38, 72, 68, 0.52)',
+    headerBg: '#6B7B3A',
+    stroke: '#475569',
+    highlight: '#FDE047'
+  },
+  crimson: {
+    fill: 'rgba(153, 27, 27, 0.30)',
+    headerBg: '#DC2626',
+    stroke: '#F87171',
+    highlight: '#FCA5A5'
+  }
+};
+
 const ACCENTS = {
-  cyan: { primary: '#0284C7', bright: '#38BDF8', dark: '#082F49', soft: '#E0F2FE' },
+  cyan: { primary: '#0284C7', bright: '#38E8FF', line: '#5CE1E6', dark: '#082F49', soft: '#E0F2FE' },
   emerald: { primary: '#059669', bright: '#10B981', light: '#34D399', dark: '#022C22', mid: '#064E3B', soft: '#A7F3D0' },
-  amber: { primary: '#D97706', bright: '#F59E0B', dark: '#451A03', mid: '#78350F', soft: '#FEF08A' },
+  amber: { primary: '#D97706', bright: '#F59E0B', yellow: '#FACC15', dark: '#451A03', mid: '#78350F', soft: '#FEF08A' },
   purple: { primary: '#8A4F80', bright: '#A855F7', dark: '#311E2D', mid: '#701A75', soft: '#F5D0FE' },
   indigo: { primary: '#4F46E5', bright: '#6366F1', dark: '#1E1B4B', mid: '#4338CA', soft: '#C7D2FE' },
   rose: { primary: '#E11D48', bright: '#EF4444', dark: '#450A0A', mid: '#881337', soft: '#FCA5A5' }
 };
 
 const FONTS = {
-  sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-  mono: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace'
+  sans: '"DIN Alternate", "Bahnschrift", "Plus Jakarta Sans", "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
 };
 
-function drawBackground(ctx, width = 1920, height = 1080, paletteName = 'charcoal') {
-  const p = PALETTES[paletteName] || PALETTES.charcoal;
+/**
+ * Draws the studio background with authentic organic bezier waves or atmospheric speedlines.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {number} width
+ * @param {number} height
+ * @param {string} paletteName
+ * @param {object} [opts] - { backdrop: 'waves'|'speedlines'|'blueprint'|'clean', timeSec: 0 }
+ */
+function drawBackground(ctx, width = 1920, height = 1080, paletteName = 'byteCharcoal', opts = {}) {
+  const p = PALETTES[paletteName] || PALETTES.byteCharcoal;
+  const backdrop = opts.backdrop || 'waves';
+  const t = opts.timeSec || 0;
+
   ctx.save();
   ctx.fillStyle = p.bg;
   ctx.fillRect(0, 0, width, height);
 
-  // Signature subtle organic background waves (adds depth without visual clutter)
-  ctx.fillStyle = p.bgWave;
-  ctx.beginPath();
-  ctx.arc(width * 0.91, height * 0.88, height * 0.44, 0, Math.PI * 2);
-  ctx.fill();
+  if (backdrop === 'waves') {
+    // Authentic ByteByteGo two-layer organic wave silhouette in bottom-right
+    ctx.fillStyle = p.blobOuter;
+    ctx.beginPath();
+    ctx.moveTo(width * 0.56, height);
+    ctx.bezierCurveTo(width * 0.58, height * 0.80, width * 0.72, height * 0.82, width * 0.77, height * 0.66);
+    ctx.bezierCurveTo(width * 0.83, height * 0.48, width * 0.94, height * 0.52, width, height * 0.62);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
 
-  ctx.beginPath();
-  ctx.arc(width * 0.08, height * 0.14, height * 0.3, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = p.blobInner;
+    ctx.beginPath();
+    ctx.moveTo(width * 0.73, height);
+    ctx.bezierCurveTo(width * 0.76, height * 0.88, width * 0.85, height * 0.76, width * 0.92, height * 0.80);
+    ctx.bezierCurveTo(width * 0.96, height * 0.82, width * 0.98, height * 0.78, width, height * 0.76);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+  } else if (backdrop === 'speedlines') {
+    // Atmospheric high-speed streaks (for Evolution / Performance scenes)
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 18; i++) {
+      const y = ((i * 63) % (height - 160)) + 100;
+      const len = 180 + (i % 5) * 90;
+      const speed = 220 + (i % 4) * 80;
+      const x = ((t * speed + i * 210) % (width + len)) - len;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + len, y);
+      ctx.stroke();
+    }
+  } else if (backdrop === 'blueprint') {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.lineWidth = 1;
+    const step = 60;
+    for (let x = 0; x < width; x += step) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+    }
+    for (let y = 0; y < height; y += step) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+  }
+
   ctx.restore();
 }
 
 /**
- * Clean Top Header — Strictly NO third-party channel watermarks.
- * Left: Crisp topic title. Right: Chapter breadcrumb (e.g., "01. Compilation & Portability").
+ * Clean Top Header — Strictly NO third-party watermarks.
+ * Includes optional subtle progress indicator pill on top-right.
  */
 function drawTopHeader(ctx, title, chapterText = '', options = {}) {
   const width = options.width || 1920;
-  const accentColor = options.accentColor || ACCENTS.cyan.bright;
-  const marginX = options.marginX || 80;
+  const accentColor = options.accentColor || '#38BDF8';
+  const marginX = options.marginX || 64;
 
   ctx.save();
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `600 36px ${FONTS.sans}`;
   ctx.textAlign = 'left';
-  ctx.fillText(title, marginX, 72);
+  ctx.fillText(title, marginX, 68);
 
   if (chapterText) {
+    ctx.font = `600 16px ${FONTS.sans}`;
+    const textW = ctx.measureText(chapterText).width;
+    const pillW = textW + 36;
+    const pillH = 34;
+    const pillX = width - marginX - pillW;
+    const pillY = 40;
+
+    ctx.beginPath();
+    ctx.roundRect(pillX, pillY, pillW, pillH, 17);
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
     ctx.fillStyle = accentColor;
-    ctx.font = `600 18px ${FONTS.sans}`;
-    ctx.textAlign = 'right';
-    ctx.fillText(chapterText, width - marginX, 68);
+    ctx.textAlign = 'center';
+    ctx.fillText(chapterText, pillX + pillW / 2, pillY + 22.5);
   }
+
+  // Optional thin timeline progress bar at very bottom edge
+  if (typeof options.progress === 'number' && options.progress > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(0, 1076, width, 4);
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(0, 1076, width * Math.min(1, options.progress), 4);
+  }
+  ctx.restore();
+}
+
+/**
+ * Authentic ByteByteGo Translucent Glass Container (supports solid or dashed border + self-draw progress).
+ */
+function drawGlassCard(ctx, x, y, w, h, opts = {}) {
+  const tint = GLASS_TINTS[opts.tint || 'teal'] || GLASS_TINTS.teal;
+  const radius = opts.radius !== undefined ? opts.radius : 14;
+  const dashed = opts.dashed !== undefined ? opts.dashed : false;
+  const drawProgress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (drawProgress <= 0.01) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, radius);
+
+  if (opts.fill !== false) {
+    ctx.save();
+    ctx.globalAlpha *= Math.min(1, drawProgress * 1.25);
+    ctx.fillStyle = opts.fillColor || tint.fill;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.strokeStyle = opts.strokeColor || tint.stroke;
+  ctx.lineWidth = opts.lineWidth || 2;
+  if (dashed) {
+    ctx.setLineDash([7, 5]);
+  } else if (drawProgress < 0.999) {
+    const perim = 2 * (w + h);
+    ctx.setLineDash([perim * drawProgress, perim]);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (opts.badge) {
+    ctx.font = `600 18px ${FONTS.sans}`;
+    const bw = Math.max(150, ctx.measureText(opts.badge).width + 44);
+    const bh = 38;
+    const bx = x + (w - bw) / 2;
+    const by = y + (opts.badgeInside ? 18 : -bh / 2);
+
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 10);
+    ctx.fillStyle = opts.badgeBg || tint.headerBg;
+    ctx.fill();
+
+    ctx.fillStyle = opts.badgeTextColor || '#FFFFFF';
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.badge, bx + bw / 2, by + 25);
+  }
+
+  if (opts.subtitle) {
+    const sw = w - 44;
+    const sh = 36;
+    const sx = x + 22;
+    const sy = y + (opts.badgeInside ? 68 : 30);
+
+    ctx.beginPath();
+    ctx.roundRect(sx, sy, sw, sh, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.fill();
+    ctx.strokeStyle = opts.strokeColor || tint.stroke;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#F8FAFC';
+    ctx.font = `500 14.5px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.subtitle, sx + sw / 2, sy + 23);
+  }
+
   ctx.restore();
 }
 
@@ -101,23 +305,23 @@ function drawTopHeader(ctx, title, chapterText = '', options = {}) {
  */
 function drawTakeawayPill(ctx, text, options = {}) {
   const canvasWidth = options.canvasWidth || 1920;
-  const y = options.y || 855;
-  const bg = options.bg || ACCENTS.cyan.primary;
-  const border = options.border || ACCENTS.cyan.bright;
+  const y = options.y || 865;
+  const bg = options.bg || 'rgba(2, 132, 199, 0.28)';
+  const border = options.border || '#38BDF8';
   const alpha = options.alpha !== undefined ? options.alpha : 1;
 
-  if (alpha <= 0) return;
+  if (alpha <= 0.01) return;
 
   ctx.save();
   ctx.globalAlpha *= alpha;
   ctx.font = `600 19px ${FONTS.sans}`;
   const measured = ctx.measureText(text).width;
-  const w = Math.max(540, Math.min(canvasWidth - 240, measured + 96));
-  const h = 58;
+  const w = Math.max(500, Math.min(canvasWidth - 240, measured + 88));
+  const h = 54;
   const x = (canvasWidth - w) / 2;
 
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 29);
+  ctx.roundRect(x, y, w, h, 27);
   ctx.fillStyle = bg;
   ctx.fill();
   ctx.strokeStyle = border;
@@ -130,13 +334,249 @@ function drawTakeawayPill(ctx, text, options = {}) {
   ctx.restore();
 }
 
+/**
+ * Dims everything outside a spotlight rectangle to guide viewer focus.
+ */
+function drawSpotlightMask(ctx, focusRect, strength = 0.65, width = 1920, height = 1080) {
+  if (!focusRect || strength <= 0.01) return;
+  const pad = focusRect.pad !== undefined ? focusRect.pad : 20;
+  const rx = focusRect.x - pad;
+  const ry = focusRect.y - pad;
+  const rw = focusRect.w + pad * 2;
+  const rh = focusRect.h + pad * 2;
+
+  ctx.save();
+  ctx.fillStyle = `rgba(18, 18, 18, ${Math.min(0.85, strength)})`;
+  ctx.beginPath();
+  ctx.rect(0, 0, width, height);
+  ctx.roundRect(rx, ry, rw, rh, 18);
+  ctx.fill('evenodd');
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
+  GLASS_TINTS,
   ACCENTS,
   FONTS,
   drawBackground,
   drawTopHeader,
-  drawTakeawayPill
+  drawGlassCard,
+  drawTakeawayPill,
+  drawSpotlightMask
+};
+
+  },
+  "./core/camera": function(module, exports, __require) {
+    const require = (r) => __require("./core/camera", r);
+'use strict';
+
+/**
+ * Cinematic 2D Virtual Camera Engine (ByteByteGo After-Effects Style).
+ * Enables Overview -> Smooth Zoom-In to Focus Node -> Pan Across Pipeline -> Reset to Wide.
+ */
+
+function createCameraState(width = 1920, height = 1080) {
+  return {
+    camX: width / 2,
+    camY: height / 2,
+    camZoom: 1,
+    __camWidth: width,
+    __camHeight: height
+  };
+}
+
+/**
+ * Adds a smooth camera zoom + pan tween onto a GSAP timeline.
+ * @param {object} tl - GSAP timeline
+ * @param {object} state - Scene state containing camX, camY, camZoom
+ * @param {object} target - { x, y, zoom, duration, ease }
+ * @param {number} atTime - Timeline start timestamp
+ */
+function zoomTo(tl, state, target, atTime) {
+  return tl.to(state, {
+    camX: target.x !== undefined ? target.x : 960,
+    camY: target.y !== undefined ? target.y : 540,
+    camZoom: target.zoom !== undefined ? target.zoom : 1.5,
+    duration: target.duration !== undefined ? target.duration : 1.1,
+    ease: target.ease || 'power3.inOut'
+  }, atTime);
+}
+
+/**
+ * Resets virtual camera smoothly back to full 1920x1080 wide framing.
+ */
+function reset(tl, state, atTime, duration = 1.0) {
+  const w = state.__camWidth || 1920;
+  const h = state.__camHeight || 1080;
+  return tl.to(state, {
+    camX: w / 2,
+    camY: h / 2,
+    camZoom: 1,
+    duration,
+    ease: 'power3.inOut'
+  }, atTime);
+}
+
+/**
+ * Applies the virtual camera transform to `ctx` around `(state.camX, state.camY)`.
+ * Call before drawing world-space diagram elements; header/takeaway stay screen-space!
+ */
+function apply(ctx, state, width = 1920, height = 1080) {
+  const cx = state.camX !== undefined ? state.camX : width / 2;
+  const cy = state.camY !== undefined ? state.camY : height / 2;
+  const z = state.camZoom !== undefined ? state.camZoom : 1;
+
+  ctx.save();
+  if (Math.abs(z - 1) > 0.0005 || Math.abs(cx - width / 2) > 0.5 || Math.abs(cy - height / 2) > 0.5) {
+    ctx.translate(width / 2, height / 2);
+    ctx.scale(z, z);
+    ctx.translate(-cx, -cy);
+  }
+}
+
+function restore(ctx) {
+  ctx.restore();
+}
+
+module.exports = {
+  createCameraState,
+  zoomTo,
+  reset,
+  apply,
+  restore
+};
+
+  },
+  "./core/draw-effects": function(module, exports, __require) {
+    const require = (r) => __require("./core/draw-effects", r);
+'use strict';
+
+const { FONTS } = require('./theme');
+
+/**
+ * Progressive Vector Self-Draw & Kinetic Typography Effects.
+ * Replicates After Effects Trim Paths (`strokeDashoffset`) and character reveals.
+ */
+
+/**
+ * Self-draws any arbitrary canvas path progressively from 0 -> 1.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {function} buildPathFn - Function calling ctx.moveTo / lineTo / arc / bezierCurveTo / roundRect
+ * @param {number} progress - 0.0 to 1.0
+ * @param {object} style - { stroke, lineWidth, fill, fillAfter, pathLength }
+ */
+function strokeDraw(ctx, buildPathFn, progress = 1, style = {}) {
+  if (progress <= 0.005) return;
+  const p = Math.min(1, progress);
+  const estLen = style.pathLength || 1200;
+
+  ctx.save();
+  ctx.beginPath();
+  buildPathFn(ctx);
+
+  if (style.fill && p > (style.fillAfter !== undefined ? style.fillAfter : 0.65)) {
+    const fillAlpha = Math.min(1, (p - (style.fillAfter || 0.65)) / 0.35);
+    ctx.save();
+    ctx.globalAlpha *= fillAlpha;
+    ctx.fillStyle = style.fill;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.strokeStyle = style.stroke || '#5CE1E6';
+  ctx.lineWidth = style.lineWidth || 2.5;
+  ctx.lineCap = style.lineCap || 'round';
+  ctx.lineJoin = style.lineJoin || 'round';
+
+  if (p < 0.999) {
+    ctx.setLineDash([estLen * p, estLen]);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/**
+ * Progressive character-by-character typewriter text reveal (matching ByteByteGo label reveals).
+ */
+function typeText(ctx, text, x, y, progress = 1, style = {}) {
+  if (!text || progress <= 0.01) return;
+  const count = Math.max(1, Math.ceil(text.length * Math.min(1, progress)));
+  const slice = text.slice(0, count);
+
+  ctx.save();
+  ctx.fillStyle = style.color || '#FFFFFF';
+  ctx.font = style.font || `600 17px ${FONTS.sans}`;
+  ctx.textAlign = style.align || 'center';
+  ctx.fillText(slice, x, y);
+  ctx.restore();
+}
+
+/**
+ * Animated two-stroke red failure cross-out `✕` (matching ByteByteGo broken link / error state).
+ */
+function crossOutFailure(ctx, cx, cy, progress = 1, opts = {}) {
+  if (progress <= 0.01) return;
+  const r = (opts.size || 38) / 2;
+  const color = opts.color || '#EF4444';
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = opts.lineWidth || 6;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 10;
+
+  // Stroke 1 (0 -> 0.5)
+  const p1 = Math.min(1, progress * 2);
+  ctx.beginPath();
+  ctx.moveTo(cx - r, cy - r);
+  ctx.lineTo(cx - r + 2 * r * p1, cy - r + 2 * r * p1);
+  ctx.stroke();
+
+  // Stroke 2 (0.5 -> 1.0)
+  if (progress > 0.5) {
+    const p2 = Math.min(1, (progress - 0.5) * 2);
+    ctx.beginPath();
+    ctx.moveTo(cx + r, cy - r);
+    ctx.lineTo(cx + r - 2 * r * p2, cy - r + 2 * r * p2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * Radial spark burst when an event / error / optimization triggers.
+ */
+function sparkBurst(ctx, cx, cy, progress, opts = {}) {
+  if (progress <= 0.01 || progress >= 0.99) return;
+  const rays = opts.rays || 8;
+  const maxR = opts.radius || 46;
+  const color = opts.color || '#FACC15';
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.globalAlpha *= (1 - progress);
+
+  for (let i = 0; i < rays; i++) {
+    const angle = (i / rays) * Math.PI * 2;
+    const r1 = maxR * 0.35 * progress;
+    const r2 = maxR * progress;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
+    ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+module.exports = {
+  strokeDraw,
+  typeText,
+  crossOutFailure,
+  sparkBurst
 };
 
   },
@@ -299,55 +739,167 @@ module.exports = {
 
 const { FONTS } = require('./theme');
 
+function drawArrowhead(ctx, x, y, angle, headlen = 12) {
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 6), y - headlen * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 6), y - headlen * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fill();
+}
+
 /**
- * Signature ByteByteGo Connector: Origin dot o- - - -> Clean Arrowhead.
+ * Crisp Solid ByteByteGo Arrow: Origin dot o──────▶ Clean Arrowhead (like HTTP GET & Linux Boot).
  */
-function dashedArrow(ctx, x1, y1, x2, y2, opts = {}) {
+function solidArrow(ctx, x1, y1, x2, y2, opts = {}) {
   const progress = opts.progress !== undefined ? opts.progress : 1;
   if (progress <= 0.01) return;
 
-  const color = opts.color || '#38BDF8';
-  const lw = opts.lineWidth || 3;
+  const color = opts.color || '#FFFFFF';
+  const lw = opts.lineWidth || 2.5;
   const label = opts.label || '';
   const labelOffset = opts.labelOffset !== undefined ? opts.labelOffset : -14;
+  const p = Math.min(1, progress);
 
   ctx.save();
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.lineWidth = lw;
 
-  // Origin dot
-  ctx.beginPath();
-  ctx.arc(x1, y1, 5, 0, Math.PI * 2);
-  ctx.fill();
+  if (opts.originDot !== false) {
+    ctx.beginPath();
+    ctx.arc(x1, y1, 4.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-  const p = Math.min(1, progress);
   const curX = x1 + (x2 - x1) * p;
   const curY = y1 + (y2 - y1) * p;
 
   ctx.beginPath();
-  ctx.setLineDash(opts.dash || [8, 6]);
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(curX, curY);
+  ctx.stroke();
+
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  drawArrowhead(ctx, curX, curY, angle, 11.5);
+
+  if (label && p > 0.35) {
+    ctx.font = opts.labelFont || `600 16px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = opts.labelColor || color;
+    ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 + labelOffset);
+  }
+  ctx.restore();
+}
+
+/**
+ * Signature Dashed ByteByteGo Arrow: Origin dot o- - - -▶ Clean Arrowhead.
+ */
+function dashedArrow(ctx, x1, y1, x2, y2, opts = {}) {
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  if (progress <= 0.01) return;
+
+  const color = opts.color || '#38BDF8';
+  const lw = opts.lineWidth || 2.6;
+  const label = opts.label || '';
+  const labelOffset = opts.labelOffset !== undefined ? opts.labelOffset : -14;
+  const p = Math.min(1, progress);
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lw;
+
+  if (opts.originDot !== false) {
+    ctx.beginPath();
+    ctx.arc(x1, y1, 4.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const curX = x1 + (x2 - x1) * p;
+  const curY = y1 + (y2 - y1) * p;
+
+  ctx.beginPath();
+  ctx.setLineDash(opts.dash || [7, 5]);
   ctx.moveTo(x1, y1);
   ctx.lineTo(curX, curY);
   ctx.stroke();
   ctx.setLineDash([]);
 
-  if (p >= 0.94) {
+  if (p >= 0.92) {
     const angle = Math.atan2(y2 - y1, x2 - x1);
-    const headlen = 12;
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI / 6), y2 - headlen * Math.sin(angle - Math.PI / 6));
-    ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI / 6), y2 - headlen * Math.sin(angle + Math.PI / 6));
-    ctx.closePath();
-    ctx.fill();
+    drawArrowhead(ctx, x2, y2, angle, 11.5);
   }
 
   if (label && p > 0.4) {
-    ctx.font = `600 15px ${FONTS.sans}`;
+    ctx.font = opts.labelFont || `600 15px ${FONTS.sans}`;
     ctx.textAlign = 'center';
-    ctx.fillStyle = color;
+    ctx.fillStyle = opts.labelColor || color;
     ctx.fillText(label, (x1 + x2) / 2, (y1 + y2) / 2 + labelOffset);
+  }
+  ctx.restore();
+}
+
+/**
+ * Orthogonal Rounded-Corner Elbow Connector: o───┐
+ *                                               └───▶
+ * Prevents diagonal line crossings in complex architecture diagrams!
+ */
+function elbowArrow(ctx, points, opts = {}) {
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  if (!points || points.length < 2 || progress <= 0.01) return;
+
+  const color = opts.color || '#FFFFFF';
+  const lw = opts.lineWidth || 2.5;
+  const radius = opts.radius !== undefined ? opts.radius : 12;
+  const dashed = Boolean(opts.dashed);
+
+  // Calculate total polyline length
+  let totalLen = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    totalLen += Math.hypot(points[i + 1][0] - points[i][0], points[i + 1][1] - points[i][1]);
+  }
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = lw;
+
+  if (opts.originDot !== false) {
+    ctx.beginPath();
+    ctx.arc(points[0][0], points[0][1], 4.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(points[0][0], points[0][1]);
+  for (let i = 1; i < points.length - 1; i++) {
+    ctx.arcTo(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1], radius);
+  }
+  const last = points[points.length - 1];
+  ctx.lineTo(last[0], last[1]);
+
+  if (dashed) {
+    ctx.setLineDash([7, 5]);
+  } else if (progress < 0.999) {
+    ctx.setLineDash([totalLen * progress, totalLen]);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  if (progress >= 0.95) {
+    const prev = points[points.length - 2];
+    const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
+    drawArrowhead(ctx, last[0], last[1], angle, 11.5);
+  }
+
+  if (opts.label && progress > 0.5) {
+    const midIdx = Math.floor((points.length - 1) / 2);
+    const mx = (points[midIdx][0] + points[midIdx + 1][0]) / 2;
+    const my = (points[midIdx][1] + points[midIdx + 1][1]) / 2;
+    ctx.font = `600 14.5px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.label, mx, my - 10);
   }
   ctx.restore();
 }
@@ -379,7 +931,7 @@ function pulseOrb(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
 }
 
 /**
- * Glowing fiber-optic pointer laser beam (ideal for Memory References, RPC streams, Direct DMA).
+ * Glowing fiber-optic pointer laser beam.
  */
 function laserBeam(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
   const progress = opts.progress !== undefined ? opts.progress : 1;
@@ -393,13 +945,13 @@ function laserBeam(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
 
   ctx.save();
   ctx.strokeStyle = color;
-  ctx.lineWidth = 3.5;
+  ctx.lineWidth = 3.2;
   ctx.shadowColor = color;
   ctx.shadowBlur = 12;
 
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(x1, y1, 6, 0, Math.PI * 2);
+  ctx.arc(x1, y1, 5.5, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.beginPath();
@@ -414,7 +966,7 @@ function laserBeam(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
     ctx.shadowBlur = 16;
     ctx.fillStyle = '#FFFFFF';
     ctx.beginPath();
-    ctx.arc(x2, y2, 6, 0, Math.PI * 2);
+    ctx.arc(x2, y2, 5.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
@@ -429,38 +981,42 @@ function laserBeam(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
 }
 
 /**
- * Dual Request / Response arrows (ideal for HTTP GET/200, gRPC, DB Query/Result).
+ * Dual Request / Response arrows (supports both ByteByteGo crisp solid white lines and dashed mode).
  */
 function bidirectional(ctx, x1, y1, x2, y2, timeSec, opts = {}) {
   const gap = opts.gap || 16;
-  const reqColor = opts.reqColor || '#38BDF8';
-  const resColor = opts.resColor || '#10B981';
+  const solid = opts.solid !== undefined ? opts.solid : true;
+  const reqColor = opts.reqColor || (solid ? '#FFFFFF' : '#38BDF8');
+  const resColor = opts.resColor || (solid ? '#FFFFFF' : '#10B981');
   const reqProgress = opts.reqProgress !== undefined ? opts.reqProgress : 1;
   const resProgress = opts.resProgress !== undefined ? opts.resProgress : 1;
+  const fn = solid ? solidArrow : dashedArrow;
 
-  dashedArrow(ctx, x1, y1 - gap, x2, y2 - gap, {
+  fn(ctx, x1, y1 - gap, x2, y2 - gap, {
     progress: reqProgress,
     color: reqColor,
     label: opts.reqLabel || '',
     labelOffset: -12
   });
-  if (reqProgress > 0.85) {
-    pulseOrb(ctx, x1, y1 - gap, x2, y2 - gap, timeSec, { color: reqColor });
+  if (reqProgress > 0.85 && opts.packets !== false) {
+    pulseOrb(ctx, x1, y1 - gap, x2, y2 - gap, timeSec, { color: '#38BDF8' });
   }
 
-  dashedArrow(ctx, x2, y2 + gap, x1, y1 + gap, {
+  fn(ctx, x2, y2 + gap, x1, y1 + gap, {
     progress: resProgress,
     color: resColor,
     label: opts.resLabel || '',
     labelOffset: 24
   });
-  if (resProgress > 0.85) {
-    pulseOrb(ctx, x2, y2 + gap, x1, y1 + gap, timeSec, { color: resColor, phase: 0.5 });
+  if (resProgress > 0.85 && opts.packets !== false) {
+    pulseOrb(ctx, x2, y2 + gap, x1, y1 + gap, timeSec, { color: '#10B981', phase: 0.5 });
   }
 }
 
 module.exports = {
+  solidArrow,
   dashedArrow,
+  elbowArrow,
   pulseOrb,
   laserBeam,
   bidirectional
@@ -1553,23 +2109,785 @@ module.exports = {
 };
 
   },
+  "./illustrations/archetypes": function(module, exports, __require) {
+    const require = (r) => __require("./illustrations/archetypes", r);
+'use strict';
+
+const Theme = require('../core/theme');
+const Effects = require('../core/draw-effects');
+const Connectors = require('../core/connectors');
+
+const { FONTS, GLASS_TINTS } = Theme;
+
+/**
+ * Signature ByteByteGo Line-Art Primitives & High-Retention Scene Archetypes (v2.0).
+ * Every primitive supports progressive self-drawing (`progress: 0 -> 1`).
+ */
+
+// 1. AUTHENTIC 3D STACKED ISOMETRIC WIREFRAME SERVER (Matches ByteByteGo HTTP video)
+function isometricServerStack(ctx, cx, cy, opts = {}) {
+  const slabs = opts.slabs || 3;
+  const rx = opts.rx || 68;
+  const ry = opts.ry || 34;
+  const slabThickness = opts.thickness || 18;
+  const gap = opts.gap || 26;
+  const stroke = opts.color || '#5CE1E6';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label || '';
+
+  if (progress <= 0.01) return;
+
+  const totalHeight = (slabs - 1) * gap;
+  const startY = cy - totalHeight / 2;
+
+  ctx.save();
+  for (let i = slabs - 1; i >= 0; i--) {
+    const sy = startY + i * gap;
+    const localP = Math.max(0, Math.min(1, (progress * slabs) - (slabs - 1 - i) * 0.45));
+    if (localP <= 0.01) continue;
+
+    // Fill dark background so lower slabs occlude cleanly
+    ctx.save();
+    ctx.fillStyle = '#242424';
+    ctx.beginPath();
+    ctx.moveTo(cx, sy - ry);
+    ctx.lineTo(cx + rx, sy);
+    ctx.lineTo(cx + rx, sy + slabThickness);
+    ctx.lineTo(cx, sy + ry + slabThickness);
+    ctx.lineTo(cx - rx, sy + slabThickness);
+    ctx.lineTo(cx - rx, sy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Top isometric diamond
+    Effects.strokeDraw(ctx, (c) => {
+      c.moveTo(cx, sy - ry);
+      c.lineTo(cx + rx, sy);
+      c.lineTo(cx, sy + ry);
+      c.lineTo(cx - rx, sy);
+      c.closePath();
+
+      // Side extrusions
+      c.moveTo(cx - rx, sy);
+      c.lineTo(cx - rx, sy + slabThickness);
+      c.lineTo(cx, sy + ry + slabThickness);
+      c.lineTo(cx + rx, sy + slabThickness);
+      c.lineTo(cx + rx, sy);
+    }, localP, { stroke, lineWidth: 2, pathLength: 620 });
+
+    // Front-left status LEDs
+    if (localP > 0.75) {
+      ctx.fillStyle = stroke;
+      ctx.beginPath();
+      ctx.arc(cx - rx * 0.62, sy + ry * 0.38 + slabThickness * 0.45, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx - rx * 0.46, sy + ry * 0.46 + slabThickness * 0.45);
+      ctx.lineTo(cx - rx * 0.22, sy + ry * 0.58 + slabThickness * 0.45);
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+    }
+  }
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, startY + totalHeight + ry + slabThickness + 30, progress, {
+      font: `600 17px ${FONTS.sans}`,
+      color: '#FFFFFF'
+    });
+  }
+  ctx.restore();
+  return { leftX: cx - rx, rightX: cx + rx, cy };
+}
+
+// 2. FOLDED-CORNER DOCUMENT WITH RIBBON BADGE (HTML, LOG, JSON, SQL, CLASS)
+function foldedFileBadge(ctx, cx, cy, tag = 'LOG', opts = {}) {
+  const w = opts.width || 96;
+  const h = opts.height || 118;
+  const fold = opts.fold || 24;
+  const x = cx - w / 2;
+  const y = cy - h / 2;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const outlineColor = opts.outlineColor || '#FFFFFF';
+  const ribbonBg = opts.ribbonBg || '#3B82F6';
+  const ribbonStroke = opts.ribbonStroke || '';
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Effects.strokeDraw(ctx, (c) => {
+    c.moveTo(x + 10, y);
+    c.lineTo(x + w - fold, y);
+    c.lineTo(x + w, y + fold);
+    c.lineTo(x + w, y + h - 10);
+    c.quadraticCurveTo(x + w, y + h, x + w - 10, y + h);
+    c.lineTo(x + 10, y + h);
+    c.quadraticCurveTo(x, y + h, x, y + h - 10);
+    c.lineTo(x, y + 10);
+    c.quadraticCurveTo(x, y, x + 10, y);
+
+    // Folded corner crease
+    c.moveTo(x + w - fold, y);
+    c.lineTo(x + w - fold, y + fold);
+    c.lineTo(x + w, y + fold);
+  }, progress, { stroke: outlineColor, lineWidth: 2.3, pathLength: 520 });
+
+  if (progress > 0.35) {
+    const rp = Math.min(1, (progress - 0.35) / 0.65);
+    const rw = w + 20;
+    const rh = 38;
+    const rx = cx - rw / 2;
+    const ry = cy + 6;
+
+    ctx.save();
+    ctx.globalAlpha *= rp;
+    ctx.beginPath();
+    ctx.roundRect(rx, ry, rw, rh, 10);
+    ctx.fillStyle = ribbonBg;
+    ctx.fill();
+    if (ribbonStroke) {
+      ctx.strokeStyle = ribbonStroke;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `600 21px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(tag, cx, ry + 26);
+    ctx.restore();
+  }
+
+  if (opts.caption && progress > 0.5) {
+    Effects.typeText(ctx, opts.caption, cx, y + h + 28, (progress - 0.5) * 2, {
+      font: `500 16px ${FONTS.sans}`,
+      color: '#E2E8F0'
+    });
+  }
+  ctx.restore();
+}
+
+// 3. THIN-LINE NEON WIREFRAME BROWSER (`www` — Matches ByteByteGo HTTP video)
+function wireframeBrowser(ctx, x, y, w = 176, h = 122, opts = {}) {
+  const stroke = opts.color || '#5CE1E6';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const centerLabel = opts.label !== undefined ? opts.label : 'WWW';
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Effects.strokeDraw(ctx, (c) => {
+    c.roundRect(x, y, w, h, 8);
+    c.moveTo(x, y + 24);
+    c.lineTo(x + w, y + 24);
+    c.roundRect(x + 8, y + 6, w * 0.56, 12, 6);
+  }, progress, { stroke, lineWidth: 2, fill: 'rgba(20, 28, 36, 0.55)', pathLength: 780 });
+
+  if (progress > 0.6) {
+    for (let i = 0; i < 3; i++) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(x + w - 34 + i * 11, y + 12, 3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (centerLabel) {
+      ctx.fillStyle = opts.labelColor || '#F59E0B';
+      ctx.font = `700 24px ${FONTS.sans}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(centerLabel, x + w / 2, y + h / 2 + 18);
+    }
+  }
+  ctx.restore();
+}
+
+// 4. THIN-LINE WIREFRAME CYLINDER DATABASE (Self-drawing, matches ACID video)
+function wireframeCylinderDb(ctx, cx, cy, opts = {}) {
+  const w = opts.width || 108;
+  const h = opts.height || 116;
+  const ry = opts.ry || 18;
+  const x = cx - w / 2;
+  const y = cy - h / 2;
+  const stroke = opts.color || '#7DD3FC';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label !== undefined ? opts.label : 'Database';
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  Effects.strokeDraw(ctx, (c) => {
+    c.ellipse(cx, y + ry, w / 2, ry, 0, 0, Math.PI * 2);
+    c.moveTo(x, y + ry);
+    c.lineTo(x, y + h - ry);
+    c.ellipse(cx, y + h - ry, w / 2, ry, 0, Math.PI, 0, true);
+    c.lineTo(x + w, y + ry);
+    // Middle tier band
+    c.moveTo(x, cy);
+    c.ellipse(cx, cy, w / 2, ry, 0, Math.PI, 0, true);
+  }, progress, { stroke, lineWidth: 2, fill: 'rgba(56, 189, 248, 0.08)', pathLength: 820 });
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, y + h + 26, progress, {
+      font: `500 17px ${FONTS.sans}`,
+      color: '#FFFFFF'
+    });
+  }
+  ctx.restore();
+}
+
+// 5. CRISP CYAN LINE-ART USER BUST (Matches ByteByteGo Alice/Bob Transaction scene)
+function lineArtUser(ctx, cx, cy, opts = {}) {
+  const scale = opts.scale || 1;
+  const stroke = opts.color || '#38BDF8';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const label = opts.label || '';
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  Effects.strokeDraw(ctx, (c) => {
+    // Head + stylized hair crest
+    c.moveTo(-22, -16);
+    c.lineTo(-22, -38);
+    c.quadraticCurveTo(0, -48, 22, -40);
+    c.lineTo(22, -12);
+    c.quadraticCurveTo(22, 10, 0, 10);
+    c.quadraticCurveTo(-22, 10, -22, -16);
+
+    // Hair wave line
+    c.moveTo(-22, -22);
+    c.quadraticCurveTo(-4, -18, 8, -28);
+    c.quadraticCurveTo(16, -20, 22, -20);
+
+    // Shoulders & collar
+    c.moveTo(-10, 10);
+    c.lineTo(-10, 20);
+    c.moveTo(10, 10);
+    c.lineTo(10, 20);
+
+    c.moveTo(-42, 46);
+    c.quadraticCurveTo(-42, 22, -14, 20);
+    c.lineTo(0, 32);
+    c.lineTo(14, 20);
+    c.quadraticCurveTo(42, 22, 42, 46);
+    c.closePath();
+
+    c.moveTo(0, 32);
+    c.lineTo(0, 46);
+  }, progress, { stroke, lineWidth: 2.2, pathLength: 560 });
+
+  ctx.restore();
+
+  if (label) {
+    Effects.typeText(ctx, label, cx, cy + 68 * scale, progress, {
+      font: `600 16px ${FONTS.sans}`,
+      color: '#E2E8F0'
+    });
+  }
+}
+
+// 6. TRANSLUCENT STATE MUTATION CARD (e.g. Alice Account: Before $200 / Debit $100 / Available $100)
+function stateMutationCard(ctx, x, y, w, h, opts = {}) {
+  const title = opts.title || 'Account State';
+  const tint = opts.tint || 'olive';
+  const rows = opts.rows || [
+    { text: 'Before: $200', highlight: false },
+    { text: 'Debit: $100', highlight: true },
+    { text: 'Available: $100', highlight: false }
+  ];
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  if (title) {
+    ctx.fillStyle = (GLASS_TINTS[tint] || GLASS_TINTS.olive).highlight;
+    ctx.font = `600 20px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(title, x + w / 2, y - 16);
+  }
+
+  Theme.drawGlassCard(ctx, x, y, w, h, { tint, radius: 12, progress });
+
+  const rowStart = y + 38;
+  const rowGap = Math.min(34, (h - 32) / Math.max(1, rows.length));
+
+  rows.forEach((r, idx) => {
+    const rp = Math.max(0, Math.min(1, (progress - idx * 0.18) / 0.55));
+    if (rp <= 0.01) return;
+    Effects.typeText(ctx, r.text, x + w / 2, rowStart + idx * rowGap, rp, {
+      font: `${r.highlight ? '700' : '500'} 18px ${FONTS.sans}`,
+      color: r.highlight ? '#FACC15' : '#FFFFFF'
+    });
+  });
+  ctx.restore();
+}
+
+// 7. BROKEN LINK PLUG + RED FAILURE CROSS-OUT (Matches ByteByteGo ACID failure state)
+function brokenLinkPlug(ctx, cx, cy, opts = {}) {
+  const sep = (opts.separation !== undefined ? opts.separation : 1) * 14;
+  const crossProgress = opts.crossProgress !== undefined ? opts.crossProgress : 1;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-Math.PI / 4);
+
+  // Left plug body
+  ctx.strokeStyle = '#E2E8F0';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-42 - sep, -14, 28, 28, 5);
+  ctx.stroke();
+  // Prongs
+  ctx.beginPath();
+  ctx.moveTo(-14 - sep, -6); ctx.lineTo(-4 - sep, -6);
+  ctx.moveTo(-14 - sep, 6); ctx.lineTo(-4 - sep, 6);
+  ctx.stroke();
+
+  // Right socket body
+  ctx.strokeStyle = '#C084FC';
+  ctx.beginPath();
+  ctx.roundRect(10 + sep, -14, 28, 28, 5);
+  ctx.stroke();
+  ctx.restore();
+
+  if (crossProgress > 0.01) {
+    Effects.crossOutFailure(ctx, cx, cy, crossProgress, { size: 42 });
+  }
+}
+
+// ============================================================================
+// HIGH-RETENTION FULL-SCENE ARCHETYPES
+// ============================================================================
+
+// 8. EVOLUTION / MILESTONE TIMELINE STRIP (`HTTP/1 o──▶ HTTP/1.1 o──▶ HTTP/2 o──▶ HTTP/3`)
+function evolutionTimeline(ctx, items, opts = {}) {
+  const canvasWidth = opts.canvasWidth || 1920;
+  const cy = opts.centerY || 540;
+  const nodeW = opts.nodeWidth || 186;
+  const nodeH = opts.nodeHeight || 66;
+  const gap = opts.gap || 135;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const activeIndex = opts.activeIndex !== undefined ? opts.activeIndex : items.length - 1;
+
+  const totalW = items.length * nodeW + (items.length - 1) * gap;
+  const startX = Math.round((canvasWidth - totalW) / 2);
+
+  ctx.save();
+  items.forEach((item, i) => {
+    const stepThreshold = i / items.length;
+    const localP = Math.max(0, Math.min(1, (progress - stepThreshold * 0.7) / 0.35));
+    if (localP <= 0.01) return;
+
+    const x = startX + i * (nodeW + gap);
+    const y = cy - nodeH / 2;
+    const isCurrent = i === activeIndex;
+    const label = typeof item === 'string' ? item : item.label;
+    const sub = typeof item === 'object' ? item.sub : '';
+
+    ctx.save();
+    ctx.globalAlpha *= localP;
+    ctx.beginPath();
+    ctx.roundRect(x, y, nodeW, nodeH, 14);
+    ctx.fillStyle = isCurrent ? 'rgba(234, 179, 8, 0.22)' : 'rgba(24, 24, 24, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = isCurrent ? '#FACC15' : '#D4C646';
+    ctx.lineWidth = isCurrent ? 3 : 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 24px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x + nodeW / 2, cy + 8);
+
+    if (sub) {
+      ctx.fillStyle = isCurrent ? '#FEF08A' : '#94A3B8';
+      ctx.font = `500 15px ${FONTS.sans}`;
+      ctx.fillText(sub, x + nodeW / 2, y + nodeH + 28);
+    }
+    ctx.restore();
+
+    if (i < items.length - 1) {
+      const arrowP = Math.max(0, Math.min(1, (progress - (stepThreshold + 0.08) * 0.7) / 0.25));
+      Connectors.solidArrow(ctx, x + nodeW, cy, x + nodeW + gap, cy, {
+        progress: arrowP,
+        color: '#FFFFFF',
+        lineWidth: 2.6
+      });
+    }
+  });
+  ctx.restore();
+}
+
+// 9. GIANT KINETIC STAT / YEAR HERO SLAM (`2010`, `< 1 ms`, `10,000x` — Matches HTTP 38s)
+function heroMetricSlam(ctx, mainText, opts = {}) {
+  const cx = opts.cx || 960;
+  const cy = opts.cy || 530;
+  const color = opts.color || '#2CE5FF';
+  const subText = opts.subtitle || '';
+  const scale = opts.scale !== undefined ? opts.scale : 1;
+  const fontSize = opts.fontSize || 230;
+
+  if (scale <= 0.01) return;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(scale, scale);
+
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 28;
+  ctx.fillStyle = color;
+  ctx.font = `800 ${fontSize}px ${FONTS.sans}`;
+  ctx.textAlign = 'center';
+  ctx.fillText(mainText, 0, fontSize * 0.32);
+
+  ctx.shadowBlur = 0;
+  if (subText) {
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = `600 28px ${FONTS.sans}`;
+    ctx.fillText(subText, 0, fontSize * 0.32 + 64);
+  }
+  ctx.restore();
+}
+
+// 10. SIDE-BY-SIDE TRANSLUCENT COMPARISON TABLE (Matches Linux BIOS vs UEFI frame 42s)
+function comparisonSplitTable(ctx, leftSpec, rightSpec, opts = {}) {
+  const canvasWidth = opts.canvasWidth || 1920;
+  const cardW = opts.cardWidth || 620;
+  const cardH = opts.cardHeight || 420;
+  const gap = opts.gap || 32;
+  const y = opts.y || 300;
+  const startX = Math.round((canvasWidth - (cardW * 2 + gap)) / 2);
+
+  const cards = [
+    { spec: leftSpec, x: startX },
+    { spec: rightSpec, x: startX + cardW + gap }
+  ];
+
+  cards.forEach(({ spec, x }) => {
+    const progress = spec.progress !== undefined ? spec.progress : 1;
+    if (progress <= 0.01) return;
+
+    ctx.save();
+    ctx.globalAlpha *= progress;
+
+    // Outer body
+    ctx.beginPath();
+    ctx.roundRect(x, y, cardW, cardH, 16);
+    ctx.fillStyle = spec.bodyFill || 'rgba(34, 68, 62, 0.72)';
+    ctx.fill();
+    ctx.strokeStyle = spec.strokeColor || 'rgba(94, 234, 212, 0.35)';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    // Olive/Gold top header bar
+    ctx.beginPath();
+    ctx.roundRect(x, y, cardW, 56, [16, 16, 12, 12]);
+    ctx.fillStyle = spec.headerFill || '#6B7B3A';
+    ctx.fill();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `600 24px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(spec.title || '', x + cardW / 2, y + 36);
+
+    // Bullet points with optional active yellow highlight
+    ctx.textAlign = 'left';
+    let cursorY = y + 102;
+    (spec.bullets || []).forEach((b, idx) => {
+      const text = typeof b === 'string' ? b : b.text;
+      const isHighlighted = (typeof b === 'object' && b.highlight) || spec.highlightIndex === idx;
+      ctx.fillStyle = isHighlighted ? '#FACC15' : '#F8FAFC';
+      ctx.font = `${isHighlighted ? '600' : '500'} 21px ${FONTS.sans}`;
+
+      // Word-wrap cleanly inside cardW - 68
+      const words = (`-  ${text}`).split(' ');
+      let line = '';
+      const maxW = cardW - 68;
+      for (const word of words) {
+        const testLine = line ? `${line} ${word}` : word;
+        if (ctx.measureText(testLine).width > maxW) {
+          ctx.fillText(line, x + 34, cursorY);
+          line = '    ' + word;
+          cursorY += 32;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) {
+        ctx.fillText(line, x + 34, cursorY);
+        cursorY += 42;
+      }
+    });
+
+    ctx.restore();
+  });
+}
+
+// 11. SWIMLANE PROTOCOL SEQUENCE DIAGRAM (TCP Handshake, OAuth2, Raft, 2PC)
+function swimlaneSequence(ctx, actors, messages, opts = {}) {
+  const canvasWidth = opts.canvasWidth || 1920;
+  const topY = opts.topY || 220;
+  const bottomY = opts.bottomY || 780;
+  const spanW = opts.spanWidth || 1240;
+  const startX = Math.round((canvasWidth - spanW) / 2);
+  const stepX = actors.length > 1 ? spanW / (actors.length - 1) : 0;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  const actorXs = actors.map((_, i) => Math.round(startX + i * stepX));
+
+  ctx.save();
+  // Draw actor headers & vertical dashed lifelines
+  actors.forEach((act, i) => {
+    const ax = actorXs[i];
+    const name = typeof act === 'string' ? act : act.name;
+    const color = (typeof act === 'object' && act.color) || '#38BDF8';
+
+    ctx.beginPath();
+    ctx.roundRect(ax - 95, topY - 26, 190, 50, 12);
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 18px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(name, ax, topY + 6);
+
+    // Lifeline
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 6]);
+    ctx.beginPath();
+    ctx.moveTo(ax, topY + 26);
+    ctx.lineTo(ax, bottomY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  // Draw chronological messages
+  const msgAreaStart = topY + 78;
+  const msgGap = Math.min(92, (bottomY - msgAreaStart - 30) / Math.max(1, messages.length));
+
+  messages.forEach((m, idx) => {
+    const mp = m.progress !== undefined
+      ? m.progress
+      : Math.max(0, Math.min(1, (progress * messages.length) - idx));
+    if (mp <= 0.01) return;
+
+    const x1 = actorXs[m.from];
+    const x2 = actorXs[m.to];
+    const y1 = msgAreaStart + idx * msgGap;
+    const y2 = y1 + (m.slope !== undefined ? m.slope : 22);
+    const col = m.color || '#5CE1E6';
+
+    if (m.dashed) {
+      Connectors.dashedArrow(ctx, x1, y1, x2, y2, { progress: mp, label: m.label, color: col, labelOffset: -12 });
+    } else {
+      Connectors.solidArrow(ctx, x1, y1, x2, y2, { progress: mp, label: m.label, color: col, labelOffset: -12 });
+    }
+
+    if (m.failed && mp > 0.7) {
+      Effects.crossOutFailure(ctx, (x1 + x2) / 2, (y1 + y2) / 2, (mp - 0.7) / 0.3, { size: 32 });
+    }
+  });
+  ctx.restore();
+}
+
+// 12. CONSISTENT HASH RING (Distributed Systems: DynamoDB, Cassandra, Sharding)
+function consistentHashRing(ctx, cx, cy, radius, nodes, opts = {}) {
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const tokenAngle = opts.tokenAngle !== undefined ? opts.tokenAngle : 0;
+
+  ctx.save();
+  Effects.strokeDraw(ctx, (c) => {
+    c.arc(cx, cy, radius, 0, Math.PI * 2);
+  }, progress, { stroke: '#475569', lineWidth: 3, pathLength: Math.round(2 * Math.PI * radius) + 40 });
+
+  if (opts.sweepToAngle !== undefined && progress > 0.6) {
+    ctx.strokeStyle = '#38BDF8';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, tokenAngle, opts.sweepToAngle);
+    ctx.stroke();
+  }
+
+  nodes.forEach((n) => {
+    const nx = cx + Math.cos(n.angle) * radius;
+    const ny = cy + Math.sin(n.angle) * radius;
+    ctx.fillStyle = n.color || '#10B981';
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(nx, ny, 15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    const lx = cx + Math.cos(n.angle) * (radius + 42);
+    const ly = cy + Math.sin(n.angle) * (radius + 42);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `600 15px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(n.label, lx, ly + 5);
+  });
+
+  if (opts.showToken !== false && progress > 0.5) {
+    const kx = cx + Math.cos(tokenAngle) * radius;
+    const ky = cy + Math.sin(tokenAngle) * radius;
+    ctx.fillStyle = '#FACC15';
+    ctx.shadowColor = '#FACC15';
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.arc(kx, ky, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
+}
+
+// 13. B-TREE / INDEX HIERARCHY (Database Indexes, File Systems, Compilers)
+function bTreeHierarchy(ctx, cx, topY, opts = {}) {
+  const rootKeys = opts.root || ['30', '70'];
+  const children = opts.children || [
+    { keys: ['10', '20'], active: false },
+    { keys: ['42', '55'], active: true },
+    { keys: ['80', '95'], active: false }
+  ];
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  function drawKeyNode(nx, ny, keys, active) {
+    const cellW = 54;
+    const w = keys.length * cellW;
+    const h = 44;
+    const x = nx - w / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, ny, w, h, 8);
+    ctx.fillStyle = active ? 'rgba(16, 185, 129, 0.28)' : 'rgba(30, 41, 59, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = active ? '#34D399' : '#38BDF8';
+    ctx.lineWidth = active ? 2.8 : 2;
+    ctx.stroke();
+
+    keys.forEach((k, idx) => {
+      if (idx > 0) {
+        ctx.beginPath();
+        ctx.moveTo(x + idx * cellW, ny);
+        ctx.lineTo(x + idx * cellW, ny + h);
+        ctx.stroke();
+      }
+      ctx.fillStyle = active ? '#FEF08A' : '#FFFFFF';
+      ctx.font = `700 16px ${FONTS.mono}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(k, x + idx * cellW + cellW / 2, ny + 28);
+    });
+    ctx.restore();
+    return { x, y: ny, w, h };
+  }
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+  drawKeyNode(cx, topY, rootKeys, true);
+
+  const childY = topY + 130;
+  const spacing = opts.spacing || 210;
+  const startX = cx - ((children.length - 1) * spacing) / 2;
+
+  children.forEach((ch, i) => {
+    const childCx = startX + i * spacing;
+    Connectors.solidArrow(ctx, cx + (i - 1) * 28, topY + 44, childCx, childY, {
+      color: ch.active ? '#34D399' : '#64748B',
+      lineWidth: ch.active ? 2.8 : 1.8
+    });
+    drawKeyNode(childCx, childY, ch.keys, ch.active);
+  });
+  ctx.restore();
+}
+
+// 14. SEGMENTED NETWORK PACKET / PROTOCOL FRAME (`[ IP | TCP | TLS | HTTP Payload ]`)
+function networkPacketFrame(ctx, cx, cy, segments, opts = {}) {
+  const h = opts.height || 64;
+  const totalW = segments.reduce((s, seg) => s + (seg.width || 160), 0);
+  let cursorX = cx - totalW / 2;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+
+  ctx.save();
+  segments.forEach((seg, i) => {
+    const sw = seg.width || 160;
+    const lp = Math.max(0, Math.min(1, (progress * segments.length) - i * 0.5));
+    if (lp > 0.01) {
+      ctx.save();
+      ctx.globalAlpha *= lp;
+      const radii = i === 0
+        ? [10, 0, 0, 10]
+        : (i === segments.length - 1 ? [0, 10, 10, 0] : 0);
+
+      ctx.beginPath();
+      ctx.roundRect(cursorX, cy - h / 2, sw, h, radii);
+      ctx.fillStyle = seg.bg || 'rgba(2, 132, 199, 0.35)';
+      ctx.fill();
+      ctx.strokeStyle = seg.border || '#38BDF8';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `700 16px ${FONTS.sans}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(seg.label, cursorX + sw / 2, cy + (seg.sub ? -2 : 6));
+
+      if (seg.sub) {
+        ctx.fillStyle = '#CBD5E1';
+        ctx.font = `12px ${FONTS.mono}`;
+        ctx.fillText(seg.sub, cursorX + sw / 2, cy + 18);
+      }
+      ctx.restore();
+    }
+    cursorX += sw;
+  });
+  ctx.restore();
+}
+
+module.exports = {
+  isometricServerStack,
+  foldedFileBadge,
+  wireframeBrowser,
+  wireframeCylinderDb,
+  lineArtUser,
+  stateMutationCard,
+  brokenLinkPlug,
+  evolutionTimeline,
+  heroMetricSlam,
+  comparisonSplitTable,
+  swimlaneSequence,
+  consistentHashRing,
+  bTreeHierarchy,
+  networkPacketFrame
+};
+
+  },
   "./core/runner": function(module, exports, __require) {
     const require = (r) => __require("./core/runner", r);
 'use strict';
 
 const Theme = require('./theme');
+const Camera = require('./camera');
 const Icons = require('./icons');
 
 /**
- * Elastic Multi-Scene Timeline Engine & Deterministic Frame Runner.
+ * Elastic Multi-Scene Timeline Engine & Cinematic Camera Runner (v2.0).
  *
- * Automatically wires:
- * - Scene offsets, fade-in / fade-out transitions, and peak QA timestamps
- * - `window.__studioReady` (awaits SVG icons + fonts)
- * - `window.__studioMeta` (scene breakdown + peak QA times)
- * - `window.__studioSeek(timeSec)` (100% deterministic frame-by-frame rendering)
- * - `window.startRecording()` (60fps VP9 stream fallback)
- * - Interactive browser scrubber when opened with `?preview=1` or Spacebar!
+ * Features:
+ * - Authentic #262626 ByteByteGo palette + per-scene backdrop ('waves'|'speedlines'|'blueprint')
+ * - Built-in 2D Virtual Camera (`camX`, `camY`, `camZoom`) per scene
+ * - Smooth cross-scene transitions ('fade' | 'slideLeft' | 'zoomThrough')
+ * - Declarative Motion SFX cue timeline (`sfx: [{ time, type, volume }]`)
+ * - Interactive browser scrubber & HUD controls when opened manually in Chrome!
  */
 function createVideo(config) {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -1579,14 +2897,18 @@ function createVideo(config) {
   const width = config.width || 1920;
   const height = config.height || 1080;
   const fps = config.fps || 60;
-  const palette = config.palette || 'charcoal';
+  const palette = config.palette || 'byteCharcoal';
   const title = config.title || 'Technical Architecture';
+  const showProgressBar = config.showProgressBar !== undefined ? config.showProgressBar : true;
+
   const canvas = typeof config.canvas === 'string'
     ? document.querySelector(config.canvas)
     : (config.canvas || document.getElementById('canvas'));
 
-  canvas.width = width;
-  canvas.height = height;
+  // Support optional 2x Retina supersampling configured by CLI
+  const scaleFactor = window.__studioScaleFactor || 1;
+  canvas.width = width * scaleFactor;
+  canvas.height = height * scaleFactor;
   const ctx = canvas.getContext('2d');
 
   if (config.customIcons) {
@@ -1595,22 +2917,45 @@ function createVideo(config) {
     }
   }
 
-  // Compute elastic scene windows
   let cursor = 0;
+  const allSfxCues = [];
+
   const scenes = (config.scenes || []).map((sc, idx) => {
     const duration = sc.duration || 15;
     const start = cursor;
     const end = cursor + duration;
     cursor = end;
 
-    const state = Object.assign({ __alpha: 0 }, sc.initialState ? sc.initialState() : {});
-    // Peak QA timestamp defaults to 65% into the scene (after entrance animations complete, before fade-out)
+    const camBase = Camera.createCameraState(width, height);
+    const state = Object.assign(
+      camBase,
+      { __alpha: 0, __offsetX: 0 },
+      sc.initialState ? sc.initialState() : {}
+    );
+
     const qaTime = sc.qaTime !== undefined ? start + sc.qaTime : Number((start + duration * 0.65).toFixed(2));
+    const transition = sc.transition || 'fade';
+
+    // Collect scene SFX cues + automatic subtle scene-transition whoosh
+    if (idx > 0) {
+      allSfxCues.push({ time: start, type: 'whoosh', volume: 0.14 });
+    }
+    if (Array.isArray(sc.sfx)) {
+      sc.sfx.forEach((cue) => {
+        allSfxCues.push({
+          time: Number((start + (cue.time || 0)).toFixed(3)),
+          type: cue.type || 'pop',
+          volume: cue.volume
+        });
+      });
+    }
 
     return {
       index: idx,
       id: sc.id || `scene-${idx + 1}`,
       chapter: sc.chapter || `0${idx + 1}. Scene ${idx + 1}`,
+      backdrop: sc.backdrop || 'waves',
+      transition,
       duration,
       start,
       end,
@@ -1630,28 +2975,50 @@ function createVideo(config) {
   const masterTl = gsap.timeline({ paused: true });
 
   scenes.forEach((sc) => {
-    const fadeIn = 0.45;
-    const fadeOut = 0.45;
-    masterTl.to(sc.state, { __alpha: 1, duration: fadeIn, ease: 'power1.out' }, sc.start);
+    const fadeDur = 0.45;
+    if (sc.transition === 'slideLeft') {
+      sc.state.__offsetX = 140;
+      masterTl.to(sc.state, { __alpha: 1, __offsetX: 0, duration: 0.55, ease: 'power3.out' }, sc.start);
+    } else {
+      masterTl.to(sc.state, { __alpha: 1, duration: fadeDur, ease: 'power2.out' }, sc.start);
+    }
+
     if (typeof sc.build === 'function') {
       const subTl = gsap.timeline();
       sc.build(subTl, sc.state, sc.duration);
       masterTl.add(subTl, sc.start);
     }
-    masterTl.to(sc.state, { __alpha: 0, duration: fadeOut, ease: 'power1.in' }, Math.max(sc.start + fadeIn, sc.end - fadeOut));
+
+    masterTl.to(sc.state, { __alpha: 0, duration: fadeDur, ease: 'power2.in' }, Math.max(sc.start + fadeDur, sc.end - fadeDur));
   });
 
   function renderAt(timeSec) {
     const clamped = Math.max(0, Math.min(totalDuration - 0.001, timeSec));
     masterTl.seek(clamped);
 
-    Theme.drawBackground(ctx, width, height, palette);
-
     const activeScene = scenes.find((s) => clamped >= s.start && clamped < s.end) || scenes[scenes.length - 1];
+
+    ctx.save();
+    if (scaleFactor !== 1) {
+      ctx.scale(scaleFactor, scaleFactor);
+    }
+
+    Theme.drawBackground(ctx, width, height, palette, {
+      backdrop: activeScene ? activeScene.backdrop : 'waves',
+      timeSec: clamped
+    });
+
     if (activeScene) {
       ctx.save();
       ctx.globalAlpha = activeScene.state.__alpha;
-      Theme.drawTopHeader(ctx, title, activeScene.chapter, { width });
+
+      // World-space diagram layer (with Virtual Camera + Slide offset)
+      ctx.save();
+      if (activeScene.state.__offsetX) {
+        ctx.translate(activeScene.state.__offsetX, 0);
+      }
+      Camera.apply(ctx, activeScene.state, width, height);
+
       activeScene.render(ctx, {
         state: activeScene.state,
         t: clamped,
@@ -1660,21 +3027,36 @@ function createVideo(config) {
         width,
         height
       });
+
+      Camera.restore(ctx);
+      ctx.restore();
+
+      // Screen-space crisp Top Header (unaffected by camera zoom!)
+      Theme.drawTopHeader(ctx, title, activeScene.chapter, {
+        width,
+        progress: showProgressBar ? (clamped / totalDuration) : 0
+      });
+
       ctx.restore();
     }
+
+    ctx.restore();
   }
 
   window.__studioMeta = {
+    version: '2.0.0',
     title,
     width,
     height,
     fps,
     totalDuration,
     qaTimes: scenes.map((s) => s.qaTime),
+    sfxCues: allSfxCues,
     scenes: scenes.map((s) => ({
       index: s.index,
       id: s.id,
       chapter: s.chapter,
+      backdrop: s.backdrop,
       start: s.start,
       end: s.end,
       duration: s.duration,
@@ -1682,23 +3064,53 @@ function createVideo(config) {
     }))
   };
 
+  window.__studioSetScaleFactor = function (factor) {
+    window.__studioScaleFactor = factor;
+    canvas.width = width * factor;
+    canvas.height = height * factor;
+  };
+
   window.__studioSeek = function (timeSec) {
     renderAt(timeSec);
     return true;
   };
 
-  window.__studioCaptureFrameJpeg = function (timeSec, quality = 0.95) {
+  window.__studioCaptureFrameJpeg = function (timeSec, quality = 0.96) {
     renderAt(timeSec);
     return canvas.toDataURL('image/jpeg', quality);
   };
 
-  // Real-time stream recorder fallback
+  // Compute negative-space telemetry (% of pixels matching dark background) for automated QA linting
+  window.__studioAnalyzeFrame = function (timeSec) {
+    renderAt(timeSec);
+    const sampleStep = 8 * scaleFactor;
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let bgPixels = 0;
+    let totalSampled = 0;
+    for (let y = 0; y < canvas.height; y += sampleStep) {
+      for (let x = 0; x < canvas.width; x += sampleStep) {
+        const idx = (y * canvas.width + x) * 4;
+        const r = img[idx];
+        const g = img[idx + 1];
+        const b = img[idx + 2];
+        // Dark neutral charcoal/wave pixel check
+        if (Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && r >= 18 && r <= 62) {
+          bgPixels++;
+        }
+        totalSampled++;
+      }
+    }
+    return {
+      negativeSpacePct: Number(((bgPixels / Math.max(1, totalSampled)) * 100).toFixed(1))
+    };
+  };
+
   window.startRecording = async function () {
     await readyPromise;
     const stream = canvas.captureStream(fps);
     const recorder = new MediaRecorder(stream, {
       mimeType: 'video/webm;codecs=vp9',
-      videoBitsPerSecond: 16000000
+      videoBitsPerSecond: 18000000
     });
     const chunks = [];
     recorder.ondataavailable = (e) => chunks.push(e.data);
@@ -1734,7 +3146,6 @@ function createVideo(config) {
     window.__studioReady = true;
     window.iconsReady = true;
 
-    // Optional live playback when opened directly in a normal desktop browser with ?play=1
     const params = new URLSearchParams(window.location.search);
     if (params.get('play') === '1') {
       let t0 = performance.now();
@@ -1764,18 +3175,29 @@ module.exports = {
 'use strict';
 
 const Theme = require('./core/theme');
+const Camera = require('./core/camera');
+const Effects = require('./core/draw-effects');
 const Layout = require('./core/layout');
 const Connectors = require('./core/connectors');
 const Icons = require('./core/icons');
-const Illustrations = require('./illustrations/primitives');
+const Primitives = require('./illustrations/primitives');
+const Archetypes = require('./illustrations/archetypes');
 const Runner = require('./core/runner');
 
+// Merge Primitives + Archetypes under Illustrations for ergonomic one-stop access,
+// while also exposing Archetypes explicitly.
+const Illustrations = Object.assign({}, Primitives, Archetypes);
+
 const TechVideoStudio = {
+  version: '2.0.0',
   Theme,
+  Camera,
+  Effects,
   Layout,
   Connectors,
   Icons,
   Illustrations,
+  Archetypes,
   createVideo: Runner.createVideo
 };
 

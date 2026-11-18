@@ -24,6 +24,15 @@ function findBundlePath() {
   return candidates.find((p) => fs.existsSync(p));
 }
 
+function loadSfxGen() {
+  const candidates = [
+    path.join(ROOT, 'src/audio/sfx-gen.js'),
+    path.join(__dirname, 'sfx-gen.js')
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  return found ? require(found) : null;
+}
+
 function findChromeExecutable() {
   if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
     return process.env.CHROME_PATH;
@@ -148,7 +157,7 @@ function cmdNew(positional, flags) {
   <title>${title}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #1E1E1E; width: 1920px; height: 1080px; overflow: hidden; }
+    body { background: #262626; width: 1920px; height: 1080px; overflow: hidden; }
     #canvas { display: block; width: 1920px; height: 1080px; }
   </style>
   <script src="./tech-video-studio.bundle.js"></script>
@@ -156,48 +165,79 @@ function cmdNew(positional, flags) {
 <body>
   <canvas id="canvas" width="1920" height="1080"></canvas>
   <script>
-    const { Theme, Layout, Connectors, Illustrations, createVideo } = window.TechVideoStudio;
+    const { Theme, Camera, Connectors, Illustrations, createVideo } = window.TechVideoStudio;
 
     createVideo({
       title: ${JSON.stringify(title)},
+      palette: 'byteCharcoal',
       fps: 60,
       scenes: [
         {
           id: 'request-flow',
           chapter: '01. Client Request & Edge Routing',
           duration: 15,
-          initialState: () => ({ client: 0, net: 0, server: 0 }),
+          backdrop: 'waves',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.1, type: 'draw' },
+            { time: 1.8, type: 'pop' },
+            { time: 3.2, type: 'whoosh' },
+            { time: 4.5, type: 'success' }
+          ],
+          initialState: () => ({ client: 0, net: 0, server: 0, doc: 0 }),
           build(tl, s) {
-            tl.to(s, { client: 1, duration: 0.6, ease: 'back.out(1.5)' }, 0.3)
-              .to(s, { net: 1, duration: 0.6, ease: 'power2.out' }, 1.1)
-              .to(s, { server: 1, duration: 0.6, ease: 'back.out(1.5)' }, 1.8);
+            tl.to(s, { client: 1, duration: 0.7, ease: 'power2.out' }, 0.3)
+              .to(s, { net: 1, duration: 0.7, ease: 'power2.out' }, 1.1)
+              .to(s, { server: 1, duration: 0.8, ease: 'power2.out' }, 1.8)
+              .to(s, { doc: 1, duration: 0.6, ease: 'back.out(1.5)' }, 2.6);
+            Camera.zoomTo(tl, s, { x: 1120, y: 500, zoom: 1.18, duration: 1.2 }, 3.2);
+            Camera.reset(tl, s, 6.0, 1.1);
           },
-          render(ctx, { state, t }) {
-            const split = Layout.splitColumns(360, 360, { gap: 460, centerY: 450, height: 240 });
-            Layout.scaleAround(ctx, split.left.cx, split.left.cy, state.client, () => {
-              Illustrations.browserClient(ctx, split.left.x, split.left.y, split.left.w, split.left.h, {
-                url: 'https://app.example.com',
-                headline: 'Browser Client',
-                status: 'HTTPS / TLS 1.3'
+          render(ctx, { state }) {
+            Theme.drawGlassCard(ctx, 210, 310, 420, 380, {
+              tint: 'teal',
+              badge: 'Client Side',
+              badgeSide: 'left',
+              progress: state.client
+            });
+            Illustrations.wireframeBrowser(ctx, 270, 390, 300, 240, {
+              progress: state.client,
+              centerText: 'WWW'
+            });
+
+            Connectors.solidArrow(ctx, 650, 470, 1210, 470, {
+              progress: state.net,
+              label: 'GET /index.html'
+            });
+            Connectors.solidArrow(ctx, 1210, 545, 650, 545, {
+              progress: state.doc,
+              dashed: true,
+              color: '#5CE1E6',
+              label: '200 OK (TLS 1.3)'
+            });
+
+            if (state.doc > 0.05) {
+              Illustrations.foldedFileBadge(ctx, 930, 620, {
+                badge: 'HTML',
+                badgeColor: '#F97316',
+                progress: state.doc
               });
+            }
+
+            Theme.drawGlassCard(ctx, 1230, 310, 460, 380, {
+              tint: 'emerald',
+              badge: 'Origin Cluster',
+              badgeSide: 'right',
+              progress: state.server
             });
-            Connectors.bidirectional(ctx, split.bridge.x1, split.bridge.y1, split.bridge.x2, split.bridge.y2, t, {
-              reqProgress: state.net,
-              resProgress: state.server,
-              reqLabel: 'GET /feed',
-              resLabel: '200 OK (12ms)'
+            Illustrations.isometricServerStack(ctx, 1460, 495, {
+              slabs: 3,
+              progress: state.server,
+              label: 'Edge Server'
             });
-            Layout.scaleAround(ctx, split.right.cx, split.right.cy, state.server, () => {
-              Illustrations.hardwareMachine(ctx, split.right.x, split.right.cy, {
-                width: split.right.w,
-                type: 'server',
-                osIcon: 'linuxPenguin',
-                title: 'API Edge Server',
-                status: '⚡ Healthy • 4ms p99'
-              });
-            });
-            if (state.server > 0.5) {
-              Theme.drawTakeawayPill(ctx, 'Low-Latency Edge Routing with Keep-Alive Connections');
+
+            if (state.doc > 0.6) {
+              Theme.drawTakeawayPill(ctx, 'Keep-Alive Multiplexing Cuts Round-Trip Latency by 65%');
             }
           }
         }
@@ -210,7 +250,7 @@ function cmdNew(positional, flags) {
 
   const htmlOut = path.join(targetDir, 'index.html');
   fs.writeFileSync(htmlOut, starterHtml, 'utf8');
-  console.log(`✅ Scaffolded new YouTube explainer project at: ${targetDir}`);
+  console.log(`✅ Scaffolded new ByteByteGo-grade YouTube explainer project at: ${targetDir}`);
   console.log(`   1. Preview & QA: node "${__filename}" qa "${htmlOut}"`);
   console.log(`   2. Render MP4:   node "${__filename}" render "${htmlOut}" -o "${path.join(targetDir, 'video.mp4')}"`);
 }
@@ -248,19 +288,27 @@ async function cmdQa(positional, flags) {
     const savedFrames = [];
     for (let i = 0; i < times.length; i++) {
       const t = times[i];
-      await page.evaluate((sec) => {
+      const telemetry = await page.evaluate((sec) => {
         if (typeof window.__studioSeek === 'function') {
           window.__studioSeek(sec);
         } else if (typeof tl !== 'undefined' && typeof render === 'function') {
           tl.seek(sec);
           render(sec);
         }
+        if (typeof window.__studioAnalyzeFrame === 'function') {
+          return window.__studioAnalyzeFrame(sec);
+        }
+        return null;
       }, t);
 
       const framePath = path.join(outDir, `scene_${String(i + 1).padStart(2, '0')}_${t}s.png`);
       await page.screenshot({ path: framePath });
       savedFrames.push(framePath);
-      console.log(`📸 Captured QA keyframe [${i + 1}/${times.length}] @ ${t}s -> ${framePath}`);
+
+      const negInfo = telemetry
+        ? ` | Negative Space: ${telemetry.negativeSpacePct}% (${telemetry.negativeSpacePct >= 35 ? '✅ Optimal' : '⚠️ Crowded'})`
+        : '';
+      console.log(`📸 Captured QA keyframe [${i + 1}/${times.length}] @ ${t}s -> ${framePath}${negInfo}`);
     }
 
     // Stitch 2x2 or Nx2 contact sheet via FFmpeg if >= 2 frames exist
@@ -331,6 +379,8 @@ async function cmdRender(positional, flags) {
     ]
   });
 
+  let tmpSfxWav = null;
+
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
@@ -342,17 +392,53 @@ async function cmdRender(positional, flags) {
       ? parseFloat(flags.duration)
       : (meta && meta.totalDuration ? meta.totalDuration : 60);
 
+    // Synthesize procedural motion SFX track if scene defines sfx cues and --no-sfx is not set
+    const sfxGen = loadSfxGen();
+    if (sfxGen && !flags['no-sfx'] && meta && Array.isArray(meta.sfxCues) && meta.sfxCues.length > 0) {
+      tmpSfxWav = outMp4 + '.sfx.wav';
+      sfxGen.synthesizeSfxTrack(tmpSfxWav, duration, meta.sfxCues);
+      console.log(`🔊 Synthesized ${meta.sfxCues.length} procedural motion SFX cues -> ${path.basename(tmpSfxWav)}`);
+    }
+
+    const buildAudioArgs = () => {
+      const audioArgs = [];
+      if (flags.audio && tmpSfxWav) {
+        audioArgs.push(
+          '-i', path.resolve(process.cwd(), flags.audio),
+          '-i', tmpSfxWav,
+          '-filter_complex', '[1:a]loudnorm=I=-14:TP=-1.5:LRA=11[voice];[2:a]volume=0.85[sfx];[voice][sfx]amix=inputs=2:duration=first:dropout_transition=2[aout]',
+          '-map', '0:v',
+          '-map', '[aout]',
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          '-shortest'
+        );
+      } else if (flags.audio) {
+        audioArgs.push(
+          '-i', path.resolve(process.cwd(), flags.audio),
+          '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11',
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          '-shortest'
+        );
+      } else if (tmpSfxWav) {
+        audioArgs.push(
+          '-i', tmpSfxWav,
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          '-shortest'
+        );
+      }
+      return audioArgs;
+    };
+
     if (mode === 'stream') {
       console.log(`🎬 Recording ${duration}s stream at ${fps} FPS...`);
       const b64 = await page.evaluate(async () => window.startRecording());
       const tmpWebm = outMp4 + '.raw.webm';
       fs.writeFileSync(tmpWebm, Buffer.from(b64, 'base64'));
 
-      const ffArgs = ['-y', '-i', tmpWebm];
-      if (flags.audio) {
-        ffArgs.push('-i', path.resolve(process.cwd(), flags.audio));
-        ffArgs.push('-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '192k', '-shortest');
-      }
+      const ffArgs = ['-y', '-i', tmpWebm, ...buildAudioArgs()];
       ffArgs.push('-c:v', 'libx264', '-preset', 'fast', '-crf', '18', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outMp4);
       execFileSync(ffmpeg, ffArgs, { stdio: 'inherit' });
       if (fs.existsSync(tmpWebm)) fs.unlinkSync(tmpWebm);
@@ -365,20 +451,15 @@ async function cmdRender(positional, flags) {
         '-f', 'image2pipe',
         '-vcodec', 'mjpeg',
         '-framerate', String(fps),
-        '-i', '-'
-      ];
-      if (flags.audio) {
-        ffArgs.push('-i', path.resolve(process.cwd(), flags.audio));
-        ffArgs.push('-af', 'loudnorm=I=-14:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '192k', '-shortest');
-      }
-      ffArgs.push(
+        '-i', '-',
+        ...buildAudioArgs(),
         '-c:v', 'libx264',
         '-preset', 'fast',
         '-crf', '18',
         '-pix_fmt', 'yuv420p',
         '-movflags', '+faststart',
         outMp4
-      );
+      ];
 
       const ffProc = spawn(ffmpeg, ffArgs, { stdio: ['pipe', 'ignore', 'pipe'] });
       let ffErr = '';
@@ -435,6 +516,9 @@ async function cmdRender(positional, flags) {
     const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
     console.log(`✅ Rendered 1080p${fps} H.264 MP4 in ${elapsed}s -> ${outMp4} (${sizeMb} MB)`);
   } finally {
+    if (tmpSfxWav && fs.existsSync(tmpSfxWav)) {
+      fs.unlinkSync(tmpSfxWav);
+    }
     await browser.close();
   }
 }
@@ -469,28 +553,30 @@ function cmdInstallSkill(flags) {
   const skillSrc = path.join(ROOT, 'skills/tech-video-studio');
 
   copyDirRecursive(skillSrc, dest);
-  // Ensure standalone CLI & metaphor DB are bundled inside skill scripts/
+  // Ensure standalone CLI, SFX synth, & metaphor DB are bundled inside skill scripts/
   const scriptsDir = path.join(dest, 'scripts');
   fs.mkdirSync(scriptsDir, { recursive: true });
   fs.copyFileSync(__filename, path.join(scriptsDir, 'tech-video-studio.js'));
+  const sfxSrc = path.join(ROOT, 'src/audio/sfx-gen.js');
+  if (fs.existsSync(sfxSrc)) fs.copyFileSync(sfxSrc, path.join(scriptsDir, 'sfx-gen.js'));
   const mPath = findMetaphorsPath();
   if (mPath) fs.copyFileSync(mPath, path.join(scriptsDir, 'metaphors.json'));
   const bPath = findBundlePath();
   if (bPath) fs.copyFileSync(bPath, path.join(scriptsDir, 'tech-video-studio.bundle.js'));
 
-  console.log(`✅ Installed "tech-video-studio" AI Skill to: ${dest}`);
+  console.log(`✅ Installed "tech-video-studio" (v2.0) AI Skill to: ${dest}`);
 }
 
 function printHelp() {
   console.log(`
-Tech Video Studio CLI (v1.0.0) — YouTube 1080p60 Technical Explainer Engine
+Tech Video Studio CLI (v2.0.0 — ByteByteGo Edition) — YouTube 1080p60 Technical Explainer Engine
 
 Usage:
   techvid metaphor <keywords>                     Search diverse visual metaphors & avoid box monotony
-  techvid new <folder> [--title "Video Title"]    Scaffold a new 1080p60 YouTube explainer project
-  techvid qa <scene.html> [--times 8,22,36,54]    Capture scene keyframes + 2x2 QA contact sheet
-  techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact 60FPS H.264 MP4 render
-          [--fps 60] [--duration 60] [--audio voice.mp3] [--mode deterministic|stream]
+  techvid new <folder> [--title "Video Title"]    Scaffold a new 1080p60 ByteByteGo explainer project
+  techvid qa <scene.html> [--times 8,22,36,54]    Capture keyframes + negative-space QA + 2x2 contact sheet
+  techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact 60FPS H.264 MP4 render (+ auto SFX)
+          [--fps 60] [--duration 60] [--audio voice.mp3] [--no-sfx] [--mode deterministic|stream]
   techvid install-skill [--target antigravity|claude|cursor|codex|local] [--dest <path>]
 `);
 }

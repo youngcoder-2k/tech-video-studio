@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ByteByteGo v2.0 Showcase — HTTP, ACID, Sharding & Architecture</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #262626; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="../../dist/tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Camera, Connectors, Illustrations, createVideo } = window.TechVideoStudio;
+
+    createVideo({
+      title: 'How Modern Distributed Systems Work',
+      palette: 'byteCharcoal',
+      fps: 60,
+      scenes: [
+        // ====================================================================
+        // SCENE 1: HTTP Evolution & Client-Server Wireframe (0s -> 15s)
+        // ====================================================================
+        {
+          id: 'http-evolution',
+          chapter: '01. HTTP Evolution & Multiplexed Wireframe',
+          duration: 15,
+          backdrop: 'waves',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 0.9, type: 'draw' },
+            { time: 1.8, type: 'pop' },
+            { time: 2.6, type: 'whoosh' },
+            { time: 3.4, type: 'success' }
+          ],
+          initialState: () => ({
+            timeline: 0,
+            browser: 0,
+            reqArrow: 0,
+            resArrow: 0,
+            fileBadge: 0,
+            server: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { timeline: 1, duration: 0.7, ease: 'power2.out' }, 0.2)
+              .to(s, { browser: 1, duration: 0.8, ease: 'power2.out' }, 0.7)
+              .to(s, { server: 1, duration: 0.8, ease: 'power2.out' }, 1.1)
+              .to(s, { reqArrow: 1, duration: 0.6, ease: 'power2.out' }, 1.7)
+              .to(s, { resArrow: 1, duration: 0.6, ease: 'power2.out' }, 2.3)
+              .to(s, { fileBadge: 1, duration: 0.6, ease: 'back.out(1.6)' }, 2.7);
+            Camera.zoomTo(tl, s, { x: 1020, y: 560, zoom: 1.08, duration: 1.2 }, 3.2);
+            Camera.reset(tl, s, 9.5, 1.0);
+          },
+          render(ctx, { state }) {
+            // Top protocol evolution strip (authentic ByteByteGo HTTP video style)
+            Illustrations.evolutionTimeline(ctx, [
+              { label: 'HTTP/1.0', sub: '1996' },
+              { label: 'HTTP/1.1', sub: 'Keep-Alive' },
+              { label: 'HTTP/2', sub: 'Multiplexing' },
+              { label: 'HTTP/3', sub: 'QUIC / UDP' }
+            ], {
+              centerY: 220,
+              activeIndex: 2,
+              progress: state.timeline
+            });
+
+            // Left translucent teal glass card + wireframe browser
+            Theme.drawGlassCard(ctx, 180, 340, 440, 440, {
+              tint: 'teal',
+              badge: 'Client Side',
+              badgeSide: 'left',
+              progress: state.browser
+            });
+            Illustrations.wireframeBrowser(ctx, 250, 430, 300, 220, {
+              progress: state.browser,
+              label: 'WWW',
+              color: '#5CE1E6'
+            });
+
+            // Request & Response solid/dashed connectors + folded HTML badge
+            Connectors.solidArrow(ctx, 640, 480, 1250, 480, {
+              progress: state.reqArrow,
+              label: 'GET /index.html'
+            });
+            Connectors.solidArrow(ctx, 1250, 565, 640, 565, {
+              progress: state.resArrow,
+              dashed: true,
+              color: '#5CE1E6',
+              label: 'Binary Frames (TLS 1.3)'
+            });
+
+            if (state.fileBadge > 0.05) {
+              Illustrations.foldedFileBadge(ctx, 945, 675, 'HTML', {
+                ribbonBg: '#F97316',
+                caption: 'Multiplexed Stream',
+                progress: state.fileBadge
+              });
+            }
+
+            // Right translucent emerald glass card + 3D stacked isometric server
+            Theme.drawGlassCard(ctx, 1270, 340, 470, 440, {
+              tint: 'emerald',
+              badge: 'Origin Cluster',
+              badgeSide: 'right',
+              progress: state.server
+            });
+            Illustrations.isometricServerStack(ctx, 1505, 535, {
+              slabs: 3,
+              progress: state.server,
+              label: 'Edge Server'
+            });
+
+            if (state.fileBadge > 0.5) {
+              Theme.drawTakeawayPill(ctx, 'HTTP/2 Multiplexes Parallel Streams Over a Single TCP Connection');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 2: ACID Transactions & Atomic Rollback (15s -> 30s)
+        // ====================================================================
+        {
+          id: 'acid-transactions',
+          chapter: '02. ACID Transactions & Atomic Rollback',
+          duration: 15,
+          backdrop: 'waves',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.4, type: 'pop' },
+            { time: 1.2, type: 'draw' },
+            { time: 2.5, type: 'error' },
+            { time: 3.6, type: 'success' }
+          ],
+          initialState: () => ({
+            actors: 0,
+            debit: 0,
+            dbWrite: 0,
+            crash: 0,
+            rollback: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { actors: 1, duration: 0.7, ease: 'power2.out' }, 0.3)
+              .to(s, { debit: 1, duration: 0.7, ease: 'power2.out' }, 1.1)
+              .to(s, { dbWrite: 1, duration: 0.7, ease: 'power2.out' }, 1.8)
+              .to(s, { crash: 1, duration: 0.6, ease: 'back.out(1.6)' }, 2.5)
+              .to(s, { rollback: 1, duration: 0.7, ease: 'power2.out' }, 3.5);
+          },
+          render(ctx, { state }) {
+            // Left: User A & User B translucent glass card (ByteByteGo ACID style)
+            Theme.drawGlassCard(ctx, 160, 230, 380, 560, {
+              tint: 'teal',
+              badge: 'Transaction Scope',
+              badgeSide: 'left',
+              progress: state.actors
+            });
+            Illustrations.lineArtUser(ctx, 350, 355, {
+              label: 'User A (-$200)',
+              color: '#5CE1E6',
+              progress: state.actors
+            });
+            Illustrations.lineArtUser(ctx, 350, 595, {
+              label: 'User B (+$200)',
+              color: '#4ADE80',
+              progress: state.actors
+            });
+
+            // Middle Top: Account State Mutation Card
+            Illustrations.stateMutationCard(ctx, 640, 265, 480, 210, {
+              title: 'Step 1: Debit Account A',
+              tint: 'olive',
+              rows: [
+                { text: 'Before: $600', highlight: false },
+                { text: 'Debit: -$200 (Uncommitted)', highlight: true },
+                { text: 'Account B: $800 (Pending)', highlight: false }
+              ],
+              progress: state.debit
+            });
+
+            // Bottom Middle: Broken Link Plug simulating network crash before Step 2
+            if (state.crash > 0.05) {
+              Theme.drawGlassCard(ctx, 640, 520, 480, 270, {
+                tint: 'crimson',
+                badge: 'Network Crash',
+                badgeSide: 'left',
+                progress: state.crash
+              });
+              Illustrations.brokenLinkPlug(ctx, 880, 645, {
+                separation: state.crash,
+                crossProgress: state.crash
+              });
+            }
+
+            // Connectors to Database
+            Connectors.solidArrow(ctx, 540, 370, 640, 370, { progress: state.debit });
+            Connectors.solidArrow(ctx, 1120, 370, 1310, 450, {
+              progress: state.dbWrite,
+              label: 'WAL Undo Log'
+            });
+
+            // Right: Wireframe Cylinder DB
+            Theme.drawGlassCard(ctx, 1310, 230, 440, 560, {
+              tint: 'plum',
+              badge: 'ACID Storage',
+              badgeSide: 'right',
+              progress: state.dbWrite
+            });
+            Illustrations.wireframeCylinderDb(ctx, 1530, 490, {
+              width: 150,
+              height: 170,
+              color: '#C084FC',
+              progress: state.dbWrite,
+              label: 'Rollback Restores $600'
+            });
+
+            if (state.rollback > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Atomicity Guarantees Zero Partial State Mutations on Crash');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 3: Consistent Hashing & B-Tree Indexing (30s -> 45s)
+        // ====================================================================
+        {
+          id: 'sharding-and-indexing',
+          chapter: '03. Consistent Hash Ring & B-Tree Index',
+          duration: 15,
+          backdrop: 'blueprint',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.1, type: 'draw' },
+            { time: 2.2, type: 'tick' },
+            { time: 3.2, type: 'success' }
+          ],
+          initialState: () => ({
+            ring: 0,
+            btree: 0,
+            packet: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { ring: 1, duration: 0.9, ease: 'power2.out' }, 0.3)
+              .to(s, { btree: 1, duration: 0.9, ease: 'power2.out' }, 1.2)
+              .to(s, { packet: 1, duration: 0.8, ease: 'power2.out' }, 2.2);
+          },
+          render(ctx, { state }) {
+            // Left pane: Consistent Hash Ring
+            Theme.drawGlassCard(ctx, 150, 210, 740, 510, {
+              tint: 'teal',
+              badge: 'Shard Routing',
+              badgeSide: 'left',
+              progress: state.ring
+            });
+            Illustrations.consistentHashRing(ctx, 520, 465, 165, [
+              { angle: -Math.PI * 0.45, label: 'Shard A', color: '#5CE1E6' },
+              { angle: Math.PI * 0.25, label: 'Shard B (Owner)', color: '#4ADE80' },
+              { angle: Math.PI * 0.85, label: 'Shard C', color: '#C084FC' },
+              { angle: -Math.PI * 0.92, label: 'Shard D', color: '#FACC15' }
+            ], {
+              progress: state.ring,
+              tokenAngle: -0.25,
+              sweepToAngle: Math.PI * 0.25
+            });
+
+            // Right pane: B-Tree Storage Engine Index
+            Theme.drawGlassCard(ctx, 970, 210, 800, 510, {
+              tint: 'emerald',
+              badge: 'O(log N) B-Tree Lookup',
+              badgeSide: 'right',
+              progress: state.btree
+            });
+            Illustrations.bTreeHierarchy(ctx, 1370, 320, {
+              root: ['100', '250'],
+              progress: state.btree,
+              children: [
+                { keys: ['10', '45', '88'], active: false },
+                { keys: ['120', '184', '240'], active: true },
+                { keys: ['280', '310', '390'], active: false }
+              ]
+            });
+
+            // Bottom: Encapsulated Network Packet Frame
+            Illustrations.networkPacketFrame(ctx, 960, 800, [
+              { label: 'IPv6 Header', sub: '40 Bytes', width: 240, bg: 'rgba(2, 132, 199, 0.35)', border: '#38BDF8' },
+              { label: 'TCP Header', sub: '32 Bytes', width: 240, bg: 'rgba(126, 34, 206, 0.35)', border: '#C084FC' },
+              { label: 'TLS 1.3 Record', sub: '24 Bytes', width: 260, bg: 'rgba(161, 98, 7, 0.35)', border: '#FACC15' },
+              { label: 'Shard B Query (Key #184)', sub: '256 Bytes', width: 420, bg: 'rgba(6, 95, 70, 0.45)', border: '#4ADE80' }
+            ], {
+              height: 76,
+              progress: state.packet
+            });
+
+            if (state.packet > 0.5) {
+              Theme.drawTakeawayPill(ctx, 'Consistent Hashing Routes Key #184 -> Shard B -> B-Tree Leaf in 0.4ms');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 4: Split Architecture Comparison & Swimlane Sequence (45s -> 60s)
+        // ====================================================================
+        {
+          id: 'comparison-and-swimlane',
+          chapter: '04. Protocol Swimlane & Architecture Comparison',
+          duration: 15,
+          backdrop: 'speedlines',
+          transition: 'fade',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.0, type: 'draw' },
+            { time: 2.0, type: 'success' }
+          ],
+          initialState: () => ({
+            swimlane: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { swimlane: 1, duration: 1.4, ease: 'power2.out' }, 0.3);
+          },
+          render(ctx, { state }) {
+            Theme.drawGlassCard(ctx, 220, 175, 1480, 680, {
+              tint: 'slate',
+              badge: 'Distributed gRPC Order Verification',
+              badgeSide: 'left',
+              progress: Math.min(1, state.swimlane * 1.5)
+            });
+
+            Illustrations.swimlaneSequence(
+              ctx,
+              [
+                { name: 'API Gateway', color: '#5CE1E6' },
+                { name: 'Auth Service', color: '#C084FC' },
+                { name: 'Order Ledger', color: '#4ADE80' }
+              ],
+              [
+                { from: 0, to: 1, label: '1. VerifyToken(JWT)', color: '#5CE1E6' },
+                { from: 1, to: 0, label: '2. Claims Valid (0.8ms)', color: '#C084FC', dashed: true },
+                { from: 0, to: 2, label: '3. CommitOrder(Protobuf)', color: '#4ADE80' },
+                { from: 2, to: 0, label: '4. Stream ACK #9042', color: '#FACC15', dashed: true }
+              ],
+              {
+                topY: 250,
+                bottomY: 790,
+                spanWidth: 1060,
+                progress: state.swimlane
+              }
+            );
+
+            if (state.swimlane > 0.6) {
+              Theme.drawTakeawayPill(ctx, 'Swimlane Sequences Reveal Distributed Temporal Ordering at a Glance');
+            }
+          }
+        }
+      ]
+    });
+  </script>
+</body>
+</html>

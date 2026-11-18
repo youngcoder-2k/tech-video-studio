@@ -3,11 +3,50 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 const Studio = require('../src/index');
+const SfxGen = require('../src/audio/sfx-gen');
+
+test('Studio v2.0 exposes Camera, Effects, Archetypes, and ByteByteGo Theme', () => {
+  assert.equal(Studio.version, '2.0.0');
+  assert.ok(Studio.Theme.PALETTES.byteCharcoal, 'byteCharcoal palette exists');
+  assert.equal(Studio.Theme.PALETTES.byteCharcoal.bg, '#262626');
+  assert.ok(Studio.Theme.GLASS_TINTS.teal, 'GLASS_TINTS.teal exists');
+  assert.equal(typeof Studio.Theme.drawGlassCard, 'function');
+  assert.equal(typeof Studio.Camera.createCameraState, 'function');
+  assert.equal(typeof Studio.Camera.zoomTo, 'function');
+  assert.equal(typeof Studio.Effects.strokeDraw, 'function');
+  assert.equal(typeof Studio.Effects.typeText, 'function');
+  assert.equal(typeof Studio.Effects.crossOutFailure, 'function');
+  assert.equal(typeof Studio.Connectors.solidArrow, 'function');
+  assert.equal(typeof Studio.Connectors.elbowArrow, 'function');
+});
+
+test('All 14 ByteByteGo high-retention archetypes are merged into Studio.Illustrations', () => {
+  const expectedArchetypes = [
+    'isometricServerStack',
+    'foldedFileBadge',
+    'wireframeBrowser',
+    'wireframeCylinderDb',
+    'lineArtUser',
+    'stateMutationCard',
+    'brokenLinkPlug',
+    'evolutionTimeline',
+    'heroMetricSlam',
+    'comparisonSplitTable',
+    'swimlaneSequence',
+    'consistentHashRing',
+    'bTreeHierarchy',
+    'networkPacketFrame'
+  ];
+  for (const fnName of expectedArchetypes) {
+    assert.equal(typeof Studio.Illustrations[fnName], 'function', `Missing archetype: ${fnName}`);
+  }
+});
 
 test('Layout.horizontalPipeline guarantees mathematical left/right margin symmetry', () => {
   const layout = Studio.Layout.horizontalPipeline([380, 420, 380], {
@@ -29,13 +68,36 @@ test('Layout.splitColumns produces symmetrical Left/Right panes', () => {
   assert.equal(1920 - split.right.right, 230);
 });
 
+test('Procedural 48kHz Stereo WAV SFX Synthesizer writes valid RIFF WAVE header', () => {
+  const tmpWav = path.join(os.tmpdir(), `studio_test_sfx_${Date.now()}.wav`);
+  try {
+    SfxGen.synthesizeSfxTrack(tmpWav, 2.0, [
+      { time: 0.1, type: 'pop' },
+      { time: 0.4, type: 'draw' },
+      { time: 0.8, type: 'whoosh' },
+      { time: 1.2, type: 'tick' },
+      { time: 1.5, type: 'success' },
+      { time: 1.7, type: 'error' }
+    ]);
+    assert.ok(fs.existsSync(tmpWav));
+    const buf = fs.readFileSync(tmpWav);
+    assert.equal(buf.toString('ascii', 0, 4), 'RIFF');
+    assert.equal(buf.toString('ascii', 8, 12), 'WAVE');
+    assert.equal(buf.readUInt32LE(24), 48000);
+  } finally {
+    if (fs.existsSync(tmpWav)) fs.unlinkSync(tmpWav);
+  }
+});
+
 test('Standalone browser bundle and standalone skill assets exist', () => {
   const distBundle = path.join(ROOT, 'dist/tech-video-studio.bundle.js');
   const skillBundle = path.join(ROOT, 'skills/tech-video-studio/scripts/tech-video-studio.bundle.js');
   const skillCli = path.join(ROOT, 'skills/tech-video-studio/scripts/tech-video-studio.js');
+  const skillSfx = path.join(ROOT, 'skills/tech-video-studio/scripts/sfx-gen.js');
   assert.ok(fs.existsSync(distBundle), 'dist bundle missing');
   assert.ok(fs.existsSync(skillBundle), 'skill bundle missing');
   assert.ok(fs.existsSync(skillCli), 'skill CLI missing');
+  assert.ok(fs.existsSync(skillSfx), 'skill sfx-gen.js missing');
 });
 
 test('Antigravity plugin.json and SKILL.md adhere to strict customization schemas', () => {
@@ -53,13 +115,13 @@ test('Antigravity plugin.json and SKILL.md adhere to strict customization schema
   assert.match(skillMd, /^---\nname:\s*tech-video-studio\ndescription:/);
 });
 
-test('CLI metaphor search returns domain-specific visual metaphors', () => {
+test('CLI metaphor search returns domain-specific visual metaphors including v2.0 archetypes', () => {
   const out = execFileSync(process.execPath, [
     path.join(ROOT, 'bin/tech-video-studio.js'),
     'metaphor',
-    'stack heap gc'
+    'acid transaction rollback'
   ], { encoding: 'utf8' });
 
-  assert.match(out, /stack-vs-heap-memory/);
-  assert.match(out, /lifoStackChamber/);
+  assert.match(out, /acid-transaction-state/);
+  assert.match(out, /stateMutationCard/);
 });
