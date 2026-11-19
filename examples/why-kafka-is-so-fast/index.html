@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Why Apache Kafka Is So Fast — ByteByteGo Single-Focus Edition</title>
+  <title>Why Apache Kafka Is So Fast — Kinetic ByteByteGo Edition (v2.6)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #262626; width: 1920px; height: 1080px; overflow: hidden; }
@@ -13,7 +13,7 @@
 <body>
   <canvas id="canvas" width="1920" height="1080"></canvas>
   <script>
-    const { Theme, Connectors, Icons, Illustrations, createVideo } = window.TechVideoStudio;
+    const { Theme, Effects, Connectors, Icons, Illustrations, createVideo } = window.TechVideoStudio;
 
     createVideo({
       title: 'Why Apache Kafka Is So Insanely Fast',
@@ -22,642 +22,688 @@
       showCaptions: false,
       scenes: [
         // ====================================================================
-        // SCENE 1: Sequential Disk Race (Beat A) -> Immutable Commit Log Tape (Beat B)
+        // SCENE 1 (0s - 20s): Random vs Sequential Disk (Beat A) -> Commit Log (Beat B)
         // ====================================================================
         {
           id: 'sequential-io-and-commit-log',
-          chapter: '01. Sequential Disk I/O & Immutable Append-Only Commit Log',
-          duration: 30,
-          qaTime: 6.0,
+          chapter: '01. Sequential Disk I/O & Append-Only Commit Log',
+          duration: 20,
+          qaTime: 4.5,
           backdrop: 'dotMatrix',
           transition: 'fade',
           sfx: [],
           captions: [
             {
-              start: 0.3,
-              end: 14.3,
+              start: 0.1,
+              end: 9.8,
               text: 'Why can Apache Kafka stream over one million messages per second on ordinary disks? The secret is replacing random disk seeks with sequential writes.'
             },
             {
-              start: 14.9,
-              end: 29.0,
-              text: 'Every partition is an immutable, append-only commit log. New events always append right at the end of the file in O(1) time.'
+              start: 10.1,
+              end: 19.8,
+              text: 'Every partition is an immutable, append-only commit log. New events always stream straight to the end of the file in O(1) time.'
             }
           ],
-          render(ctx, { localT }) {
-            // BEAT 1A (0s -> 14.6s): Single Centered Random I/O vs Sequential I/O Race
-            Theme.withBeat(ctx, localT, 0, 14.6, ({ progress }) => {
-              Illustrations.horizontalLaneRace(ctx, 260, 230, 1400, 560, {
-                progress,
-                topLane: {
-                  tag: 'RANDOM DISK I/O (Traditional B-Tree / Queue Updates)',
-                  desc: 'Disk head jumps across scattered sectors for every message update',
-                  latency: '~100 KB/s (SLOW) ❌',
-                  color: '#EF4444',
-                  bg: 'rgba(127, 29, 29, 0.22)'
-                },
-                bottomLane: {
-                  tag: 'SEQUENTIAL APPEND-ONLY LOG I/O (Apache Kafka Segment)',
-                  desc: 'Streams contiguous byte blocks straight to the end of the file',
-                  latency: '600+ MB/s (6,000x) ✔',
-                  color: '#10B981',
-                  bg: 'rgba(6, 78, 59, 0.24)'
-                }
+          render(ctx, { localT, t }) {
+            // BEAT 1A (0s -> 10.0s): Random Disk Seek vs Sequential Stream Speedometer Battle
+            Theme.withBeat(ctx, localT, 0, 10.0, ({ stagger, countUp }) => {
+              const pLeft = stagger(0, 0.45, 0.7);
+              const pCenter = stagger(1, 0.5, 0.7);
+              const pRight = stagger(2, 0.55, 0.75);
+              const pBanner = stagger(3, 0.6, 0.6);
+
+              // Left Hero: Random Disk Seeks (Slow)
+              Icons.drawBadge(ctx, 'hardDiskPlatter', 460, 430, 130, {
+                color: '#EF4444',
+                tag: 'RANDOM DISK SEEK ❌',
+                title: 'Scattered Sector Jumps',
+                sub: `${countUp(100, 1.5, 0.2)} KB/s Throughput`,
+                progress: pLeft,
+                timeSec: t
               });
 
-              // Top Lane Scattered Seek Blocks
-              const badSectors = ['Sector #912', 'Seek -> #041', 'Seek -> #778', 'Seek -> #105'];
-              badSectors.forEach((s, i) => {
-                const bx = 300 + i * 320;
-                ctx.beginPath();
-                ctx.roundRect(bx, 332, 260, 82, 10);
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-                ctx.fill();
-                ctx.strokeStyle = '#EF4444';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                ctx.fillStyle = '#FCA5A5';
-                ctx.font = `700 18px ${Theme.FONTS.mono}`;
+              // Center VS Speedup Rocket
+              if (pCenter > 0.05) {
+                ctx.save();
+                ctx.globalAlpha *= pCenter;
+                Effects.sonarPulse(ctx, 960, 430, t, { color: '#FACC15', minRadius: 35, maxRadius: 115 });
+                Icons.draw(ctx, 'rocketBoost', 960, 410, 96, { glowColor: '#FACC15', timeSec: t });
+                ctx.fillStyle = '#FEF08A';
+                ctx.font = `900 30px ${Theme.FONTS.mono}`;
                 ctx.textAlign = 'center';
-                ctx.fillText(s, bx + 130, 380);
-              });
+                ctx.fillText(`${countUp(6000, 1.8, 0.6)}x FASTER`, 960, 515);
+                ctx.restore();
+              }
 
-              // Bottom Lane Contiguous Streaming Bar
-              ctx.beginPath();
-              ctx.roundRect(300, 642, 1320 * Math.min(1, progress * 1.15), 82, 10);
-              ctx.fillStyle = 'rgba(16, 185, 129, 0.32)';
-              ctx.fill();
-              ctx.strokeStyle = '#34D399';
-              ctx.lineWidth = 2.5;
-              ctx.stroke();
+              // Right Hero: Sequential Append Stream (600+ MB/s Gauge)
+              if (pRight > 0.05) {
+                ctx.save();
+                ctx.globalAlpha *= pRight;
+                Effects.sonarPulse(ctx, 1460, 420, t, { color: '#34D399', minRadius: 55, maxRadius: 150 });
+                Effects.liveGaugeArc(ctx, 1460, 425, 118, pRight, {
+                  color: '#34D399',
+                  valueRatio: 0.94,
+                  label: `${countUp(600, 1.8, 0.8)} MB/s`,
+                  sub: 'Sequential Stream Write ✔'
+                });
+                ctx.restore();
+              }
 
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 19px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('⚡ CONTIGUOUS STREAM WRITE -> 600+ MB/s SEQUENTIAL THROUGHPUT', 960, 690);
-
-              Theme.drawTakeawayPill(ctx, 'Sequential Disk Writes Are Up to 6,000x Faster Than Random Disk Seeks', {
-                variant: 'banner',
-                tag: 'SEQUENTIAL I/O',
-                border: '#34D399'
-              });
+              if (pBanner > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Sequential Disk Writes Are 6,000x Faster Than Random Disk Seeks', {
+                  variant: 'banner',
+                  tag: '6,000x SPEEDUP',
+                  border: '#34D399',
+                  alpha: pBanner
+                });
+              }
             });
 
-            // BEAT 1B (14.6s -> 30.0s): Single Centered Immutable Commit Log Tape
-            Theme.withBeat(ctx, localT, 14.6, 30.0, ({ progress }) => {
-              Illustrations.byteArrayTape(ctx, 220, 325, 1480, 115, {
-                title: 'Partition Segment File (00000000000000000000.log) — Immutable Offset Tape',
-                progress,
+            // BEAT 1B (10.0s -> 20.0s): Animated Append-Only Commit Log Stream
+            Theme.withBeat(ctx, localT, 10.0, 20.0, ({ stagger }) => {
+              const pProd = stagger(0, 0.4, 0.65);
+              const pTape = stagger(1, 0.5, 0.75);
+              const pBanner = stagger(2, 0.65, 0.6);
+
+              // Left Producer Icon Medallion
+              Icons.drawBadge(ctx, 'lightningBolt', 350, 470, 115, {
+                color: '#FACC15',
+                tag: 'PRODUCER STREAM',
+                title: 'Incoming Events',
+                sub: '1M+ msgs/sec',
+                progress: pProd,
+                timeSec: t
+              });
+
+              // High-velocity capsule stream flying into Commit Log Tail
+              if (pTape > 0.2) {
+                Connectors.flowArrow(ctx, 460, 470, 660, 470, t, {
+                  color: '#FACC15',
+                  lineWidth: 3,
+                  label: 'O(1) Append',
+                  orbs: 3
+                });
+                Effects.dataStreamParticles(ctx, 470, 470, 650, 470, t, { color: '#FACC15', count: 3, speed: 1.4 });
+              }
+
+              // Clean 5-Cell Commit Log Tape on Right
+              Illustrations.byteArrayTape(ctx, 680, 415, 1020, 110, {
+                title: 'Immutable Partition Log (000000.log)',
+                progress: pTape,
                 cells: [
-                  { label: 'Offset #0', sub: 'Committed', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.18)', span: 1 },
-                  { label: 'Offset #1', sub: 'Committed', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.18)', span: 1 },
-                  { label: 'Offset #2', sub: 'Committed', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.18)', span: 1 },
-                  { label: 'Offset #3', sub: 'Committed', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.18)', span: 1 },
-                  { label: 'Offset #4', sub: 'Committed', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.18)', span: 1 },
-                  { label: 'Offset #5 ⚡', sub: 'APPEND HEAD', color: '#FACC15', bg: 'rgba(250, 204, 21, 0.28)', span: 1.3 },
-                  { label: 'Next Free Blocks', sub: 'Sequential Tail', color: '#34D399', bg: 'rgba(52, 211, 153, 0.12)', span: 1.5, dashed: true }
-                ],
-                brackets: [
-                  { startRatio: 0.0, endRatio: 0.64, label: 'Immutable Historical Events (Never Modified In-Place)', color: '#38BDF8' },
-                  { startRatio: 0.64, endRatio: 1.0, label: 'O(1) Sequential Write Head', color: '#FACC15' }
+                  { label: 'Offset #0', sub: 'Locked', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.18)', span: 1 },
+                  { label: 'Offset #1', sub: 'Locked', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.18)', span: 1 },
+                  { label: 'Offset #2', sub: 'Locked', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.18)', span: 1 },
+                  { label: 'Offset #3 ⚡', sub: 'WRITE HEAD', color: '#FACC15', bg: 'rgba(250, 204, 21, 0.30)', span: 1.3 },
+                  { label: 'Free Tail', sub: 'Next Offset ->', color: '#34D399', bg: 'rgba(52, 211, 153, 0.14)', span: 1.2, dashed: true }
                 ]
               });
 
-              const cards = [
-                { title: 'O(1) Append Complexity', sub: 'Independent of total disk data size', color: '#FACC15', x: 240 },
-                { title: 'Zero In-Place Mutation', sub: 'No B-Tree page splits or locks', color: '#38BDF8', x: 750 },
-                { title: 'Deterministic Replay', sub: 'Consumers rewind by offset anytime', color: '#34D399', x: 1260 }
-              ];
-
-              cards.forEach((c) => {
-                ctx.beginPath();
-                ctx.roundRect(c.x, 535, 420, 135, 14);
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-                ctx.fill();
-                ctx.strokeStyle = c.color;
-                ctx.lineWidth = 2.2;
-                ctx.stroke();
-
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = `700 22px ${Theme.FONTS.sans}`;
-                ctx.textAlign = 'center';
-                ctx.fillText(c.title, c.x + 210, 590);
-
-                ctx.fillStyle = c.color;
-                ctx.font = `600 15.5px ${Theme.FONTS.mono}`;
-                ctx.fillText(c.sub, c.x + 210, 632);
-              });
-
-              Theme.drawTakeawayPill(ctx, 'Append-Only Commit Logs Guarantee O(1) Writes Regardless of Dataset Size', {
-                variant: 'banner',
-                tag: 'COMMIT LOG',
-                border: '#FACC15'
-              });
+              if (pBanner > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Append-Only Commit Logs Guarantee O(1) Writes Regardless of Dataset Size', {
+                  variant: 'banner',
+                  tag: 'O(1) APPEND',
+                  border: '#FACC15',
+                  alpha: pBanner
+                });
+              }
             }, { noFadeOut: true });
           }
         },
 
         // ====================================================================
-        // SCENE 2: OS PageCache Pyramid (Beat A) -> mmap Sparse Index (Beat B)
+        // SCENE 2 (20s - 40s): OS PageCache RAM (Beat A) -> mmap Sparse Index (Beat B)
         // ====================================================================
         {
           id: 'pagecache-and-mmap-index',
-          chapter: '02. OS PageCache Architecture & Memory-Mapped Sparse Index',
-          duration: 30,
-          qaTime: 6.0,
+          chapter: '02. Linux Kernel PageCache & Memory-Mapped Sparse Index',
+          duration: 20,
+          qaTime: 4.5,
           backdrop: 'spotlight',
           transition: 'fade',
           sfx: [],
           captions: [
             {
-              start: 0.3,
-              end: 14.3,
+              start: 0.1,
+              end: 9.8,
               text: 'Instead of caching messages inside the Java heap, Kafka delegates caching directly to the Linux page cache — avoiding garbage collection pauses completely.'
             },
             {
-              start: 14.9,
-              end: 29.0,
+              start: 10.1,
+              end: 19.8,
               text: 'To locate any offset, Kafka uses a memory-mapped sparse index. A quick binary search jumps straight to the exact byte position on disk.'
             }
           ],
-          render(ctx, { localT }) {
-            // BEAT 2A (0s -> 14.6s): Single Centered OS PageCache Hierarchy Pyramid
-            Theme.withBeat(ctx, localT, 0, 14.6, ({ progress }) => {
-              ctx.fillStyle = '#94A3B8';
-              ctx.font = `700 17px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('KAFKA MEMORY ARCHITECTURE // OS KERNEL PAGECACHE FIRST', 960, 185);
+          render(ctx, { localT, t }) {
+            // BEAT 2A (0s -> 10.0s): JVM Heap Trap vs Linux Kernel PageCache Hero
+            Theme.withBeat(ctx, localT, 0, 10.0, ({ stagger, countUp }) => {
+              const p1 = stagger(0, 0.45, 0.65);
+              const p2 = stagger(1, 0.55, 0.7);
+              const p3 = stagger(2, 0.65, 0.6);
 
-              Illustrations.memoryHierarchyPyramid(ctx, 960, 505, {
-                width: 720,
-                height: 500,
-                activeBadge: 'KAFKA ZONE',
-                progress,
-                tiers: [
-                  { name: 'Small JVM Heap (6–8 GB Only)', latency: 'Metadata Only • Zero GC Pause Storms', color: '#38BDF8', fill: 'rgba(56, 189, 248, 0.18)', active: false },
-                  { name: 'Linux Kernel PageCache (56+ GB RAM)', latency: 'Hot Segments Served at 100 ns ⚡', color: '#34D399', fill: 'rgba(16, 185, 129, 0.36)', active: true },
-                  { name: 'Memory-Mapped Index (mmap .index)', latency: 'Virtual Address Backed by Kernel RAM', color: '#FACC15', fill: 'rgba(250, 204, 21, 0.20)', active: false },
-                  { name: 'Sequential Disk Log (.log Segments)', latency: 'Asynchronous Background pdflush', color: '#C084FC', fill: 'rgba(192, 132, 252, 0.18)', active: false }
-                ]
+              // Left: Bloated JVM Heap (Crossed out warning)
+              Icons.drawBadge(ctx, 'javaLogo', 520, 440, 125, {
+                color: '#EF4444',
+                tag: '64GB JVM HEAP ❌',
+                title: 'Stop-The-World GC Pauses',
+                sub: '2x Object Memory Overhead',
+                progress: p1,
+                timeSec: t
+              });
+              if (p1 > 0.7) {
+                Effects.crossOutFailure(ctx, 520, 440, (p1 - 0.7) / 0.3, { size: 95 });
+              }
+
+              // Center Arrow
+              Connectors.flowArrow(ctx, 680, 440, 1180, 440, t, {
+                progress: p2,
+                color: '#34D399',
+                lineWidth: 3.2,
+                label: 'Offload to Linux Kernel RAM',
+                orbs: 3
               });
 
-              Theme.drawTakeawayPill(ctx, 'OS PageCache Serves Hot Messages from Free RAM With Zero JVM GC Overhead', {
-                variant: 'banner',
-                tag: 'OS PAGECACHE',
-                border: '#34D399'
+              // Right: Linux Kernel PageCache RAM Chip Hero
+              Icons.drawBadge(ctx, 'ramChip', 1360, 440, 135, {
+                color: '#34D399',
+                tag: 'LINUX PAGECACHE ✔',
+                title: `${countUp(58, 1.5, 0.5)} GB Free Kernel RAM`,
+                sub: '100 ns Hot Read • Zero GC Freeze',
+                progress: p2,
+                timeSec: t
               });
+
+              if (p3 > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'OS PageCache Serves Hot Messages from Free RAM With Zero JVM GC Overhead', {
+                  variant: 'banner',
+                  tag: 'OS PAGECACHE',
+                  border: '#34D399',
+                  alpha: p3
+                });
+              }
             });
 
-            // BEAT 2B (14.6s -> 30.0s): Single Centered Memory-Mapped Sparse Index Lookup
-            Theme.withBeat(ctx, localT, 14.6, 30.0, ({ progress }) => {
-              ctx.fillStyle = '#FACC15';
-              ctx.font = `800 20px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('SPARSE OFFSET INDEX (000000.index via mmap) // O(log N) BINARY SEARCH', 960, 215);
+            // BEAT 2B (10.0s -> 20.0s): mmap() Sparse Index Binary Search Lens -> Disk Byte Position
+            Theme.withBeat(ctx, localT, 10.0, 20.0, ({ stagger, countUp }) => {
+              const p1 = stagger(0, 0.4, 0.65);
+              const p2 = stagger(1, 0.5, 0.7);
+              const p3 = stagger(2, 0.6, 0.65);
 
-              Illustrations.bTreeHierarchy(ctx, 960, 285, {
-                root: ['Offset 1000 -> Pos 0B', 'Offset 5000 -> Pos 64KB'],
-                children: [
-                  { keys: ['#1000 -> 0B', '#2000 -> 16KB'], active: false },
-                  { keys: ['#3000 -> 32KB', '#4000 -> 48KB ⚡'], active: true },
-                  { keys: ['#5000 -> 64KB', '#6000 -> 80KB'], active: false }
-                ],
-                spacing: 380,
-                progress
+              // Left: Memory-Mapped Sparse Index with Magnifying Glass
+              Icons.drawBadge(ctx, 'magnifyingGlass', 420, 450, 120, {
+                color: '#FACC15',
+                tag: 'MMAP .INDEX (RAM)',
+                title: 'O(log N) Binary Search',
+                sub: 'Offset #4000 -> Byte 49,152',
+                progress: p1,
+                timeSec: t
               });
 
-              // Direct Physical Byte Offset Target Card Below
-              ctx.beginPath();
-              ctx.roundRect(410, 610, 1100, 140, 16);
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-              ctx.fill();
-              ctx.strokeStyle = '#34D399';
-              ctx.lineWidth = 2.4;
-              ctx.stroke();
+              // Center Laser Pointer Jump
+              if (p2 > 0.1) {
+                Connectors.laserBeam(ctx, 570, 450, 1160, 450, t, {
+                  progress: p2,
+                  color: '#FACC15',
+                  label: 'Direct Physical Offset Jump (0 Scans)'
+                });
+                Effects.dataStreamParticles(ctx, 570, 450, 1160, 450, t, { color: '#38BDF8', count: 3, speed: 1.5 });
+              }
 
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 24px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('mmap() Sparse Index Maps Logical Offset #4000 -> Physical Byte 49,152', 960, 668);
-
-              ctx.fillStyle = '#6EE7B7';
-              ctx.font = `600 17px ${Theme.FONTS.mono}`;
-              ctx.fillText('✔ Zero Full-File Scans   •   ✔ 8-Byte Compact Index Entries   •   ✔ Instant Offset Seek', 960, 712);
-
-              Theme.drawTakeawayPill(ctx, 'Memory-Mapped Sparse Indexes Resolve Any Message Offset in Microseconds', {
-                variant: 'pill',
-                border: '#FACC15',
-                bg: 'rgba(161, 98, 7, 0.28)'
+              // Right: Target Disk Segment Block
+              Icons.drawBadge(ctx, 'hardDiskPlatter', 1360, 450, 125, {
+                color: '#38BDF8',
+                tag: 'SEGMENT .LOG FILE',
+                title: `Byte Pos #${countUp(49152, 1.4, 0.5)}`,
+                sub: 'Instant O(1) Sequential Slice',
+                progress: p2,
+                timeSec: t
               });
+
+              if (p3 > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Memory-Mapped Sparse Indexes Resolve Any Message Offset in Microseconds', {
+                  variant: 'pill',
+                  border: '#FACC15',
+                  alpha: p3
+                });
+              }
             }, { noFadeOut: true });
           }
         },
 
         // ====================================================================
-        // SCENE 3: Traditional 4-Copy Path (Beat A) -> Zero-Copy DMA Pipeline (Beat B)
+        // SCENE 3 (40s - 60s): 4-Copy Bottleneck (Beat A) -> Zero-Copy DMA (Beat B)
         // ====================================================================
         {
           id: 'zero-copy-sendfile-dma',
-          chapter: '03. Traditional 4-Copy Bottleneck vs Linux sendfile() Zero-Copy',
-          duration: 30,
-          qaTime: 22.0,
+          chapter: '03. Traditional 4-Copy Trap vs Linux sendfile() Zero-Copy',
+          duration: 20,
+          qaTime: 14.5,
           backdrop: 'splitHorizontal',
           transition: 'fade',
           sfx: [],
           captions: [
             {
-              start: 0.3,
-              end: 14.3,
-              text: 'Normally, sending a file over the network copies data four times across user space and kernel space, wasting massive CPU cycles.'
+              start: 0.1,
+              end: 9.8,
+              text: 'Normally, sending a file over the network copies data four times across user space and kernel space, burning massive CPU cycles.'
             },
             {
-              start: 14.9,
-              end: 29.0,
+              start: 10.1,
+              end: 19.8,
               text: 'Kafka uses the Linux sendfile() system call for zero-copy streaming. Data moves straight from page cache to the network card via DMA.'
             }
           ],
           render(ctx, { localT, t }) {
-            // BEAT 3A (0s -> 14.6s): Single Centered Traditional 4-Copy / 4-Context-Switch Chain
-            Theme.withBeat(ctx, localT, 0, 14.6, ({ progress }) => {
-              ctx.fillStyle = '#F87171';
-              ctx.font = `800 20px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('TRADITIONAL read() + write() // 4 DATA COPIES & 4 CONTEXT SWITCHES', 960, 215);
+            // BEAT 3A (0s -> 10.0s): Clean 3-Node Traditional CPU Bottleneck (Disk -> User JVM -> NIC)
+            Theme.withBeat(ctx, localT, 0, 10.0, ({ stagger, countUp }) => {
+              const p1 = stagger(0, 0.35, 0.6);
+              const p2 = stagger(1, 0.45, 0.65);
+              const p3 = stagger(2, 0.55, 0.65);
+              const p4 = stagger(3, 0.65, 0.6);
 
-              const boxes = [
-                { title: '1. Disk (.log)', sub: 'Hardware Storage', color: '#94A3B8', x: 150 },
-                { title: '2. Kernel Buffer', sub: 'Read PageCache', color: '#F87171', x: 560 },
-                { title: '3. User JVM Heap', sub: '❌ CPU Copy #2', color: '#EF4444', x: 970 },
-                { title: '4. Socket + NIC', sub: '❌ CPU Copy #3 & #4', color: '#F87171', x: 1380 }
-              ];
-
-              boxes.forEach((b, i) => {
-                ctx.beginPath();
-                ctx.roundRect(b.x, 320, 340, 210, 16);
-                ctx.fillStyle = i === 2 ? 'rgba(153, 27, 27, 0.38)' : 'rgba(15, 23, 42, 0.9)';
-                ctx.fill();
-                ctx.strokeStyle = b.color;
-                ctx.lineWidth = 2.4;
-                ctx.stroke();
-
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = `700 23px ${Theme.FONTS.sans}`;
-                ctx.textAlign = 'center';
-                ctx.fillText(b.title, b.x + 170, 415);
-
-                ctx.fillStyle = b.color;
-                ctx.font = `600 16.5px ${Theme.FONTS.mono}`;
-                ctx.fillText(b.sub, b.x + 170, 460);
-
-                if (i < 3) {
-                  Connectors.solidArrow(ctx, b.x + 345, 425, boxes[i + 1].x - 5, 425, {
-                    progress,
-                    color: '#EF4444',
-                    lineWidth: 2.8,
-                    label: `Copy #${i + 1}`
-                  });
-                }
-              });
-
-              // Bottleneck Warning Summary Box
-              ctx.beginPath();
-              ctx.roundRect(430, 600, 1060, 120, 14);
-              ctx.fillStyle = 'rgba(127, 29, 29, 0.30)';
-              ctx.fill();
-              ctx.strokeStyle = '#EF4444';
-              ctx.lineWidth = 2.2;
-              ctx.stroke();
-
-              ctx.fillStyle = '#FCA5A5';
-              ctx.font = `700 22px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('⛔ Redundant Kernel <-> User-Space Copies Saturate CPU Cores', 960, 670);
-
-              Theme.drawTakeawayPill(ctx, 'Traditional Socket I/O Copies Every Byte 4 Times Across Kernel and User Space', {
-                variant: 'banner',
-                tag: '4-COPY BOTTLENECK',
-                border: '#EF4444'
-              });
-            });
-
-            // BEAT 3B (14.6s -> 30.0s): Single Centered Linux sendfile() Zero-Copy DMA Pipeline
-            Theme.withBeat(ctx, localT, 14.6, 30.0, ({ progress }) => {
-              Illustrations.zeroCopyDmaPipeline(ctx, 220, 210, 1480, 560, {
-                progress,
+              Icons.drawBadge(ctx, 'hardDiskPlatter', 380, 450, 115, {
+                color: '#94A3B8',
+                tag: '1. KERNEL READ',
+                title: 'Disk + PageCache',
+                sub: 'Context Switch #1 & #2',
+                progress: p1,
                 timeSec: t
               });
 
-              Theme.drawTakeawayPill(ctx, 'Linux sendfile() + DMA Streams PageCache Directly to the NIC With Zero CPU Copies', {
-                variant: 'banner',
-                tag: 'ZERO-COPY DMA',
-                border: '#34D399'
+              Connectors.flowArrow(ctx, 515, 450, 795, 450, t, {
+                progress: p2,
+                color: '#EF4444',
+                lineWidth: 3,
+                label: 'CPU Copy into User Space'
               });
+
+              Icons.drawBadge(ctx, 'cpuSilicon', 960, 450, 130, {
+                color: '#EF4444',
+                tag: '2. USER JVM BUFFER ❌',
+                title: `${countUp(4, 1.2, 0.4)} Redundant Copies`,
+                sub: '100% CPU Core Saturation',
+                progress: p2,
+                timeSec: t
+              });
+
+              Connectors.flowArrow(ctx, 1125, 450, 1405, 450, t, {
+                progress: p3,
+                color: '#EF4444',
+                lineWidth: 3,
+                label: 'CPU Copy Back to Kernel'
+              });
+
+              Icons.drawBadge(ctx, 'networkCardNic', 1540, 450, 115, {
+                color: '#F87171',
+                tag: '3. SOCKET & NIC',
+                title: 'Network Buffer',
+                sub: 'Context Switch #3 & #4',
+                progress: p3,
+                timeSec: t
+              });
+
+              if (p4 > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Traditional Socket I/O Copies Every Byte 4 Times Across Kernel and User Space', {
+                  variant: 'banner',
+                  tag: '4 CPU COPIES',
+                  border: '#EF4444',
+                  alpha: p4
+                });
+              }
+            });
+
+            // BEAT 3B (10.0s -> 20.0s): Linux sendfile() Zero-Copy DMA Direct Highway
+            Theme.withBeat(ctx, localT, 10.0, 20.0, ({ stagger }) => {
+              const p1 = stagger(0, 0.35, 0.65);
+              const p2 = stagger(1, 0.5, 0.7);
+              const p3 = stagger(2, 0.65, 0.6);
+
+              // Top Faded Bypassed User Space Pill
+              if (p1 > 0.1) {
+                ctx.save();
+                ctx.globalAlpha *= p1 * 0.75;
+                ctx.beginPath();
+                ctx.roundRect(560, 195, 800, 64, 32);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.fill();
+                ctx.strokeStyle = '#34D399';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 6]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#6EE7B7';
+                ctx.font = `800 18px ${Theme.FONTS.mono}`;
+                ctx.textAlign = 'center';
+                ctx.fillText('▲ USER-SPACE JVM BYPASSED — ZERO CPU DATA COPIES ✔', 960, 234);
+                ctx.restore();
+              }
+
+              // Left: Linux PageCache RAM
+              Icons.drawBadge(ctx, 'ramChip', 480, 500, 135, {
+                color: '#FACC15',
+                tag: 'KERNEL PAGECACHE',
+                title: 'OS RAM Buffer',
+                sub: 'sendfile() Syscall',
+                progress: p1,
+                timeSec: t
+              });
+
+              // Center High-Speed DMA Laser Highway
+              if (p2 > 0.05) {
+                Connectors.flowArrow(ctx, 645, 500, 1275, 500, t, {
+                  progress: p2,
+                  color: '#34D399',
+                  lineWidth: 4,
+                  label: 'Direct Memory Access (DMA Engine — 0 CPU Cycles)',
+                  orbs: 4,
+                  speed: 1.6
+                });
+                Effects.dataStreamParticles(ctx, 660, 500, 1260, 500, t, { color: '#34D399', count: 5, speed: 1.5 });
+              }
+
+              // Right: 10GbE Network Card NIC
+              Icons.drawBadge(ctx, 'networkCardNic', 1440, 500, 135, {
+                color: '#34D399',
+                tag: 'NIC TX BUFFER ✔',
+                title: '10+ Gbps Wire Speed',
+                sub: 'Direct Hardware Transfer',
+                progress: p2,
+                timeSec: t
+              });
+
+              if (p3 > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Linux sendfile() + DMA Streams PageCache Directly to the NIC With Zero CPU Copies', {
+                  variant: 'banner',
+                  tag: 'ZERO-COPY DMA',
+                  border: '#34D399',
+                  alpha: p3
+                });
+              }
             }, { noFadeOut: true });
           }
         },
 
         // ====================================================================
-        // SCENE 4: Producer Batching (Beat A) -> End-to-End LZ4 Compression (Beat B)
+        // SCENE 4 (60s - 80s): Producer Batching (Beat A) -> LZ4 Compression (Beat B)
         // ====================================================================
         {
           id: 'producer-batching-and-compression',
-          chapter: '04. Producer RecordAccumulator Batching & End-to-End LZ4/Zstd',
-          duration: 30,
-          qaTime: 6.0,
+          chapter: '04. Producer Record Batching & End-to-End LZ4 Compression',
+          duration: 20,
+          qaTime: 4.5,
           backdrop: 'isometric',
           transition: 'fade',
           sfx: [],
           captions: [
             {
-              start: 0.3,
-              end: 14.3,
+              start: 0.1,
+              end: 9.8,
               text: 'On the producer side, Kafka never sends messages one by one. It buffers events in memory and flushes them as one contiguous batch.'
             },
             {
-              start: 14.9,
-              end: 29.0,
+              start: 10.1,
+              end: 19.8,
               text: 'Each batch is compressed with LZ4 or Zstd before leaving the producer, and stays compressed on broker disk until the consumer reads it.'
             }
           ],
-          render(ctx, { localT }) {
-            // BEAT 4A (0s -> 14.6s): Single Centered RecordAccumulator Batching Pipeline
-            Theme.withBeat(ctx, localT, 0, 14.6, ({ progress }) => {
-              ctx.fillStyle = '#38BDF8';
-              ctx.font = `800 20px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('PRODUCER RECORDACCUMULATOR // AMORTIZING NETWORK & DISK I/O', 960, 215);
+          render(ctx, { localT, t }) {
+            // BEAT 4A (0s -> 10.0s): RecordAccumulator Batch Queue -> Single Kafka Broker Write
+            Theme.withBeat(ctx, localT, 0, 10.0, ({ stagger, countUp }) => {
+              const p1 = stagger(0, 0.4, 0.65);
+              const p2 = stagger(1, 0.5, 0.7);
+              const p3 = stagger(2, 0.6, 0.6);
 
-              // Left: Producer Batch Queue
-              Illustrations.pubSubTopicBox(ctx, 210, 390, 620, 150, {
-                title: 'RecordAccumulator (linger.ms = 5, batch.size = 64KB)',
+              // Left: Animated Batching Buffer
+              Illustrations.pubSubTopicBox(ctx, 220, 400, 620, 150, {
+                title: 'Producer RecordAccumulator (64KB Batch)',
                 tint: 'teal',
-                offsets: ['Msg #1', 'Msg #2', 'Msg #3', 'Msg #4', '64KB FULL'],
+                offsets: ['Msg #1', 'Msg #2', 'Msg #3', 'Msg #4', 'BATCH READY ⚡'],
                 activeSlot: 4,
-                progress
+                progress: p1
               });
 
-              // Center Arrow
-              Connectors.solidArrow(ctx, 845, 465, 1085, 465, {
-                progress,
+              // Center High-Speed Batch RPC Stream
+              if (p2 > 0.05) {
+                Connectors.flowArrow(ctx, 860, 475, 1240, 475, t, {
+                  progress: p2,
+                  color: '#34D399',
+                  lineWidth: 3.6,
+                  label: '1 Single Batch RPC (1,000x Fewer Round-Trips)',
+                  orbs: 3
+                });
+                Effects.dataStreamParticles(ctx, 870, 475, 1230, 475, t, { color: '#38BDF8', count: 3, speed: 1.3 });
+              }
+
+              // Right: Kafka Broker Medallion
+              Icons.drawBadge(ctx, 'kafkaLogo', 1430, 475, 135, {
                 color: '#34D399',
-                lineWidth: 3.2,
-                label: '1 Single RPC'
+                tag: 'KAFKA BROKER ✔',
+                title: `${countUp(1000, 1.5, 0.5)}K+ Events/sec`,
+                sub: '1 Contiguous Disk Append',
+                progress: p2,
+                timeSec: t
               });
 
-              // Right: Broker Contiguous Write
-              ctx.beginPath();
-              ctx.roundRect(1100, 345, 610, 240, 18);
-              ctx.fillStyle = 'rgba(6, 78, 59, 0.32)';
-              ctx.fill();
-              ctx.strokeStyle = '#34D399';
-              ctx.lineWidth = 2.6;
-              ctx.stroke();
-
-              Icons.draw(ctx, 'kafkaLogo', 1220, 465, 105, { glowColor: '#34D399' });
-
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 25px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'left';
-              ctx.fillText('Single Broker Sequential Write', 1310, 425);
-
-              ctx.fillStyle = '#6EE7B7';
-              ctx.font = `600 17.5px ${Theme.FONTS.mono}`;
-              ctx.fillText('✔ 1,000x Fewer Network Round-Trips', 1310, 475);
-              ctx.fillText('✔ 1 Contiguous OS PageCache Append', 1310, 515);
-              ctx.fillText('✔ 1M+ Events/sec Throughput', 1310, 555);
-
-              Theme.drawTakeawayPill(ctx, 'Record Batching Amortizes Network Round-Trips and Disk Writes Across Thousands of Events', {
-                variant: 'banner',
-                tag: 'BATCHING ENGINE',
-                border: '#38BDF8'
-              });
+              if (p3 > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Record Batching Amortizes Network Round-Trips Across Thousands of Events', {
+                  variant: 'banner',
+                  tag: '64KB BATCHING',
+                  border: '#38BDF8',
+                  alpha: p3
+                });
+              }
             });
 
-            // BEAT 4B (14.6s -> 30.0s): Single Centered End-to-End Compressed Batch Frame
-            Theme.withBeat(ctx, localT, 14.6, 30.0, ({ progress }) => {
-              ctx.fillStyle = '#FACC15';
-              ctx.font = `800 20px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('END-TO-END RECORD BATCH FRAME // COMPRESSED ONCE, STORED COMPRESSED', 960, 245);
+            // BEAT 4B (10.0s -> 20.0s): End-to-End LZ4 / Zstd Compression Pipeline
+            Theme.withBeat(ctx, localT, 10.0, 20.0, ({ stagger, countUp }) => {
+              const p1 = stagger(0, 0.35, 0.6);
+              const p2 = stagger(1, 0.45, 0.65);
+              const p3 = stagger(2, 0.55, 0.65);
+              const p4 = stagger(3, 0.65, 0.6);
 
-              Illustrations.networkPacketFrame(ctx, 220, 330, 1480, 130, {
-                progress,
-                segments: [
-                  { label: 'Base Offset & Length', sub: '12 Bytes', ratio: 0.22, border: '#38BDF8', bg: 'rgba(2, 132, 199, 0.28)' },
-                  { label: 'CRC32-C & Magic', sub: 'Integrity Check', ratio: 0.20, border: '#FACC15', bg: 'rgba(161, 98, 7, 0.28)' },
-                  { label: 'Attributes (LZ4 / Zstd)', sub: 'Codec Bitmask', ratio: 0.20, border: '#C084FC', bg: 'rgba(107, 33, 168, 0.28)' },
-                  { label: 'Compressed Records Payload (5x Smaller)', sub: 'Zero Broker Re-Compression ⚡', ratio: 0.38, border: '#34D399', bg: 'rgba(6, 78, 59, 0.38)' }
-                ]
+              Icons.drawBadge(ctx, 'boxArchive', 380, 460, 120, {
+                color: '#C084FC',
+                tag: '1. PRODUCER LZ4',
+                title: 'Compress Batch Once',
+                sub: `${countUp(80, 1.4, 0.3)}% Smaller Payload`,
+                progress: p1,
+                timeSec: t
               });
 
-              const stages = [
-                { title: '1. Producer Compresses', sub: 'LZ4 / Zstd batch compression', color: '#38BDF8', x: 230 },
-                { title: '2. Broker Stores Raw Bytes', sub: 'Zero CPU decompression on broker', color: '#FACC15', x: 750 },
-                { title: '3. Consumer Decompresses', sub: '80% less network & disk bandwidth', color: '#34D399', x: 1270 }
-              ];
-
-              stages.forEach((s) => {
-                ctx.beginPath();
-                ctx.roundRect(s.x, 545, 420, 135, 14);
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-                ctx.fill();
-                ctx.strokeStyle = s.color;
-                ctx.lineWidth = 2.2;
-                ctx.stroke();
-
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = `700 22px ${Theme.FONTS.sans}`;
-                ctx.textAlign = 'center';
-                ctx.fillText(s.title, s.x + 210, 600);
-
-                ctx.fillStyle = s.color;
-                ctx.font = `600 15.5px ${Theme.FONTS.mono}`;
-                ctx.fillText(s.sub, s.x + 210, 642);
+              Connectors.flowArrow(ctx, 520, 460, 810, 460, t, {
+                progress: p2,
+                color: '#C084FC',
+                lineWidth: 3.2,
+                label: 'Compressed Wire Frame'
               });
 
-              Theme.drawTakeawayPill(ctx, 'End-to-End LZ4/Zstd Batch Compression Cuts Network and Disk Footprint by 80%', {
-                variant: 'banner',
-                tag: '5x COMPRESSION',
-                border: '#34D399'
+              Icons.drawBadge(ctx, 'hardDiskPlatter', 960, 460, 125, {
+                color: '#FACC15',
+                tag: '2. BROKER DISK',
+                title: 'Stored Compressed',
+                sub: '0% Broker CPU Re-Compression',
+                progress: p2,
+                timeSec: t
               });
+
+              Connectors.flowArrow(ctx, 1110, 460, 1400, 460, t, {
+                progress: p3,
+                color: '#34D399',
+                lineWidth: 3.2,
+                label: 'Zero-Copy Fetch'
+              });
+
+              Icons.drawBadge(ctx, 'checkShield', 1540, 460, 120, {
+                color: '#34D399',
+                tag: '3. CONSUMER',
+                title: 'Decompress on Read',
+                sub: '5x Higher Network Bandwidth',
+                progress: p3,
+                timeSec: t
+              });
+
+              if (p4 > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'End-to-End LZ4/Zstd Batch Compression Cuts Network and Disk Footprint by 80%', {
+                  variant: 'banner',
+                  tag: '5x COMPRESSION',
+                  border: '#34D399',
+                  alpha: p4
+                });
+              }
             }, { noFadeOut: true });
           }
         },
 
         // ====================================================================
-        // SCENE 5: Partition Parallelism (Beat A) -> ISR Quorum Mesh (Beat B)
+        // SCENE 5 (80s - 100s): Partition Parallelism (Beat A) -> ISR Quorum (Beat B)
         // ====================================================================
         {
           id: 'partition-parallelism-and-isr',
           chapter: '05. Horizontal Partition Parallelism & In-Sync Replica Quorum',
-          duration: 30,
-          qaTime: 6.0,
+          duration: 20,
+          qaTime: 4.5,
           backdrop: 'blueprint',
           transition: 'fade',
           sfx: [],
           captions: [
             {
-              start: 0.3,
-              end: 14.3,
+              start: 0.1,
+              end: 9.8,
               text: 'To scale horizontally, a topic splits into independent partitions across brokers. Consumers read from multiple partitions in parallel with zero lock contention.'
             },
             {
-              start: 14.9,
-              end: 29.0,
+              start: 10.1,
+              end: 19.8,
               text: 'For fault tolerance, follower brokers replicate sequentially from the leader. Once in-sync replicas confirm the write, the message is marked committed.'
             }
           ],
           render(ctx, { localT, t }) {
-            // BEAT 5A (0s -> 14.6s): Single Centered Parallel Partition-to-Consumer Mesh
-            Theme.withBeat(ctx, localT, 0, 14.6, ({ progress }) => {
-              ctx.fillStyle = '#38BDF8';
-              ctx.font = `800 19px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('HORIZONTAL SCALE // PARALLEL PARTITIONS & CONSUMER GROUP LOCK-FREE READS', 960, 195);
+            // BEAT 5A (0s -> 10.0s): Parallel Partition-to-Consumer Stream Mesh
+            Theme.withBeat(ctx, localT, 0, 10.0, ({ stagger }) => {
+              const pMesh = stagger(0, 0.35, 0.8);
+              const pBanner = stagger(1, 0.65, 0.6);
 
-              Illustrations.partitionConsumerMesh(ctx, 220, 235, 1480, 520, {
-                progress,
+              Illustrations.partitionConsumerMesh(ctx, 220, 225, 1480, 530, {
+                progress: pMesh,
                 timeSec: t
               });
 
-              Theme.drawTakeawayPill(ctx, 'Independent Topic Partitions Enable Linear Horizontal Scaling Across Brokers and Consumers', {
-                variant: 'pill',
-                border: '#38BDF8'
-              });
+              if (pBanner > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Independent Topic Partitions Enable Linear Horizontal Scaling Across Brokers', {
+                  variant: 'pill',
+                  border: '#38BDF8',
+                  alpha: pBanner
+                });
+              }
             });
 
-            // BEAT 5B (14.6s -> 30.0s): Single Centered In-Sync Replica (ISR) Quorum Triangle
-            Theme.withBeat(ctx, localT, 14.6, 30.0, ({ progress }) => {
-              ctx.fillStyle = '#FACC15';
-              ctx.font = `800 19px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('IN-SYNC REPLICA (ISR) QUORUM // HIGH-WATERMARK COMMIT WITHOUT DISK FSYNC LOCKS', 960, 195);
+            // BEAT 5B (10.0s -> 20.0s): In-Sync Replica (ISR) Quorum Triangle Mesh
+            Theme.withBeat(ctx, localT, 10.0, 20.0, ({ stagger }) => {
+              const pTri = stagger(0, 0.35, 0.75);
+              const pBanner = stagger(1, 0.65, 0.6);
 
-              Illustrations.quorumTriangleMesh(ctx, 960, 425, {
-                radius: 180,
-                progress,
+              Effects.sonarPulse(ctx, 960, 465, t, { color: '#FACC15', minRadius: 45, maxRadius: 195 });
+
+              Illustrations.quorumTriangleMesh(ctx, 960, 470, {
+                radius: 215,
+                progress: pTri,
                 timeSec: t,
                 nodes: [
-                  { name: 'Broker 1 (Leader)', role: 'LEO = #9,420 ★', color: '#FACC15', angle: -90 },
-                  { name: 'Broker 2 (ISR Follower)', role: 'Fetch #9,420 ✔', color: '#34D399', angle: 30 },
-                  { name: 'Broker 3 (ISR Follower)', role: 'Fetch #9,420 ✔', color: '#38BDF8', angle: 150 }
+                  { name: 'Broker 1 (Leader)', role: 'Offset #9,420 ★', color: '#FACC15', angle: -90 },
+                  { name: 'Broker 2 (ISR)', role: 'RAM Synced ✔', color: '#34D399', angle: 30 },
+                  { name: 'Broker 3 (ISR)', role: 'RAM Synced ✔', color: '#38BDF8', angle: 150 }
                 ]
               });
 
-              ctx.beginPath();
-              ctx.roundRect(420, 645, 1080, 110, 14);
-              ctx.fillStyle = 'rgba(6, 78, 59, 0.32)';
-              ctx.fill();
-              ctx.strokeStyle = '#34D399';
-              ctx.lineWidth = 2.4;
-              ctx.stroke();
-
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 22px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('High Watermark (HW = #9,420) Advances Once All In-Sync Replicas Fetch into PageCache', 960, 694);
-
-              ctx.fillStyle = '#6EE7B7';
-              ctx.font = `600 16px ${Theme.FONTS.mono}`;
-              ctx.fillText('acks=all + min.insync.replicas=2 Guarantees Zero Data Loss on Broker Crash', 960, 730);
-
-              Theme.drawTakeawayPill(ctx, 'In-Sync Replica Pulling Combines Multi-Node Durability With Memory-Speed Writes', {
-                variant: 'pill',
-                border: '#34D399'
-              });
+              if (pBanner > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'In-Sync Replica Pulling Combines Multi-Node Durability With Memory-Speed Writes', {
+                  variant: 'pill',
+                  border: '#34D399',
+                  alpha: pBanner
+                });
+              }
             }, { noFadeOut: true });
           }
         },
 
         // ====================================================================
-        // SCENE 6: Memory Replication vs fsync (Beat A) -> Architect Scorecard (Beat B)
+        // SCENE 6 (100s - 120s): Memory Durability vs fsync (Beat A) -> Scorecard (Beat B)
         // ====================================================================
         {
           id: 'replication-durability-and-scorecard',
           chapter: '06. Multi-Broker Memory Durability & Production Golden Rules',
-          duration: 30,
-          qaTime: 22.0,
+          duration: 20,
+          qaTime: 14.5,
           backdrop: 'waves',
           transition: 'fade',
           sfx: [],
           captions: [
             {
-              start: 0.3,
-              end: 14.3,
+              start: 0.1,
+              end: 9.8,
               text: 'Kafka rarely blocks on synchronous disk fsync. Instead, durability comes from replicating each batch into the memory of multiple independent brokers.'
             },
             {
-              start: 14.9,
-              end: 29.0,
+              start: 10.1,
+              end: 19.8,
               text: 'In production, tune linger.ms for healthy batching, use LZ4 compression, and keep the Java heap small so free RAM powers the page cache.'
             }
           ],
-          render(ctx, { localT }) {
-            // BEAT 6A (0s -> 14.6s): Single Centered Sync fsync vs Multi-Broker PageCache Replication
-            Theme.withBeat(ctx, localT, 0, 14.6, ({ progress }) => {
-              Illustrations.horizontalLaneRace(ctx, 260, 230, 1400, 560, {
-                progress,
-                topLane: {
-                  tag: 'SYNCHRONOUS DISK FSYNC ON EVERY MESSAGE (Anti-Pattern)',
-                  desc: 'Forces physical disk flush syscall on every single event write',
-                  latency: '12 ms LATENCY ❌',
-                  color: '#EF4444',
-                  bg: 'rgba(127, 29, 29, 0.22)'
-                },
-                bottomLane: {
-                  tag: '3-BROKER PAGECACHE REPLICATION + ASYNC OS PDFLUSH (Kafka Default)',
-                  desc: 'Replicated across 3 nodes in RAM immediately; kernel flushes asynchronously',
-                  latency: '1.2 ms (10x FASTER) ✔',
-                  color: '#10B981',
-                  bg: 'rgba(6, 78, 59, 0.24)'
-                }
+          render(ctx, { localT, t }) {
+            // BEAT 6A (0s -> 10.0s): Single-Disk Sync fsync Stall vs 3-Broker RAM Replication
+            Theme.withBeat(ctx, localT, 0, 10.0, ({ stagger, countUp }) => {
+              const p1 = stagger(0, 0.4, 0.65);
+              const p2 = stagger(1, 0.5, 0.7);
+              const p3 = stagger(2, 0.65, 0.6);
+
+              // Left: Synchronous Disk fsync Warning
+              Icons.drawBadge(ctx, 'warningAlert', 480, 445, 125, {
+                color: '#EF4444',
+                tag: 'SYNC DISK FSYNC ❌',
+                title: 'Blocks on Every Write',
+                sub: `${countUp(12, 1.2, 0.3)}.0 ms Disk Flush Stall`,
+                progress: p1,
+                timeSec: t
               });
 
-              ctx.beginPath();
-              ctx.roundRect(300, 335, 1320, 82, 10);
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-              ctx.fill();
-              ctx.strokeStyle = '#EF4444';
-              ctx.stroke();
-              ctx.fillStyle = '#FCA5A5';
-              ctx.font = `700 18px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('⛔ flush.messages=1 Stalls Broker I/O Threads Waiting on Physical Disk Rotation/Flush', 960, 383);
+              // Center VS Rocket
+              if (p2 > 0.05) {
+                Connectors.flowArrow(ctx, 650, 445, 1230, 445, t, {
+                  progress: p2,
+                  color: '#34D399',
+                  lineWidth: 3.5,
+                  label: '10x Faster Multi-Node RAM ACK (acks=all)',
+                  orbs: 3
+                });
+              }
 
-              const replicas = ['Broker 1 PageCache ✔', 'Broker 2 PageCache ✔', 'Broker 3 PageCache ✔', 'Async Kernel Flush ⚡'];
-              replicas.forEach((r, i) => {
-                const bx = 300 + i * 335;
-                ctx.beginPath();
-                ctx.roundRect(bx, 642, 315, 80, 10);
-                ctx.fillStyle = 'rgba(16, 185, 129, 0.26)';
-                ctx.fill();
-                ctx.strokeStyle = '#34D399';
-                ctx.lineWidth = 2.2;
-                ctx.stroke();
-
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = `700 17px ${Theme.FONTS.mono}`;
-                ctx.textAlign = 'center';
-                ctx.fillText(r, bx + 157, 688);
+              // Right: 3-Broker Memory Replication Shield
+              Icons.drawBadge(ctx, 'shieldGuard', 1420, 445, 130, {
+                color: '#34D399',
+                tag: '3-BROKER RAM ISR ✔',
+                title: '1.2 ms Memory Commit',
+                sub: 'Survives Node Crash + Async Flush',
+                progress: p2,
+                timeSec: t
               });
 
-              Theme.drawTakeawayPill(ctx, 'Multi-Broker RAM Replication Beats Single-Node Synchronous fsync in Both Speed and Safety', {
-                variant: 'banner',
-                tag: 'MEMORY DURABILITY',
-                border: '#34D399'
-              });
+              if (p3 > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Multi-Broker RAM Replication Beats Synchronous fsync in Both Speed and Safety', {
+                  variant: 'banner',
+                  tag: '10x LOWER LATENCY',
+                  border: '#34D399',
+                  alpha: p3
+                });
+              }
             });
 
-            // BEAT 6B (14.6s -> 30.0s): Single Centered 2x2 Production Kafka Architect Scorecard
-            Theme.withBeat(ctx, localT, 14.6, 30.0, ({ progress }) => {
-              ctx.fillStyle = '#34D399';
-              ctx.font = `800 19px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('PRODUCTION KAFKA ARCHITECTURE // GOLDEN DO\'S & DON\'TS SCORECARD', 960, 200);
+            // BEAT 6B (10.0s -> 20.0s): 2x2 Production Kafka Architect Scorecard
+            Theme.withBeat(ctx, localT, 10.0, 20.0, ({ stagger }) => {
+              const pCard = stagger(0, 0.35, 0.85);
+              const pBanner = stagger(1, 0.65, 0.6);
 
-              Illustrations.scorecardMatrix(ctx, 360, 240, 1200, 580, {
-                progress,
+              Illustrations.scorecardMatrix(ctx, 360, 230, 1200, 580, {
+                progress: pCard,
                 items: [
                   {
                     type: 'dont',
@@ -690,9 +736,12 @@
                 ]
               });
 
-              Theme.drawTakeawayPill(ctx, 'Batch With LZ4 and Keep JVM Heap Lean So Free RAM Fuels Zero-Copy PageCache', {
-                variant: 'terminal'
-              });
+              if (pBanner > 0.05) {
+                Theme.drawTakeawayPill(ctx, 'Batch With LZ4 and Keep JVM Heap Lean So Free RAM Fuels Zero-Copy PageCache', {
+                  variant: 'terminal',
+                  alpha: pBanner
+                });
+              }
             }, { noFadeOut: true });
           }
         }

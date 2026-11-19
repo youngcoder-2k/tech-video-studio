@@ -556,15 +556,17 @@ function drawSpeakerWave(ctx, timeSec = 0, options = {}) {
 /**
  * Sequential Beat Stage Manager — Ensures only ONE focal visual act is on screen at any moment!
  * Smoothly glides & fades the active beat in at `startSec`, animates its `progress` (0 -> 1),
- * and cleanly fades it out at `endSec` before the next beat enters.
+ * applies continuous subtle kinetic camera breathing, provides staggered choreography helpers
+ * (`stagger`, `pulse`, `countUp`), and cleanly fades out at `endSec`.
  */
 function withBeat(ctx, localT, startSec, endSec, drawFn, opts = {}) {
   if (localT < startSec || localT > endSec) return;
-  const fadeIn = opts.fadeIn !== undefined ? opts.fadeIn : 0.45;
-  const fadeOut = opts.fadeOut !== undefined ? opts.fadeOut : 0.45;
-  const drawDur = opts.drawDuration !== undefined ? opts.drawDuration : 1.0;
+  const fadeIn = opts.fadeIn !== undefined ? opts.fadeIn : 0.4;
+  const fadeOut = opts.fadeOut !== undefined ? opts.fadeOut : 0.38;
+  const drawDur = opts.drawDuration !== undefined ? opts.drawDuration : 1.1;
 
   const elapsed = localT - startSec;
+  const beatSpan = Math.max(0.5, endSec - startSec);
   const remaining = endSec - localT;
 
   const rawIn = fadeIn > 0 ? Math.min(1, elapsed / fadeIn) : 1;
@@ -578,14 +580,34 @@ function withBeat(ctx, localT, startSec, endSec, drawFn, opts = {}) {
 
   const rawProg = Math.min(1, elapsed / Math.max(0.1, drawDur));
   const progress = 1 - ((1 - rawProg) ** 2.5);
-  const offsetY = (1 - easeIn) * (opts.slideY !== undefined ? opts.slideY : 18);
+  const offsetY = (1 - easeIn) * (opts.slideY !== undefined ? opts.slideY : 20);
+
+  // Continuous kinetic micro-zoom & float across the beat so the canvas never feels static
+  const beatRatio = Math.min(1, elapsed / beatSpan);
+  const kineticScale = opts.kineticCamera === false ? 1 : (0.982 + beatRatio * 0.032);
+  const kineticFloatY = opts.kineticCamera === false ? 0 : Math.sin(elapsed * 1.6) * 2.5;
+
+  const stagger = (index = 0, delayStep = 0.48, dur = 0.68) => {
+    const t = Math.max(0, elapsed - index * delayStep);
+    const p = Math.min(1, t / Math.max(0.08, dur));
+    return 1 - ((1 - p) ** 2.6);
+  };
+
+  const pulse = (speed = 2.6, phase = 0) => 0.5 + 0.5 * Math.sin(elapsed * speed + phase);
+
+  const countUp = (target, dur = 2.0, delay = 0.35) => {
+    const t = Math.max(0, elapsed - delay);
+    const p = Math.min(1, t / Math.max(0.1, dur));
+    const eased = 1 - ((1 - p) ** 3);
+    return Math.round(target * eased);
+  };
 
   ctx.save();
   ctx.globalAlpha *= alpha;
-  if (offsetY !== 0) {
-    ctx.translate(0, offsetY);
-  }
-  drawFn({ alpha, progress, beatT: elapsed });
+  ctx.translate(960, 520 + offsetY + kineticFloatY);
+  ctx.scale(kineticScale, kineticScale);
+  ctx.translate(-960, -520);
+  drawFn({ alpha, progress, beatT: elapsed, beatRatio, stagger, pulse, countUp });
   ctx.restore();
 }
 

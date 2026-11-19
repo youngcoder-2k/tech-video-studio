@@ -132,7 +132,7 @@ function createVideo(config) {
           start: start + relStart,
           end: start + relEnd,
           duration: Math.max(1.8, relEnd - relStart),
-          leadIn: capIdx === 0 ? 0.25 : 0.15,
+          leadIn: capIdx === 0 ? 0.14 : 0.10,
           persona: cap.persona || scenePersona,
           lang: cap.lang || sceneLang,
           text: capText
@@ -188,6 +188,7 @@ function createVideo(config) {
     const safeSec = Number.isFinite(timeSec) ? timeSec : currentTimeSec;
     const clamped = Math.max(0, Math.min(totalDuration - 0.001, safeSec));
     currentTimeSec = clamped;
+    window.__studioCurrentTimeSec = clamped;
     masterTl.seek(clamped);
 
     const activeScene = scenes.find((s) => clamped >= s.start && clamped < s.end) || scenes[scenes.length - 1];
@@ -340,8 +341,8 @@ function createVideo(config) {
 
     if (negativeSpacePct < 30) {
       warnings.push(`Crowded canvas (${negativeSpacePct}% negative space < 30% minimum)`);
-    } else if (negativeSpacePct > 92) {
-      warnings.push(`Nearly empty frame (${negativeSpacePct}% negative space > 92%)`);
+    } else if (negativeSpacePct > 96) {
+      warnings.push(`Nearly empty frame (${negativeSpacePct}% negative space > 96%)`);
     }
     if (!headerZoneClear) {
       warnings.push(`Diagram bleeds into top header safety zone (${headerBleedPct}%)`);

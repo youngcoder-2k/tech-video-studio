@@ -723,9 +723,9 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
 function fitAndMasterClip(inWavPath, outWavPath, slotSeconds, opts = {}) {
   const ffmpeg = findFfmpegExecutable();
   const actualDur = getAudioDurationSec(inWavPath);
-  const maxTempo = Number.isFinite(Number(opts.maxTempo)) ? Number(opts.maxTempo) : 1.04;
+  const maxTempo = Number.isFinite(Number(opts.maxTempo)) ? Number(opts.maxTempo) : 1.07;
 
-  if (!slotSeconds || actualDur <= slotSeconds * 1.02 || maxTempo <= 1.001) {
+  if (!slotSeconds || actualDur <= slotSeconds * 1.015 || maxTempo <= 1.001) {
     fs.copyFileSync(inWavPath, outWavPath);
     return { durationSec: actualDur, rawDurationSec: actualDur, tempoApplied: 1.0 };
   }
@@ -755,8 +755,8 @@ function fitAndMasterClip(inWavPath, outWavPath, slotSeconds, opts = {}) {
 
 /**
  * Synthesizes a full-length, scene- and beat-synchronized 48kHz stereo narration track
- * for a multi-scene video project with calm, unhurried Senior SA pacing and guaranteed
- * inter-beat breathing pauses.
+ * for a multi-scene video project with calm, unhurried Senior SA pacing and tight,
+ * natural inter-beat breathing pauses (~0.35s - 0.6s, eliminating multi-second dead air).
  *
  * @param {Array<{start:number, duration:number, text:string, leadIn?:number, persona?:string, lang?:string}>} segments
  * @param {number} totalDurationSec
@@ -767,7 +767,7 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
   const status = await checkStatus(opts);
   const useVoiceStudio = status.running;
   const allowFallback = opts.allowFallback !== false;
-  const minPauseSec = Number.isFinite(Number(opts.minPauseSec)) ? Number(opts.minPauseSec) : 0.45;
+  const minPauseSec = Number.isFinite(Number(opts.minPauseSec)) ? Number(opts.minPauseSec) : 0.28;
 
   if (!useVoiceStudio && !allowFallback) {
     throw new Error(
@@ -814,17 +814,17 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
         }
         activeEngine = synthInfo.engine;
 
-        const leadIn = seg.leadIn !== undefined ? seg.leadIn : 0.25;
+        const leadIn = seg.leadIn !== undefined ? seg.leadIn : 0.14;
         const requestedStartSec = (seg.start || 0) + leadIn;
         const nextTask = validTasks[outIdx + 1];
         const nextStartSec = nextTask
-          ? (nextTask.seg.start || 0) + (nextTask.seg.leadIn !== undefined ? nextTask.seg.leadIn : 0.15)
+          ? (nextTask.seg.start || 0) + (nextTask.seg.leadIn !== undefined ? nextTask.seg.leadIn : 0.10)
           : totalDurationSec;
 
-        // True available window up to the next beat minus a comfortable breathing pause
+        // True available window up to the next beat minus a crisp breathing pause
         const availableSlotSec = Math.max(
           2.0,
-          Math.max(seg.duration || 14, nextStartSec - (seg.start || 0)) - leadIn - minPauseSec
+          (nextStartSec - requestedStartSec) - minPauseSec
         );
         const fitRes = fitAndMasterClip(rawClip, fitClip, availableSlotSec, opts);
         const wordCount = text.split(/\s+/).filter(Boolean).length;
@@ -859,6 +859,13 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
     });
 
     const avgWpm = totalSpeechSec > 0 ? Math.round((totalWords / totalSpeechSec) * 60) : 0;
+    let totalGapSec = 0;
+    for (let k = 1; k < preparedClips.length; k++) {
+      const prevEnd = (preparedClips[k - 1].startMs / 1000) + preparedClips[k - 1].durationSec;
+      const curStart = preparedClips[k].startMs / 1000;
+      totalGapSec += Math.max(0, curStart - prevEnd);
+    }
+    const avgGapSec = preparedClips.length > 1 ? Number((totalGapSec / (preparedClips.length - 1)).toFixed(2)) : 0;
 
     // Assemble all scene/beat clips onto a master 48kHz stereo timeline of length totalDurationSec
     const inputs = ['-f', 'lavfi', '-t', String(totalDurationSec), '-i', 'anullsrc=r=48000:cl=stereo'];
@@ -897,6 +904,7 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
       clipCount: preparedClips.length,
       totalDurationSec,
       avgWpm,
+      avgGapSec,
       totalWords,
       totalSpeechSec: Number(totalSpeechSec.toFixed(1)),
       maxTempoApplied

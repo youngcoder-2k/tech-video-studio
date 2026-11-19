@@ -47,28 +47,48 @@ function drawConnectorLabel(ctx, label, mx, my, dx, dy, opts = {}) {
 }
 
 /**
- * Traveling data packet orb along a linear connector segment.
+ * Traveling data packet comet train along a linear connector segment.
  */
 function pulseOrb(ctx, x1, y1, x2, y2, timeSec = 0, opts = {}) {
   const color = opts.color || '#38BDF8';
-  const speed = opts.speed || 1.4;
+  const speed = opts.speed || 1.25;
   const offset = opts.phase || 0;
-  const p = (((timeSec || 0) * speed) + offset) % 1.0;
-  const px = x1 + (x2 - x1) * p;
-  const py = y1 + (y2 - y1) * p;
+  const count = opts.orbs !== undefined ? opts.orbs : 2;
+  const liveT = timeSec || (typeof window !== 'undefined' && Number.isFinite(window.__studioCurrentTimeSec) ? window.__studioCurrentTimeSec : 0);
 
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(px, py, 7.5, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.globalAlpha = 0.38;
-  ctx.fill();
+  for (let i = 0; i < count; i++) {
+    const p = ((liveT * speed) + offset + (i / count)) % 1.0;
+    const px = x1 + (x2 - x1) * p;
+    const py = y1 + (y2 - y1) * p;
 
-  ctx.beginPath();
-  ctx.arc(px, py, 3.8, 0, Math.PI * 2);
-  ctx.fillStyle = '#FFFFFF';
-  ctx.globalAlpha = 1.0;
-  ctx.fill();
+    // Subtle trailing tail
+    const tailP = Math.max(0, p - 0.08);
+    const tx = x1 + (x2 - x1) * tailP;
+    const ty = y1 + (y2 - y1) * tailP;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(px, py);
+    ctx.stroke();
+
+    // Outer halo
+    ctx.beginPath();
+    ctx.arc(px, py, 8.5, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.42;
+    ctx.fill();
+
+    // Inner bright core
+    ctx.beginPath();
+    ctx.arc(px, py, 4.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.globalAlpha = 1.0;
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -119,8 +139,16 @@ function solidArrow(ctx, x1, y1, x2, y2, opts = {}) {
   }
   ctx.restore();
 
-  if (opts.timeSec !== undefined && p > 0.85 && opts.packets !== false) {
-    pulseOrb(ctx, x1, y1, x2, y2, opts.timeSec, { color: opts.orbColor || color, speed: opts.speed });
+  const liveT = opts.timeSec !== undefined
+    ? opts.timeSec
+    : (typeof window !== 'undefined' && Number.isFinite(window.__studioCurrentTimeSec) ? window.__studioCurrentTimeSec : undefined);
+
+  if (liveT !== undefined && p > 0.75 && opts.packets !== false) {
+    pulseOrb(ctx, x1, y1, x2, y2, liveT, {
+      color: opts.orbColor || color,
+      speed: opts.speed,
+      orbs: opts.orbs
+    });
   }
 }
 

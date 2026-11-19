@@ -120,9 +120,131 @@ function sparkBurst(ctx, cx, cy, progress, opts = {}) {
   ctx.restore();
 }
 
+/**
+ * Expanding concentric sonar/radar pulse rings behind a focal component.
+ */
+function sonarPulse(ctx, cx, cy, timeSec = 0, opts = {}) {
+  const color = opts.color || '#38BDF8';
+  const rings = opts.rings || 3;
+  const minR = opts.minRadius || 36;
+  const maxR = opts.maxRadius || 125;
+  const speed = opts.speed || 0.7;
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  for (let i = 0; i < rings; i++) {
+    const phase = ((timeSec * speed) + (i / rings)) % 1;
+    const r = minR + (maxR - minR) * phase;
+    ctx.globalAlpha = (1 - phase) * (opts.alpha || 0.42);
+    ctx.lineWidth = 2.4 * (1 - phase * 0.5);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * High-velocity stream of glowing message capsules flying between two coordinates.
+ */
+function dataStreamParticles(ctx, x1, y1, x2, y2, timeSec = 0, opts = {}) {
+  const count = opts.count || 4;
+  const color = opts.color || '#34D399';
+  const speed = opts.speed || 1.1;
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+
+  ctx.save();
+  for (let i = 0; i < count; i++) {
+    const p = ((timeSec * speed) + (i / count)) % 1;
+    const px = x1 + (x2 - x1) * p;
+    const py = y1 + (y2 - y1) * p;
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(angle);
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.roundRect(-14, -5, 28, 10, 5);
+    ctx.fill();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.roundRect(-6, -2.5, 12, 5, 2.5);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/**
+ * Animated radial speedometer / throughput gauge dial with glowing needle and live counter.
+ */
+function liveGaugeArc(ctx, cx, cy, radius = 90, progress = 1, opts = {}) {
+  const color = opts.color || '#34D399';
+  const trackColor = opts.trackColor || 'rgba(51, 65, 85, 0.55)';
+  const fillRatio = Math.max(0, Math.min(1, (opts.valueRatio !== undefined ? opts.valueRatio : 0.88) * progress));
+  const startAngle = Math.PI * 0.8;
+  const sweepAngle = Math.PI * 1.4;
+
+  ctx.save();
+  // Background track arc
+  ctx.strokeStyle = trackColor;
+  ctx.lineWidth = 14;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, startAngle, startAngle + sweepAngle);
+  ctx.stroke();
+
+  // Active glowing value arc
+  if (fillRatio > 0.01) {
+    ctx.strokeStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, startAngle, startAngle + sweepAngle * fillRatio);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  // Animated needle
+  const needleAngle = startAngle + sweepAngle * fillRatio;
+  const nx = cx + Math.cos(needleAngle) * (radius - 20);
+  const ny = cy + Math.sin(needleAngle) * (radius - 20);
+  ctx.strokeStyle = '#FACC15';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(nx, ny);
+  ctx.stroke();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (opts.label) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `800 26px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.label, cx, cy + radius * 0.55);
+  }
+  if (opts.sub) {
+    ctx.fillStyle = color;
+    ctx.font = `600 15px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.sub, cx, cy + radius * 0.82);
+  }
+  ctx.restore();
+}
+
 module.exports = {
   strokeDraw,
   typeText,
   crossOutFailure,
-  sparkBurst
+  sparkBurst,
+  sonarPulse,
+  dataStreamParticles,
+  liveGaugeArc
 };

@@ -23,7 +23,15 @@ const BUILTIN_SVGS = {
   postgresElephant: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M24,36 C24,18 42,12 56,14 C72,16 82,28 80,46 C78,64 70,84 58,84 C52,84 52,66 54,56 C44,62 32,58 26,48 Z" fill="#0284C7" stroke="#7DD3FC" stroke-width="3.5"/><circle cx="62" cy="34" r="4.5" fill="#FFFFFF"/><path d="M54,54 C58,58 66,58 72,52" fill="none" stroke="#BAE6FD" stroke-width="3" stroke-linecap="round"/></svg>`,
   kubernetesWheel: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,6 88,26 94,68 68,94 32,94 6,68 12,26" fill="#1D4ED8" stroke="#60A5FA" stroke-width="3.5"/><circle cx="50" cy="52" r="22" fill="none" stroke="#FFFFFF" stroke-width="4.5"/><circle cx="50" cy="52" r="7" fill="#FFFFFF"/><g stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"><line x1="50" y1="20" x2="50" y2="84"/><line x1="20" y1="36" x2="80" y2="68"/><line x1="20" y1="68" x2="80" y2="36"/></g></svg>`,
   rustGear: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="#F97316" stroke-width="10" stroke-dasharray="12 6"/><circle cx="50" cy="50" r="26" fill="#1E1E1E" stroke="#FB923C" stroke-width="3"/><text x="50" y="61" font-family="-apple-system, sans-serif" font-weight="900" font-size="34" fill="#F97316" text-anchor="middle">R</text></svg>`,
-  goGopher: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="20" y="18" width="60" height="68" rx="30" fill="#06B6D4" stroke="#67E8F9" stroke-width="3.5"/><circle cx="38" cy="40" r="9" fill="#FFFFFF"/><circle cx="62" cy="40" r="9" fill="#FFFFFF"/><circle cx="40" cy="40" r="4" fill="#0F172A"/><circle cx="60" cy="40" r="4" fill="#0F172A"/><ellipse cx="50" cy="54" rx="8" ry="5" fill="#FDE047"/><rect x="45" y="58" width="4" height="7" rx="1" fill="#FFFFFF"/><rect x="51" y="58" width="4" height="7" rx="1" fill="#FFFFFF"/></svg>`
+  goGopher: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="20" y="18" width="60" height="68" rx="30" fill="#06B6D4" stroke="#67E8F9" stroke-width="3.5"/><circle cx="38" cy="40" r="9" fill="#FFFFFF"/><circle cx="62" cy="40" r="9" fill="#FFFFFF"/><circle cx="40" cy="40" r="4" fill="#0F172A"/><circle cx="60" cy="40" r="4" fill="#0F172A"/><ellipse cx="50" cy="54" rx="8" ry="5" fill="#FDE047"/><rect x="45" y="58" width="4" height="7" rx="1" fill="#FFFFFF"/><rect x="51" y="58" width="4" height="7" rx="1" fill="#FFFFFF"/></svg>`,
+  hardDiskPlatter: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="14" y="12" width="72" height="76" rx="12" fill="#0F172A" stroke="#38BDF8" stroke-width="3.5"/><circle cx="50" cy="46" r="24" fill="#1E293B" stroke="#7DD3FC" stroke-width="3"/><circle cx="50" cy="46" r="8" fill="#38BDF8"/><path d="M50,28 A18,18 0 0,1 68,46" fill="none" stroke="#34D399" stroke-width="3" stroke-linecap="round"/><polygon points="26,74 48,52 53,57 32,78" fill="#FACC15"/><circle cx="28" cy="76" r="5" fill="#F59E0B"/></svg>`,
+  ramChip: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100"><rect x="10" y="24" width="100" height="46" rx="8" fill="#064E3B" stroke="#34D399" stroke-width="3.5"/><rect x="22" y="34" width="20" height="26" rx="3" fill="#0F172A" stroke="#6EE7B7" stroke-width="2"/><rect x="50" y="34" width="20" height="26" rx="3" fill="#0F172A" stroke="#6EE7B7" stroke-width="2"/><rect x="78" y="34" width="20" height="26" rx="3" fill="#0F172A" stroke="#6EE7B7" stroke-width="2"/><g fill="#FACC15"><rect x="18" y="70" width="8" height="10" rx="1"/><rect x="32" y="70" width="8" height="10" rx="1"/><rect x="46" y="70" width="8" height="10" rx="1"/><rect x="66" y="70" width="8" height="10" rx="1"/><rect x="80" y="70" width="8" height="10" rx="1"/><rect x="94" y="70" width="8" height="10" rx="1"/></g></svg>`,
+  networkCardNic: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100"><rect x="16" y="22" width="88" height="54" rx="8" fill="#0C4A6E" stroke="#38BDF8" stroke-width="3.5"/><rect x="34" y="34" width="34" height="28" rx="5" fill="#0F172A" stroke="#5CE1E6" stroke-width="2.5"/><circle cx="84" cy="38" r="5" fill="#4ADE80"/><circle cx="84" cy="54" r="5" fill="#FACC15"/><path d="M16,32 L6,32 L6,66 L16,66" fill="none" stroke="#94A3B8" stroke-width="4"/><rect x="28" y="76" width="44" height="10" rx="2" fill="#FACC15"/></svg>`,
+  rocketBoost: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,10 C68,26 72,52 68,70 L32,70 C28,52 32,26 50,10 Z" fill="#38BDF8" stroke="#E0F2FE" stroke-width="3"/><circle cx="50" cy="42" r="10" fill="#0F172A" stroke="#FACC15" stroke-width="3"/><polygon points="32,54 16,74 32,70" fill="#F43F5E"/><polygon points="68,54 84,74 68,70" fill="#F43F5E"/><path d="M38,72 L50,94 L62,72 Z" fill="#FACC15"/><path d="M43,72 L50,86 L57,72 Z" fill="#FEF08A"/></svg>`,
+  magnifyingGlass: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="44" cy="44" r="26" fill="rgba(56,189,248,0.2)" stroke="#38BDF8" stroke-width="6"/><line x1="63" y1="63" x2="86" y2="86" stroke="#FACC15" stroke-width="9" stroke-linecap="round"/><path d="M32,36 A14,14 0 0,1 52,32" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/></svg>`,
+  boxArchive: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="16" y="28" width="68" height="56" rx="8" fill="#4C1D95" stroke="#C084FC" stroke-width="3.5"/><rect x="12" y="16" width="76" height="16" rx="5" fill="#6D28D9" stroke="#E9D5FF" stroke-width="3"/><rect x="44" y="16" width="12" height="68" fill="#FACC15" opacity="0.85"/><rect x="38" y="46" width="24" height="14" rx="4" fill="#0F172A" stroke="#FACC15" stroke-width="2"/></svg>`,
+  checkShield: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#064E3B" stroke="#34D399" stroke-width="4"/><path d="M32,52 L45,65 L70,36" fill="none" stroke="#4ADE80" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  warningAlert: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,12 90,84 10,84" fill="#7F1D1D" stroke="#F87171" stroke-width="4" stroke-linejoin="round"/><line x1="50" y1="38" x2="50" y2="60" stroke="#FEF08A" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="73" r="4.5" fill="#FEF08A"/></svg>`
 };
 
 const imageCache = {};
@@ -58,7 +66,8 @@ function get(name) {
 }
 
 /**
- * Ergonomic helper to draw a registered SVG icon centered at (cx, cy).
+ * Ergonomic helper to draw a registered SVG icon centered at (cx, cy),
+ * with automatic continuous kinetic floating, sonar pulse rings, and rotation physics.
  */
 function draw(ctx, name, cx, cy, size = 48, opts = {}) {
   const img = get(name);
@@ -66,13 +75,161 @@ function draw(ctx, name, cx, cy, size = 48, opts = {}) {
   const alpha = opts.alpha !== undefined ? opts.alpha : 1;
   if (alpha <= 0.01) return false;
 
+  const liveT = opts.timeSec !== undefined
+    ? opts.timeSec
+    : (typeof window !== 'undefined' && Number.isFinite(window.__studioCurrentTimeSec) ? window.__studioCurrentTimeSec : 0);
+
+  const animate = opts.animate !== false;
+  const phase = opts.phase || ((cx * 0.013 + cy * 0.017) % 6.28);
+  const floatY = animate ? Math.sin(liveT * 2.8 + phase) * (opts.floatAmp !== undefined ? opts.floatAmp : 4.5) : 0;
+  const scalePulse = animate ? 1 + Math.sin(liveT * 3.4 + phase) * 0.035 : 1;
+
   ctx.save();
   ctx.globalAlpha *= alpha;
+
+  // Expanding sonar pulse ring behind icon
+  if (animate && (opts.pulseRing !== false) && (opts.glowColor || opts.ringColor)) {
+    const rColor = opts.ringColor || opts.glowColor || '#38BDF8';
+    const ringPhase = (liveT * 0.85 + phase * 0.2) % 1;
+    const ringR = (size * 0.45) + ringPhase * (size * 0.55);
+    ctx.save();
+    ctx.strokeStyle = rColor;
+    ctx.globalAlpha *= (1 - ringPhase) * 0.45;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy + floatY, ringR, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  ctx.translate(cx, cy + floatY);
+  if (opts.spin || name === 'gear' || name === 'rustGear' || name === 'kubernetesWheel') {
+    ctx.rotate(liveT * (opts.spinSpeed || 0.9));
+  } else if (animate && opts.tilt !== false) {
+    ctx.rotate(Math.sin(liveT * 2.1 + phase) * 0.045);
+  }
+  ctx.scale(scalePulse, scalePulse);
+
   if (opts.glowColor) {
     ctx.shadowColor = opts.glowColor;
-    ctx.shadowBlur = opts.glowBlur || 14;
+    ctx.shadowBlur = opts.glowBlur || 16;
   }
-  ctx.drawImage(img, cx - size / 2, cy - size / 2, size, size);
+  ctx.drawImage(img, -size / 2, -size / 2, size, size);
+  ctx.restore();
+  return true;
+}
+
+/**
+ * Draws an expressive animated icon inside a glowing circular medallion with an orbiting particle
+ * and an optional bold title + subtitle below. Ideal for uncluttered, high-impact visual scenes.
+ */
+function drawBadge(ctx, name, cx, cy, size = 110, opts = {}) {
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  if (progress <= 0.01) return false;
+
+  const liveT = opts.timeSec !== undefined
+    ? opts.timeSec
+    : (typeof window !== 'undefined' && Number.isFinite(window.__studioCurrentTimeSec) ? window.__studioCurrentTimeSec : 0);
+
+  const color = opts.color || '#38BDF8';
+  const bg = opts.bg || 'rgba(15, 23, 42, 0.92)';
+  const radius = size * 0.68;
+  const phase = opts.phase || ((cx * 0.011 + cy * 0.019) % 6.28);
+
+  // Overshoot pop-in scale
+  const p = Math.min(1, progress);
+  const popScale = p < 0.75
+    ? (p / 0.75) * 1.08
+    : 1.08 - ((p - 0.75) / 0.25) * 0.08;
+
+  ctx.save();
+  ctx.globalAlpha *= p;
+  ctx.translate(cx, cy);
+  ctx.scale(popScale, popScale);
+
+  // Outer expanding radar ripple
+  const ripplePhase = (liveT * 0.75 + phase * 0.2) % 1;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.globalAlpha *= (1 - ripplePhase) * 0.5;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.arc(0, 0, radius + ripplePhase * 34, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Glowing medallion circle
+  ctx.beginPath();
+  ctx.arc(0, 0, radius, 0, Math.PI * 2);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Rotating dashed tech ring inside medallion
+  ctx.save();
+  ctx.rotate(liveT * 0.65 + phase);
+  ctx.strokeStyle = color;
+  ctx.globalAlpha *= 0.45;
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([10, 8]);
+  ctx.beginPath();
+  ctx.arc(0, 0, radius - 10, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Orbiting energy particle on medallion rim
+  const orbitAngle = liveT * 2.2 + phase;
+  const ox = Math.cos(orbitAngle) * radius;
+  const oy = Math.sin(orbitAngle) * radius;
+  ctx.save();
+  ctx.fillStyle = '#FACC15';
+  ctx.shadowColor = '#FACC15';
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.arc(ox, oy, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Draw the icon inside
+  draw(ctx, name, 0, 0, size * 0.74, {
+    glowColor: color,
+    pulseRing: false,
+    timeSec: liveT,
+    phase
+  });
+
+  // Optional top tag pill
+  if (opts.tag) {
+    ctx.font = '800 13px "JetBrains Mono", monospace';
+    const tw = Math.max(96, ctx.measureText(opts.tag).width + 24);
+    ctx.beginPath();
+    ctx.roundRect(-tw / 2, -radius - 20, tw, 26, 13);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.fillStyle = '#090D16';
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.tag, 0, -radius - 3);
+  }
+
+  // Optional title & subtitle below
+  if (opts.title) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = '700 23px Inter, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.title, 0, radius + 38);
+  }
+  if (opts.sub) {
+    ctx.fillStyle = opts.subColor || color;
+    ctx.font = '600 16.5px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.sub, 0, radius + 66);
+  }
+
   ctx.restore();
   return true;
 }
@@ -87,5 +244,6 @@ module.exports = {
   initBuiltinIcons,
   get,
   draw,
+  drawBadge,
   listNames
 };

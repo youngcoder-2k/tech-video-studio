@@ -1,6 +1,6 @@
 {
   "name": "tech-video-studio",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "repository": "https://github.com/youngcoder-2k/tech-video-studio",
   "description": "AI-ready visual motion graphics engine & multi-agent skill kit for producing ByteByteGo-grade 1080p60 YouTube technical explainer videos.",
   "main": "src/index.js",

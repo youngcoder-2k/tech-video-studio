@@ -23,6 +23,10 @@ test('Studio exposes Camera, Effects, Connectors (incl. curvedArrow & flowArrow)
   assert.equal(typeof Studio.Effects.strokeDraw, 'function');
   assert.equal(typeof Studio.Effects.typeText, 'function');
   assert.equal(typeof Studio.Effects.crossOutFailure, 'function');
+  assert.equal(typeof Studio.Effects.sonarPulse, 'function');
+  assert.equal(typeof Studio.Effects.dataStreamParticles, 'function');
+  assert.equal(typeof Studio.Effects.liveGaugeArc, 'function');
+  assert.equal(typeof Studio.Icons.drawBadge, 'function');
   assert.equal(typeof Studio.Connectors.solidArrow, 'function');
   assert.equal(typeof Studio.Connectors.flowArrow, 'function');
   assert.equal(typeof Studio.Connectors.curvedArrow, 'function');
@@ -65,13 +69,14 @@ test('All 28 ByteByteGo high-retention & multi-style archetypes are merged into 
   }
 });
 
-test('Built-in SVG Icon Registry includes 22 system design & backend icons + Icons.draw helper', () => {
+test('Built-in SVG Icon Registry includes 30 system design & backend icons + Icons.draw & Icons.drawBadge', () => {
   const names = Studio.Icons.listNames();
-  assert.ok(names.length >= 22, `Expected >= 22 icons, got ${names.length}`);
-  for (const requiredIcon of ['kafkaLogo', 'redisCube', 'postgresElephant', 'kubernetesWheel', 'rustGear', 'goGopher']) {
+  assert.ok(names.length >= 30, `Expected >= 30 icons, got ${names.length}`);
+  for (const requiredIcon of ['kafkaLogo', 'redisCube', 'postgresElephant', 'kubernetesWheel', 'hardDiskPlatter', 'ramChip', 'networkCardNic', 'rocketBoost']) {
     assert.ok(names.includes(requiredIcon), `Missing built-in icon: ${requiredIcon}`);
   }
   assert.equal(typeof Studio.Icons.draw, 'function');
+  assert.equal(typeof Studio.Icons.drawBadge, 'function');
 });
 
 test('Layout.horizontalPipeline guarantees mathematical left/right margin symmetry', () => {
