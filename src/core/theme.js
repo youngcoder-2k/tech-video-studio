@@ -593,10 +593,10 @@ function withBeat(ctx, localT, startSec, endSec, drawFn, opts = {}) {
   const progress = 1 - ((1 - rawProg) ** 2.5);
   const offsetY = (1 - easeIn) * (opts.slideY !== undefined ? opts.slideY : 20);
 
-  // Continuous kinetic micro-zoom & float across the beat so the canvas never feels static
+  // Rock-solid stage by default (no continuous wobble/drift on static icons or cards; opt-in via kineticCamera: true)
   const beatRatio = Math.min(1, elapsed / beatSpan);
-  const kineticScale = opts.kineticCamera === false ? 1 : (0.982 + beatRatio * 0.032);
-  const kineticFloatY = opts.kineticCamera === false ? 0 : Math.sin(elapsed * 1.6) * 2.5;
+  const kineticScale = opts.kineticCamera === true ? (0.985 + beatRatio * 0.025) : 1;
+  const kineticFloatY = 0;
 
   const stagger = (index = 0, delayStep = 0.48, dur = 0.68) => {
     const t = Math.max(0, elapsed - index * delayStep);

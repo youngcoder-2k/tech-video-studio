@@ -988,6 +988,141 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
   }
 }
 
+/**
+ * Audio-First Auto-Tight Blueprint Narration Synthesizer (v3.1).
+ * Synthesizes every beat at natural 1.0x speed (zero atempo distortion), measures each
+ * clip's exact duration, and locks every visual beat's `duration` to `clipDur + beatGapSec`
+ * (default 0.65s) so transitions are seamless with zero long dead-air pauses.
+ */
+async function synthesizeBlueprintNarrationAutoFit(blueprint, outWavPath, opts = {}) {
+  const status = await checkStatus(opts);
+  const useVoiceStudio = status.running;
+  const beatGapSec = Number.isFinite(Number(opts.beatGapSec)) ? Number(opts.beatGapSec) : 0.65;
+  const sceneExtraGapSec = Number.isFinite(Number(opts.sceneExtraGapSec)) ? Number(opts.sceneExtraGapSec) : 0.25;
+  const leadInSec = 0.18;
+
+  const cloned = JSON.parse(JSON.stringify(blueprint));
+  const beatRefs = [];
+  (cloned.scenes || []).forEach((sc, scIdx) => {
+    (sc.beats || []).forEach((b, bIdx) => {
+      beatRefs.push({
+        scIdx,
+        bIdx,
+        isLastInScene: bIdx === sc.beats.length - 1,
+        beat: b,
+        text: String(b.narration || '').trim()
+      });
+    });
+  });
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'techvid-autofit-'));
+  const ffmpeg = findFfmpegExecutable();
+  let activeEngine = 'none';
+
+  try {
+    const concurrency = 4;
+    const clipInfo = new Array(beatRefs.length);
+
+    for (let i = 0; i < beatRefs.length; i += concurrency) {
+      const batch = beatRefs.slice(i, i + concurrency);
+      await Promise.all(batch.map(async (item, offset) => {
+        const idx = i + offset;
+        if (!item.text) {
+          clipInfo[idx] = { path: null, durationSec: item.beat.duration || 6, wordCount: 0 };
+          return;
+        }
+        const wavPath = path.join(tmpDir, `beat_${idx}.wav`);
+        const segOpts = {
+          ...opts,
+          persona: item.beat.persona || cloned.persona || opts.persona || 'senior-sa',
+          lang: item.beat.lang || cloned.lang || opts.lang
+        };
+        const info = useVoiceStudio
+          ? await synthesizeClipWithVoiceStudio(item.text, wavPath, segOpts)
+          : await synthesizeClipLocalFallbackAsync(item.text, wavPath, segOpts);
+        activeEngine = info.engine;
+        const dur = getAudioDurationSec(wavPath);
+        const wordCount = item.text.split(/\s+/).filter(Boolean).length;
+        clipInfo[idx] = { path: wavPath, durationSec: dur, wordCount };
+      }));
+    }
+
+    // Lock each visual beat's duration to exact speech length + crisp natural gap
+    let cursorSec = 0;
+    let totalWords = 0;
+    let totalSpeechSec = 0;
+    const scheduled = [];
+
+    beatRefs.forEach((item, idx) => {
+      const ci = clipInfo[idx];
+      const gap = beatGapSec + (item.isLastInScene ? sceneExtraGapSec : 0);
+      const exactBeatDur = Number((leadInSec + ci.durationSec + gap).toFixed(2));
+      item.beat.duration = exactBeatDur;
+
+      if (ci.path) {
+        scheduled.push({
+          path: ci.path,
+          startMs: Math.max(0, Math.round((cursorSec + leadInSec) * 1000)),
+          durationSec: ci.durationSec
+        });
+        totalWords += ci.wordCount;
+        totalSpeechSec += ci.durationSec;
+      }
+      cursorSec += exactBeatDur;
+    });
+
+    const totalDurationSec = Number(cursorSec.toFixed(2));
+    const avgWpm = totalSpeechSec > 0 ? Math.round((totalWords / totalSpeechSec) * 60) : 0;
+    let totalGap = 0;
+    for (let k = 1; k < scheduled.length; k++) {
+      const prevEnd = (scheduled[k - 1].startMs / 1000) + scheduled[k - 1].durationSec;
+      totalGap += Math.max(0, (scheduled[k].startMs / 1000) - prevEnd);
+    }
+    const avgGapSec = scheduled.length > 1 ? Number((totalGap / (scheduled.length - 1)).toFixed(2)) : 0;
+
+    // Assemble master 48kHz stereo WAV
+    const inputs = ['-f', 'lavfi', '-t', String(totalDurationSec), '-i', 'anullsrc=r=48000:cl=stereo'];
+    const delayFilters = [];
+    const mixLabels = ['[0:a]'];
+    scheduled.forEach((clip, idx) => {
+      inputs.push('-i', clip.path);
+      const inIdx = idx + 1;
+      const lbl = `[a${inIdx}]`;
+      delayFilters.push(`[${inIdx}:a]adelay=${clip.startMs}|${clip.startMs}${lbl}`);
+      mixLabels.push(lbl);
+    });
+
+    const filterComplex = [
+      ...delayFilters,
+      `${mixLabels.join('')}amix=inputs=${mixLabels.length}:duration=first:dropout_transition=0:normalize=0,volume=1.18,alimiter=limit=0.95:level=false[outa]`
+    ].join(';');
+
+    execFileSync(ffmpeg, [
+      '-y',
+      ...inputs,
+      '-filter_complex', filterComplex,
+      '-map', '[outa]',
+      '-ar', '48000',
+      '-ac', '2',
+      '-c:a', 'pcm_s16le',
+      outWavPath
+    ], { stdio: 'ignore' });
+
+    return {
+      alignedBlueprint: cloned,
+      outWavPath,
+      engine: activeEngine,
+      clipCount: scheduled.length,
+      totalDurationSec,
+      avgWpm,
+      avgGapSec,
+      maxTempoApplied: 1.0
+    };
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
+
 module.exports = {
   DEFAULT_VOICESTUDIO_URL,
   SENIOR_SA_PERSONAS,
@@ -1000,5 +1135,6 @@ module.exports = {
   synthesizeClipLocalFallback,
   synthesizeClipLocalFallbackAsync,
   fitAndMasterClip,
-  synthesizeSceneNarrationTrack
+  synthesizeSceneNarrationTrack,
+  synthesizeBlueprintNarrationAutoFit
 };

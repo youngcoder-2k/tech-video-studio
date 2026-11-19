@@ -79,40 +79,22 @@ function draw(ctx, name, cx, cy, size = 48, opts = {}) {
     ? opts.timeSec
     : (typeof window !== 'undefined' && Number.isFinite(window.__studioCurrentTimeSec) ? window.__studioCurrentTimeSec : 0);
 
-  const animate = opts.animate !== false;
+  // Static icons & logos stay rock-solid by default (opt-in `animate: true` or `spin: true` only)
+  const animate = opts.animate === true;
   const phase = opts.phase || ((cx * 0.013 + cy * 0.017) % 6.28);
-  const floatY = animate ? Math.sin(liveT * 2.8 + phase) * (opts.floatAmp !== undefined ? opts.floatAmp : 4.5) : 0;
-  const scalePulse = animate ? 1 + Math.sin(liveT * 3.4 + phase) * 0.035 : 1;
+  const floatY = animate ? Math.sin(liveT * 2.4 + phase) * (opts.floatAmp !== undefined ? opts.floatAmp : 3.5) : 0;
 
   ctx.save();
   ctx.globalAlpha *= alpha;
 
-  // Expanding sonar pulse ring behind icon
-  if (animate && (opts.pulseRing !== false) && (opts.glowColor || opts.ringColor)) {
-    const rColor = opts.ringColor || opts.glowColor || '#38BDF8';
-    const ringPhase = (liveT * 0.85 + phase * 0.2) % 1;
-    const ringR = (size * 0.45) + ringPhase * (size * 0.55);
-    ctx.save();
-    ctx.strokeStyle = rColor;
-    ctx.globalAlpha *= (1 - ringPhase) * 0.45;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(cx, cy + floatY, ringR, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  }
-
   ctx.translate(cx, cy + floatY);
-  if (opts.spin || name === 'gear' || name === 'rustGear' || name === 'kubernetesWheel') {
+  if (opts.spin === true) {
     ctx.rotate(liveT * (opts.spinSpeed || 0.9));
-  } else if (animate && opts.tilt !== false) {
-    ctx.rotate(Math.sin(liveT * 2.1 + phase) * 0.045);
   }
-  ctx.scale(scalePulse, scalePulse);
 
   if (opts.glowColor) {
     ctx.shadowColor = opts.glowColor;
-    ctx.shadowBlur = opts.glowBlur || 16;
+    ctx.shadowBlur = opts.glowBlur || 12;
   }
   ctx.drawImage(img, -size / 2, -size / 2, size, size);
   ctx.restore();

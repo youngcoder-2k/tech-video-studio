@@ -851,17 +851,41 @@ async function cmdBuildVideo(positional, flags) {
   const workDir = path.dirname(outMp4);
   fs.mkdirSync(workDir, { recursive: true });
 
-  // Ensure standalone bundle is accessible next to compiled HTML
+  // Always sync the latest standalone bundle next to compiled HTML
   const bundleSrc = findBundlePath();
   const localBundle = path.join(workDir, 'tech-video-studio.bundle.js');
-  if (bundleSrc && !fs.existsSync(localBundle)) {
+  if (bundleSrc) {
     fs.copyFileSync(bundleSrc, localBundle);
   }
 
   const compiledHtml = outMp4.replace(/\.mp4$/i, '.html');
-  bp.writeBlueprintHtml(bpPath, compiledHtml, {
+  const rawBlueprint = JSON.parse(fs.readFileSync(bpPath, 'utf8'));
+  let activeBlueprint = rawBlueprint;
+  let prebuiltAudioWav = flags.audio ? path.resolve(process.cwd(), flags.audio) : null;
+
+  // Audio-First Auto-Tight Timing: synthesize each beat at natural 1.0x speed and lock visual
+  // beat durations to `clipDuration + 0.65s` so transitions are seamless with zero long dead-air!
+  const vs = loadVoiceStudio();
+  if (!prebuiltAudioWav && vs && typeof vs.synthesizeBlueprintNarrationAutoFit === 'function' && flags['no-voice'] !== true) {
+    const autoWav = outMp4 + '.autofit.wav';
+    const personaKey = typeof flags.voice === 'string' ? flags.voice : (rawBlueprint.persona || 'senior-sa');
+    console.log(`🎙️  Audio-First Auto-Fit Narration (${personaKey}) — locking visual beat durations to exact speech length...`);
+    const fitRes = await vs.synthesizeBlueprintNarrationAutoFit(rawBlueprint, autoWav, {
+      url: flags['voicestudio-url'],
+      persona: personaKey,
+      lang: flags.lang,
+      rate: flags.rate,
+      speed: flags.speed,
+      beatGapSec: flags.gap ? parseFloat(flags.gap) : 0.65
+    });
+    activeBlueprint = fitRes.alignedBlueprint;
+    prebuiltAudioWav = autoWav;
+    console.log(`   ✅ Auto-aligned ${fitRes.clipCount} beats -> ${fitRes.totalDurationSec}s total (Avg pace: ${fitRes.avgWpm} WPM, Seamless gap: ${fitRes.avgGapSec}s, MaxTempo: 1.0x)`);
+  }
+
+  fs.writeFileSync(compiledHtml, bp.compileBlueprintToHtml(activeBlueprint, {
     bundleSrc: './tech-video-studio.bundle.js'
-  });
+  }), 'utf8');
   console.log(`🧩 Compiled Blueprint -> ${compiledHtml}`);
 
   if (flags.qa) {
@@ -872,10 +896,17 @@ async function cmdBuildVideo(positional, flags) {
     ...flags,
     out: outMp4,
     fps: flags.fps || '30',
-    voice: flags.voice !== undefined ? flags.voice : 'senior-sa',
+    audio: prebuiltAudioWav || flags.audio,
+    voice: prebuiltAudioWav ? undefined : (flags.voice !== undefined ? flags.voice : 'senior-sa'),
     'no-sfx': flags.sfx ? false : true
   };
-  await cmdRender([compiledHtml], renderFlags);
+  try {
+    await cmdRender([compiledHtml], renderFlags);
+  } finally {
+    if (prebuiltAudioWav && prebuiltAudioWav.endsWith('.autofit.wav') && fs.existsSync(prebuiltAudioWav)) {
+      try { fs.unlinkSync(prebuiltAudioWav); } catch {}
+    }
+  }
 }
 
 // ============================================================================
