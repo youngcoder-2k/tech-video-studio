@@ -80,6 +80,7 @@ fs.mkdirSync(skillScriptsDir, { recursive: true });
 fs.writeFileSync(path.join(skillScriptsDir, 'tech-video-studio.bundle.js'), bundle, 'utf8');
 fs.copyFileSync(path.join(ROOT, 'bin/tech-video-studio.js'), path.join(skillScriptsDir, 'tech-video-studio.js'));
 fs.copyFileSync(path.join(ROOT, 'src/audio/sfx-gen.js'), path.join(skillScriptsDir, 'sfx-gen.js'));
+fs.copyFileSync(path.join(ROOT, 'src/audio/voicestudio.js'), path.join(skillScriptsDir, 'voicestudio.js'));
 fs.copyFileSync(path.join(ROOT, 'data/metaphors.json'), path.join(skillScriptsDir, 'metaphors.json'));
 
 console.log(`Built ${outPath} (${(Buffer.byteLength(bundle) / 1024).toFixed(1)} KB) & synced standalone skill scripts.`);

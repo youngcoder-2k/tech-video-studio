@@ -33,6 +33,15 @@ function loadSfxGen() {
   return found ? require(found) : null;
 }
 
+function loadVoiceStudio() {
+  const candidates = [
+    path.join(ROOT, 'src/audio/voicestudio.js'),
+    path.join(__dirname, 'voicestudio.js')
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  return found ? require(found) : null;
+}
+
 function findChromeExecutable() {
   if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
     return process.env.CHROME_PATH;
@@ -383,6 +392,7 @@ async function cmdRender(positional, flags) {
   });
 
   let tmpSfxWav = null;
+  let tmpVoiceWav = null;
 
   try {
     const page = await browser.newPage();
@@ -390,10 +400,37 @@ async function cmdRender(positional, flags) {
     await page.goto('file://' + htmlPath, { waitUntil: 'networkidle0' });
     await page.waitForFunction(() => window.__studioReady === true || window.iconsReady === true, { timeout: 15000 });
 
+    if (flags.scale || flags.retina) {
+      const factor = flags.retina ? 2 : parseFloat(flags.scale);
+      await page.evaluate((f) => {
+        if (typeof window.__studioSetScaleFactor === 'function') window.__studioSetScaleFactor(f);
+      }, factor);
+    }
+
     const meta = await page.evaluate(() => window.__studioMeta || null);
     const duration = flags.duration
       ? parseFloat(flags.duration)
       : (meta && meta.totalDuration ? meta.totalDuration : 60);
+
+    // Synthesize Senior SA Narration Track via debpalash/VoiceStudio (or local mastered fallback) when --voice is passed
+    let activeAudioPath = flags.audio ? path.resolve(process.cwd(), flags.audio) : null;
+    if (!activeAudioPath && flags.voice) {
+      const vs = loadVoiceStudio();
+      if (vs && meta && Array.isArray(meta.narrationSegments) && meta.narrationSegments.length > 0) {
+        const personaKey = typeof flags.voice === 'string' ? flags.voice : 'senior-sa';
+        tmpVoiceWav = outMp4 + '.narration.wav';
+        console.log(`🎙️  Generating Senior SA Narration Track (${personaKey}) across ${meta.narrationSegments.length} scenes...`);
+        const navRes = await vs.synthesizeSceneNarrationTrack(meta.narrationSegments, duration, tmpVoiceWav, {
+          url: flags['voicestudio-url'],
+          persona: personaKey,
+          voice: flags['voice-id'],
+          lang: flags.lang,
+          allowFallback: !flags['strict-voicestudio']
+        });
+        activeAudioPath = tmpVoiceWav;
+        console.log(`   ✅ Synthesized ${navRes.clipCount} scene voiceovers via [${navRes.engine}] -> ${path.basename(tmpVoiceWav)}`);
+      }
+    }
 
     // Synthesize procedural motion SFX track if scene defines sfx cues and --no-sfx is not set
     const sfxGen = loadSfxGen();
@@ -405,20 +442,20 @@ async function cmdRender(positional, flags) {
 
     const buildAudioArgs = () => {
       const audioArgs = [];
-      if (flags.audio && tmpSfxWav) {
+      if (activeAudioPath && tmpSfxWav) {
         audioArgs.push(
-          '-i', path.resolve(process.cwd(), flags.audio),
+          '-i', activeAudioPath,
           '-i', tmpSfxWav,
-          '-filter_complex', '[1:a]loudnorm=I=-14:TP=-1.5:LRA=11[voice];[2:a]volume=0.85[sfx];[voice][sfx]amix=inputs=2:duration=first:dropout_transition=2[aout]',
+          '-filter_complex', '[1:a]loudnorm=I=-14:TP=-1.5:LRA=11[voice];[2:a]volume=0.48[sfx];[voice][sfx]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]',
           '-map', '0:v',
           '-map', '[aout]',
           '-c:a', 'aac',
           '-b:a', '192k',
           '-shortest'
         );
-      } else if (flags.audio) {
+      } else if (activeAudioPath) {
         audioArgs.push(
-          '-i', path.resolve(process.cwd(), flags.audio),
+          '-i', activeAudioPath,
           '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11',
           '-c:a', 'aac',
           '-b:a', '192k',
@@ -522,8 +559,116 @@ async function cmdRender(positional, flags) {
     if (tmpSfxWav && fs.existsSync(tmpSfxWav)) {
       fs.unlinkSync(tmpSfxWav);
     }
+    if (tmpVoiceWav && fs.existsSync(tmpVoiceWav)) {
+      fs.unlinkSync(tmpVoiceWav);
+    }
     await browser.close();
   }
+}
+
+// ============================================================================
+// COMMAND 5: voice <status|design|narrate> (debpalash/VoiceStudio Integration)
+// ============================================================================
+async function cmdVoice(positional, flags) {
+  const vs = loadVoiceStudio();
+  if (!vs) {
+    throw new Error('voicestudio.js module not found.');
+  }
+
+  const sub = (positional[0] || 'status').toLowerCase();
+
+  if (sub === 'status') {
+    const st = await vs.checkStatus({ url: flags.url || flags['voicestudio-url'] });
+    console.log(`\n🎙️  VoiceStudio Integration Status (https://github.com/debpalash/VoiceStudio)`);
+    console.log(`   Backend URL:      ${st.url}`);
+    console.log(`   Server Running:   ${st.running ? `✅ Online (${st.version})` : '⚪ Offline (Local Mastered TTS Fallback Ready)'}`);
+    console.log(`   CLI Binary:       ${st.cliPath || 'Not in PATH'}`);
+    console.log(`   Desktop App:      ${st.appInstalled ? '✅ /Applications/VoiceStudio.app' : 'Not installed'}`);
+    console.log(`   Built-in Senior SA Personas:`);
+    Object.values(vs.SENIOR_SA_PERSONAS).forEach((p) => {
+      console.log(`     • ${p.id.padEnd(18)} — ${p.name} [${p.language}]`);
+    });
+    if (st.running && st.profiles && st.profiles.length > 0) {
+      console.log(`   Saved VoiceStudio Profiles (${st.profiles.length}):`);
+      st.profiles.slice(0, 10).forEach((p) => {
+        console.log(`     • ${p.id || p.voice_id}: ${p.name || 'Voice'}`);
+      });
+    } else if (!st.running && st.installGuide) {
+      console.log(`\n💡 To install or launch debpalash/VoiceStudio on your machine:`);
+      console.log(`   macOS (Homebrew): ${st.installGuide.macos}`);
+      console.log(`   One-line script:  ${st.installGuide.oneCommand}`);
+      console.log(`   Docker container: ${st.installGuide.docker}\n`);
+    }
+    return;
+  }
+
+  if (sub === 'design') {
+    const personaKey = flags.persona || positional[1] || 'senior-sa';
+    console.log(`🎙️  Designing Senior SA Voice Profile (${personaKey}) in VoiceStudio...`);
+    const created = await vs.ensureSeniorSaProfile({
+      url: flags.url || flags['voicestudio-url'],
+      persona: personaKey,
+      name: flags.name,
+      description: flags.description,
+      language: flags.lang,
+      engine: flags.engine
+    });
+    console.log(`✅ Senior SA Voice Profile Ready: "${created.name}" (ID: ${created.profileId})`);
+    return;
+  }
+
+  if (sub === 'narrate') {
+    const puppeteer = require('puppeteer-core');
+    const htmlFile = positional[1] || flags.html;
+    if (!htmlFile) {
+      throw new Error('Usage: techvid voice narrate <scene.html> -o <narration.wav> [--persona senior-sa]');
+    }
+    const htmlPath = path.resolve(process.cwd(), htmlFile);
+    if (!fs.existsSync(htmlPath)) {
+      throw new Error(`HTML file not found: ${htmlPath}`);
+    }
+    const outWav = path.resolve(process.cwd(), flags.out || path.join(path.dirname(htmlPath), 'narration_senior_sa.wav'));
+    fs.mkdirSync(path.dirname(outWav), { recursive: true });
+
+    const browser = await puppeteer.launch({
+      executablePath: findChromeExecutable(),
+      headless: 'new',
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
+    let meta = null;
+    try {
+      const page = await browser.newPage();
+      await page.goto('file://' + htmlPath, { waitUntil: 'networkidle0' });
+      await page.waitForFunction(() => window.__studioReady === true || window.iconsReady === true, { timeout: 15000 });
+      meta = await page.evaluate(() => window.__studioMeta || null);
+    } finally {
+      await browser.close();
+    }
+
+    if (!meta || !Array.isArray(meta.narrationSegments) || meta.narrationSegments.length === 0) {
+      throw new Error('No narration or caption segments found in HTML scenes.');
+    }
+
+    const personaKey = flags.persona || 'senior-sa';
+    const res = await vs.synthesizeSceneNarrationTrack(
+      meta.narrationSegments,
+      meta.totalDuration || 60,
+      outWav,
+      {
+        url: flags.url || flags['voicestudio-url'],
+        persona: personaKey,
+        voice: flags.voice,
+        lang: flags.lang,
+        allowFallback: !flags['strict-voicestudio']
+      }
+    );
+
+    console.log(`✅ Generated Senior SA Narration WAV (${res.clipCount} scenes, ${res.totalDurationSec}s) via [${res.engine}] -> ${outWav}`);
+    return;
+  }
+
+  throw new Error(`Unknown voice subcommand "${sub}". Use: status | design | narrate`);
 }
 
 // ============================================================================
@@ -562,24 +707,32 @@ function cmdInstallSkill(flags) {
   fs.copyFileSync(__filename, path.join(scriptsDir, 'tech-video-studio.js'));
   const sfxSrc = path.join(ROOT, 'src/audio/sfx-gen.js');
   if (fs.existsSync(sfxSrc)) fs.copyFileSync(sfxSrc, path.join(scriptsDir, 'sfx-gen.js'));
+  const vsSrc = path.join(ROOT, 'src/audio/voicestudio.js');
+  if (fs.existsSync(vsSrc)) fs.copyFileSync(vsSrc, path.join(scriptsDir, 'voicestudio.js'));
   const mPath = findMetaphorsPath();
   if (mPath) fs.copyFileSync(mPath, path.join(scriptsDir, 'metaphors.json'));
   const bPath = findBundlePath();
   if (bPath) fs.copyFileSync(bPath, path.join(scriptsDir, 'tech-video-studio.bundle.js'));
 
-  console.log(`✅ Installed "tech-video-studio" (v2.0) AI Skill to: ${dest}`);
+  console.log(`✅ Installed "tech-video-studio" (v2.2 Senior SA VoiceStudio Edition) AI Skill to: ${dest}`);
 }
 
 function printHelp() {
   console.log(`
-Tech Video Studio CLI (v2.0.0 — ByteByteGo Edition) — YouTube 1080p60 Technical Explainer Engine
+Tech Video Studio CLI (v2.2.0 — ByteByteGo + VoiceStudio Senior SA Edition)
 
 Usage:
   techvid metaphor <keywords>                     Search diverse visual metaphors & avoid box monotony
   techvid new <folder> [--title "Video Title"]    Scaffold a new 1080p60 ByteByteGo explainer project
   techvid qa <scene.html> [--times 8,22,36,54]    Capture keyframes + negative-space QA + 2x2 contact sheet
-  techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact 60FPS H.264 MP4 render (+ auto SFX)
-          [--fps 60] [--duration 60] [--audio voice.mp3] [--no-sfx] [--mode deterministic|stream]
+  techvid voice status [--url http://localhost:3900]
+                                                  Check debpalash/VoiceStudio connection & Senior SA personas
+  techvid voice design [--persona senior-sa|staff-engineer|tech-storyteller|vi-senior-sa]
+                                                  Design a natural Senior SA voice profile in VoiceStudio
+  techvid voice narrate <scene.html> -o <out.wav> [--persona senior-sa] [--lang en|vi]
+                                                  Synthesize scene-synchronized Senior SA voiceover track
+  techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact 60FPS H.264 MP4 render
+          [--voice senior-sa] [--audio voice.mp3] [--fps 60] [--no-sfx] [--retina]
   techvid install-skill [--target antigravity|claude|cursor|codex|local] [--dest <path>]
 `);
 }
@@ -600,6 +753,10 @@ Usage:
         break;
       case 'qa':
         await cmdQa(positional, flags);
+        break;
+      case 'voice':
+      case 'voicestudio':
+        await cmdVoice(positional, flags);
         break;
       case 'render':
         await cmdRender(positional, flags);

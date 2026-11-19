@@ -46,6 +46,7 @@ function createVideo(config) {
   let cursor = 0;
   const allSfxCues = [];
   const allCaptions = Array.isArray(config.captions) ? [...config.captions] : [];
+  const narrationSegments = [];
 
   const scenes = (config.scenes || []).map((sc, idx) => {
     const duration = sc.duration || 15;
@@ -82,6 +83,34 @@ function createVideo(config) {
           end: start + (cap.end !== undefined ? cap.end : duration),
           text: cap.text
         });
+      });
+    }
+
+    // Collect scene narration (explicit sc.narration or auto-joined from sc.captions)
+    let sceneNarrationText = '';
+    let scenePersona = config.persona || 'senior-sa';
+    let sceneLang = config.lang || 'en';
+    if (typeof sc.narration === 'string') {
+      sceneNarrationText = sc.narration;
+    } else if (sc.narration && typeof sc.narration === 'object') {
+      sceneNarrationText = sc.narration.text || '';
+      if (sc.narration.persona) scenePersona = sc.narration.persona;
+      if (sc.narration.lang) sceneLang = sc.narration.lang;
+    } else if (Array.isArray(sc.captions) && sc.captions.length > 0) {
+      sceneNarrationText = sc.captions.map((c) => c.text).filter(Boolean).join(' ');
+    }
+
+    if (sceneNarrationText.trim()) {
+      narrationSegments.push({
+        sceneIndex: idx,
+        sceneId: sc.id || `scene-${idx + 1}`,
+        chapter: sc.chapter || `0${idx + 1}. Scene ${idx + 1}`,
+        start,
+        end,
+        duration,
+        persona: scenePersona,
+        lang: sceneLang,
+        text: sceneNarrationText.trim()
       });
     }
 
@@ -186,7 +215,7 @@ function createVideo(config) {
   }
 
   window.__studioMeta = {
-    version: '2.1.0',
+    version: '2.2.0',
     title,
     width,
     height,
@@ -194,6 +223,7 @@ function createVideo(config) {
     totalDuration,
     qaTimes: scenes.map((s) => s.qaTime),
     sfxCues: allSfxCues,
+    narrationSegments,
     scenes: scenes.map((s) => ({
       index: s.index,
       id: s.id,

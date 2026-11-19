@@ -412,6 +412,49 @@ function drawCaptionBar(ctx, text, options = {}) {
   ctx.restore();
 }
 
+/**
+ * Animated Broadcast Voiceover Equalizer / Senior SA Narrator Pill.
+ */
+function drawSpeakerWave(ctx, timeSec = 0, options = {}) {
+  const x = options.x !== undefined ? options.x : 64;
+  const y = options.y !== undefined ? options.y : 988;
+  const label = options.label || 'Senior SA';
+  const color = options.color || '#5CE1E6';
+  const alpha = options.alpha !== undefined ? options.alpha : 1;
+  if (alpha <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.font = `600 14px ${FONTS.sans}`;
+  const textW = ctx.measureText(label).width;
+  const pillW = textW + 64;
+  const pillH = 38;
+
+  ctx.beginPath();
+  ctx.roundRect(x, y, pillW, pillH, 19);
+  ctx.fillStyle = 'rgba(18, 24, 32, 0.86)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(92, 225, 230, 0.35)';
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+
+  // Animated 5-bar voice waveform
+  const barX0 = x + 16;
+  const midY = y + pillH / 2;
+  ctx.fillStyle = color;
+  for (let i = 0; i < 5; i++) {
+    const amp = 4 + 9 * Math.abs(Math.sin(timeSec * 7.5 + i * 1.15));
+    ctx.beginPath();
+    ctx.roundRect(barX0 + i * 5, midY - amp / 2, 3, amp, 1.5);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#E2E8F0';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x + 46, y + 24);
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
   GLASS_TINTS,
@@ -422,7 +465,8 @@ module.exports = {
   drawGlassCard,
   drawTakeawayPill,
   drawSpotlightMask,
-  drawCaptionBar
+  drawCaptionBar,
+  drawSpeakerWave
 };
 
   },
@@ -3460,6 +3504,7 @@ function createVideo(config) {
   let cursor = 0;
   const allSfxCues = [];
   const allCaptions = Array.isArray(config.captions) ? [...config.captions] : [];
+  const narrationSegments = [];
 
   const scenes = (config.scenes || []).map((sc, idx) => {
     const duration = sc.duration || 15;
@@ -3496,6 +3541,34 @@ function createVideo(config) {
           end: start + (cap.end !== undefined ? cap.end : duration),
           text: cap.text
         });
+      });
+    }
+
+    // Collect scene narration (explicit sc.narration or auto-joined from sc.captions)
+    let sceneNarrationText = '';
+    let scenePersona = config.persona || 'senior-sa';
+    let sceneLang = config.lang || 'en';
+    if (typeof sc.narration === 'string') {
+      sceneNarrationText = sc.narration;
+    } else if (sc.narration && typeof sc.narration === 'object') {
+      sceneNarrationText = sc.narration.text || '';
+      if (sc.narration.persona) scenePersona = sc.narration.persona;
+      if (sc.narration.lang) sceneLang = sc.narration.lang;
+    } else if (Array.isArray(sc.captions) && sc.captions.length > 0) {
+      sceneNarrationText = sc.captions.map((c) => c.text).filter(Boolean).join(' ');
+    }
+
+    if (sceneNarrationText.trim()) {
+      narrationSegments.push({
+        sceneIndex: idx,
+        sceneId: sc.id || `scene-${idx + 1}`,
+        chapter: sc.chapter || `0${idx + 1}. Scene ${idx + 1}`,
+        start,
+        end,
+        duration,
+        persona: scenePersona,
+        lang: sceneLang,
+        text: sceneNarrationText.trim()
       });
     }
 
@@ -3600,7 +3673,7 @@ function createVideo(config) {
   }
 
   window.__studioMeta = {
-    version: '2.1.0',
+    version: '2.2.0',
     title,
     width,
     height,
@@ -3608,6 +3681,7 @@ function createVideo(config) {
     totalDuration,
     qaTimes: scenes.map((s) => s.qaTime),
     sfxCues: allSfxCues,
+    narrationSegments,
     scenes: scenes.map((s) => ({
       index: s.index,
       id: s.id,
@@ -3876,7 +3950,7 @@ const Runner = require('./core/runner');
 const Illustrations = Object.assign({}, Primitives, Archetypes);
 
 const TechVideoStudio = {
-  version: '2.0.0',
+  version: '2.2.0',
   Theme,
   Camera,
   Effects,

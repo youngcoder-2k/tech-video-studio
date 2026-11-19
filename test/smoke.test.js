@@ -10,6 +10,7 @@ const { execFileSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 const Studio = require('../src/index');
 const SfxGen = require('../src/audio/sfx-gen');
+const VoiceStudio = require('../src/audio/voicestudio');
 
 test('Studio exposes Camera, Effects, Connectors (incl. curvedArrow & flowArrow), and ByteByteGo Theme', () => {
   assert.ok(Studio.Theme.PALETTES.byteCharcoal, 'byteCharcoal palette exists');
@@ -129,6 +130,34 @@ test('Antigravity plugin.json and SKILL.md adhere to strict customization schema
 
   const skillMd = fs.readFileSync(path.join(ROOT, 'skills/tech-video-studio/SKILL.md'), 'utf8');
   assert.match(skillMd, /^---\nname:\s*tech-video-studio\ndescription:/);
+});
+
+test('VoiceStudio Senior SA engine polishes technical terms and exposes 4 Senior SA personas', async () => {
+  assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'], 'senior-sa persona exists');
+  assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['staff-engineer'], 'staff-engineer persona exists');
+  assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['tech-storyteller'], 'tech-storyteller persona exists');
+  assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['vi-senior-sa'], 'vi-senior-sa persona exists');
+
+  const polishedEn = VoiceStudio.polishSeniorSaScript(
+    'Redis achieves < 100 μs latency at 100K+ QPS with O(1) hashes, O(log N) skiplists, epoll, and BGSAVE.',
+    'en'
+  );
+  assert.match(polishedEn, /under 100 microseconds/);
+  assert.match(polishedEn, /over 100 thousand queries per second/);
+  assert.match(polishedEn, /O of 1/);
+  assert.match(polishedEn, /O log N/);
+  assert.match(polishedEn, /e-poll/);
+  assert.match(polishedEn, /background save/);
+
+  const polishedVi = VoiceStudio.polishSeniorSaScript(
+    'Độ trễ < 100 μs ở mức 100K+ QPS với O(1) và epoll.',
+    'vi'
+  );
+  assert.match(polishedVi, /dưới 100 micro giây/);
+  assert.match(polishedVi, /hơn 100 nghìn truy vấn mỗi giây/);
+
+  const skillVs = path.join(ROOT, 'skills/tech-video-studio/scripts/voicestudio.js');
+  assert.ok(fs.existsSync(skillVs), 'skill voicestudio.js missing');
 });
 
 test('CLI metaphor search returns domain-specific visual metaphors including new system design archetypes', () => {

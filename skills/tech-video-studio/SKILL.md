@@ -46,10 +46,24 @@ node skills/tech-video-studio/scripts/tech-video-studio.js qa ./my-video/index.h
 ```
 View `qa_contact_sheet.jpg` with your file reader/vision tool to verify zero text collisions and `>= 35%` negative space.
 
-### Step 4: Render Deterministic 60FPS H.264 MP4 (+ Auto Motion SFX)
+### Step 4: Render Deterministic 60FPS H.264 MP4 (+ Senior SA VoiceStudio Narration & Motion SFX)
+You can synthesize a human-like **Senior Solutions Architect (`senior-sa`)** voiceover track via [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) (`http://localhost:3900`, with automatic mastered local fallback if VoiceStudio is offline) and mux it with procedural Motion SFX in a single command:
+
 ```bash
-node skills/tech-video-studio/scripts/tech-video-studio.js render ./my-video/index.html -o ./my-video/final_1080p60.mp4
+# Check VoiceStudio status & Senior SA personas
+node skills/tech-video-studio/scripts/tech-video-studio.js voice status
+
+# Design a custom Senior SA voice profile in VoiceStudio
+node skills/tech-video-studio/scripts/tech-video-studio.js voice design --persona senior-sa
+
+# Render 1080p60 MP4 with Senior SA voiceover + procedural Motion SFX (-14 LUFS mastered)
+node skills/tech-video-studio/scripts/tech-video-studio.js render ./my-video/index.html -o ./my-video/final_1080p60.mp4 --voice senior-sa
 ```
+Available `--voice` / `--persona` presets:
+- `senior-sa`: Warm, authoritative Senior Solutions Architect (English)
+- `staff-engineer`: Crisp, pragmatic Principal / Staff Systems Engineer (English)
+- `tech-storyteller`: Engaging ByteByteGo-style YouTube host (English)
+- `vi-senior-sa`: Kiến trúc sư giải pháp cấp cao (Tiếng Việt tự nhiên, trầm ấm)
 
 ---
 

@@ -395,6 +395,49 @@ function drawCaptionBar(ctx, text, options = {}) {
   ctx.restore();
 }
 
+/**
+ * Animated Broadcast Voiceover Equalizer / Senior SA Narrator Pill.
+ */
+function drawSpeakerWave(ctx, timeSec = 0, options = {}) {
+  const x = options.x !== undefined ? options.x : 64;
+  const y = options.y !== undefined ? options.y : 988;
+  const label = options.label || 'Senior SA';
+  const color = options.color || '#5CE1E6';
+  const alpha = options.alpha !== undefined ? options.alpha : 1;
+  if (alpha <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.font = `600 14px ${FONTS.sans}`;
+  const textW = ctx.measureText(label).width;
+  const pillW = textW + 64;
+  const pillH = 38;
+
+  ctx.beginPath();
+  ctx.roundRect(x, y, pillW, pillH, 19);
+  ctx.fillStyle = 'rgba(18, 24, 32, 0.86)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(92, 225, 230, 0.35)';
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+
+  // Animated 5-bar voice waveform
+  const barX0 = x + 16;
+  const midY = y + pillH / 2;
+  ctx.fillStyle = color;
+  for (let i = 0; i < 5; i++) {
+    const amp = 4 + 9 * Math.abs(Math.sin(timeSec * 7.5 + i * 1.15));
+    ctx.beginPath();
+    ctx.roundRect(barX0 + i * 5, midY - amp / 2, 3, amp, 1.5);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#E2E8F0';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x + 46, y + 24);
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
   GLASS_TINTS,
@@ -405,5 +448,6 @@ module.exports = {
   drawGlassCard,
   drawTakeawayPill,
   drawSpotlightMask,
-  drawCaptionBar
+  drawCaptionBar,
+  drawSpeakerWave
 };

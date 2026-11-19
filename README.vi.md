@@ -31,6 +31,9 @@ Phiên bản **v2.0** được nâng cấp dựa trên việc mổ xẻ từng k
      - `bTreeHierarchy`: Cây chỉ mục B-Tree nhiều tầng với nhánh tìm kiếm phát sáng.
      - `networkPacketFrame`: Khung gói tin phân tách từng lớp Header (`IPv6 | TCP | TLS | Payload`).
 6. **Bộ Tổng Hợp Âm Thanh Chuyển Động (Procedural 48kHz Stereo Motion SFX)**: Tự động sinh hiệu ứng âm thanh tinh tế (`pop`, `draw`, `whoosh`, `tick`, `success`, `error`) ngay từ mã nguồn và ghép vào file MP4 mà không cần file âm thanh ngoài.
+7. **Tích Hợp [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) & Giọng Thuyết Minh Senior Solutions Architect (`src/audio/voicestudio.js`)**:
+   - Kết nối trực tiếp với **VoiceStudio** (`http://localhost:3900` hoặc `voicestudio` CLI) để thiết kế giọng (`techvid voice design --persona senior-sa`) và thuyết minh tự nhiên như một **Senior Solutions Architect** thực thụ (`senior-sa`, `staff-engineer`, `tech-storyteller`, `vi-senior-sa`).
+   - Tự động chuẩn hóa cách đọc thuật ngữ kỹ thuật (`< 100 μs`, `100K+ QPS`, `O(log N)`, `p99`, `epoll`, `fsync`, `BGSAVE`), tự động khớp thời lượng từng phân cảnh (`atempo` rate-fit) và xử lý âm thanh chuẩn phòng thu (`-14 LUFS` + Studio Condenser EQ).
 
 ---
 

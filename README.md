@@ -22,6 +22,9 @@ Version 2.0 was engineered from frame-by-frame inspection of real **ByteByteGo**
    - **14 New ByteByteGo Archetypes**: `isometricServerStack`, `foldedFileBadge`, `wireframeBrowser`, `wireframeCylinderDb`, `lineArtUser`, `stateMutationCard`, `brokenLinkPlug`, `evolutionTimeline`, `heroMetricSlam`, `comparisonSplitTable`, `swimlaneSequence`, `consistentHashRing`, `bTreeHierarchy`, `networkPacketFrame`.
    - **14 Hardware & Runtime Primitives**: `codeEditorWindow`, `compilerGear`, `bytecodeCapsule`, `hardwareMachine`, `tieredVault`, `xraySecurityScanner`, `lifoStackChamber`, `memoryHeapGrid`, `sequentialReader`, `turboForge`, `nativeAssemblyBlock`, `siliconCpuDie`, `isometricDatabase`, `cacheMemoryMatrix`.
 6. **Procedural 48kHz Stereo Motion SFX Synthesizer (`src/audio/sfx-gen.js`)**: Automatically synthesizes subtle broadcast sound cues (`pop`, `draw`, `whoosh`, `tick`, `success`, `error`) and muxes them into the final MP4 with zero external audio dependencies.
+7. **Native [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio) Integration & Senior SA Voice Personas (`src/audio/voicestudio.js`)**:
+   - Connects directly to local/remote **VoiceStudio** (`http://localhost:3900` or `voicestudio` CLI) to design and synthesize natural, human-like **Senior Solutions Architect (`senior-sa`)** narration (`techvid render scene.html -o video.mp4 --voice senior-sa`).
+   - Built-in technical pronunciation polisher (`< 100 μs` -> *"under 100 microseconds"*, `100K+ QPS`, `O(log N)`, `p99`, `epoll`, `fsync`, `BGSAVE`, `gRPC`) + automatic scene-slot rate fitting and `-14 LUFS` studio condenser mastering.
 
 ---
 
