@@ -51,6 +51,15 @@ function loadReaAnalyzer() {
   return found ? require(found) : null;
 }
 
+function loadBlueprintCompiler() {
+  const candidates = [
+    path.join(ROOT, 'src/core/blueprint.js'),
+    path.join(__dirname, 'blueprint.js')
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  return found ? require(found) : null;
+}
+
 function findChromeExecutable() {
   if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
     return process.env.CHROME_PATH;
@@ -743,7 +752,64 @@ function cmdReaCompare(positional, flags) {
 }
 
 // ============================================================================
-// COMMAND 8: install-skill [--target antigravity|claude|cursor|codex] [--dest <dir>]
+// COMMAND 8: init-blueprint <out.json> [--title "..."]
+// ============================================================================
+function cmdInitBlueprint(positional, flags) {
+  const bp = loadBlueprintCompiler();
+  if (!bp) throw new Error('blueprint.js module not found.');
+  const outJson = path.resolve(process.cwd(), positional[0] || 'video.blueprint.json');
+  const title = flags.title || 'How Modern Systems Scale';
+  fs.mkdirSync(path.dirname(outJson), { recursive: true });
+  fs.writeFileSync(outJson, JSON.stringify(bp.createStarterBlueprint(title), null, 2), 'utf8');
+  console.log(`✅ Created Declarative ByteByteGo Blueprint at: ${outJson}`);
+  console.log(`   Build & render 1080p MP4 with Senior SA voice in one command:`);
+  console.log(`   node "${__filename}" build-video "${outJson}" -o "${outJson.replace(/\.json$/i, '.mp4')}" --voice senior-sa`);
+}
+
+// ============================================================================
+// COMMAND 9: build-video <blueprint.json> -o <video.mp4> [--voice senior-sa] [--fps 30] [--qa]
+// ============================================================================
+async function cmdBuildVideo(positional, flags) {
+  const bp = loadBlueprintCompiler();
+  if (!bp) throw new Error('blueprint.js module not found.');
+  const bpPath = positional[0] ? path.resolve(process.cwd(), positional[0]) : null;
+  if (!bpPath || !fs.existsSync(bpPath)) {
+    throw new Error('Usage: techvid build-video <blueprint.json> -o <video.mp4> [--voice senior-sa] [--fps 30]');
+  }
+
+  const outMp4 = path.resolve(process.cwd(), flags.out || bpPath.replace(/\.json$/i, '_1080p.mp4'));
+  const workDir = path.dirname(outMp4);
+  fs.mkdirSync(workDir, { recursive: true });
+
+  // Ensure standalone bundle is accessible next to compiled HTML
+  const bundleSrc = findBundlePath();
+  const localBundle = path.join(workDir, 'tech-video-studio.bundle.js');
+  if (bundleSrc && !fs.existsSync(localBundle)) {
+    fs.copyFileSync(bundleSrc, localBundle);
+  }
+
+  const compiledHtml = outMp4.replace(/\.mp4$/i, '.html');
+  bp.writeBlueprintHtml(bpPath, compiledHtml, {
+    bundleSrc: './tech-video-studio.bundle.js'
+  });
+  console.log(`🧩 Compiled Blueprint -> ${compiledHtml}`);
+
+  if (flags.qa) {
+    await cmdQa([compiledHtml], { 'out-dir': path.join(workDir, 'qa_output') });
+  }
+
+  const renderFlags = {
+    ...flags,
+    out: outMp4,
+    fps: flags.fps || '30',
+    voice: flags.voice !== undefined ? flags.voice : 'senior-sa',
+    'no-sfx': flags.sfx ? false : true
+  };
+  await cmdRender([compiledHtml], renderFlags);
+}
+
+// ============================================================================
+// COMMAND 10: install-skill [--target antigravity|claude|cursor|codex] [--dest <dir>]
 // ============================================================================
 function copyDirRecursive(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
@@ -782,31 +848,35 @@ function cmdInstallSkill(flags) {
   if (fs.existsSync(vsSrc)) fs.copyFileSync(vsSrc, path.join(scriptsDir, 'voicestudio.js'));
   const reaSrc = path.join(ROOT, 'src/core/rea-analyzer.js');
   if (fs.existsSync(reaSrc)) fs.copyFileSync(reaSrc, path.join(scriptsDir, 'rea-analyzer.js'));
+  const bpSrc = path.join(ROOT, 'src/core/blueprint.js');
+  if (fs.existsSync(bpSrc)) fs.copyFileSync(bpSrc, path.join(scriptsDir, 'blueprint.js'));
   const mPath = findMetaphorsPath();
   if (mPath) fs.copyFileSync(mPath, path.join(scriptsDir, 'metaphors.json'));
   const bPath = findBundlePath();
   if (bPath) fs.copyFileSync(bPath, path.join(scriptsDir, 'tech-video-studio.bundle.js'));
 
-  console.log(`✅ Installed "tech-video-studio" (v2.7 Kinetic ByteByteGo + rea-video Edition) AI Skill to: ${dest}`);
+  console.log(`✅ Installed "tech-video-studio" (v2.8 Declarative ByteByteGo + rea-video Edition) AI Skill to: ${dest}`);
 }
 
 function printHelp() {
   console.log(`
-Tech Video Studio CLI (v2.7.0 — Kinetic ByteByteGo + VoiceStudio + rea-video Edition)
+Tech Video Studio CLI (v2.8.0 — Declarative ByteByteGo + VoiceStudio + rea-video Edition)
 
 Usage:
-  techvid metaphor <keywords>                     Search diverse visual metaphors & avoid box monotony
-  techvid new <folder> [--title "Video Title"]    Scaffold a new 1080p60 ByteByteGo explainer project
-  techvid qa <scene.html> [--times 8,22,36,54]    Capture keyframes + negative-space QA + 2x2 contact sheet
+  techvid init-blueprint <out.json> [--title "..."]
+                                                  Create a declarative JSON video blueprint (zero Canvas boilerplate)
+  techvid build-video <blueprint.json> -o <out.mp4> [--voice senior-sa] [--fps 30] [--qa]
+                                                  One-command compile + Senior SA narration + 1080p MP4 render
   techvid rea-learn <ref.mp4> [-o VIDEO.md]       Reverse-engineer a ByteByteGo video's layout, motion & easing
   techvid rea-compare <ref.mp4> <remake.mp4>      Score remake parity against a reference ByteByteGo video
+  techvid metaphor <keywords>                     Search diverse visual metaphors & avoid box monotony
+  techvid new <folder> [--title "Video Title"]    Scaffold a custom 1080p60 HTML5 Canvas explainer project
+  techvid qa <scene.html> [--times 8,22,36,54]    Capture keyframes + negative-space QA + 2x2 contact sheet
   techvid voice status [--url http://localhost:3900]
                                                   Check debpalash/VoiceStudio connection & Senior SA personas
-  techvid voice design [--persona senior-sa|staff-engineer|tech-storyteller|vi-senior-sa]
-                                                  Design a natural Senior SA voice profile in VoiceStudio
   techvid voice narrate <scene.html> -o <out.wav> [--persona senior-sa] [--lang en|vi] [--rate -10%]
                                                   Synthesize scene-synchronized Senior SA voiceover track
-  techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact 60FPS H.264 MP4 render
+  techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact H.264 MP4 render
           [--voice senior-sa] [--audio voice.mp3] [--fps 60] [--no-sfx] [--retina]
   techvid install-skill [--target antigravity|claude|cursor|codex|local] [--dest <path>]
 `);
@@ -818,6 +888,14 @@ Usage:
 
   try {
     switch (cmd) {
+      case 'init-blueprint':
+      case 'blueprint':
+        cmdInitBlueprint(positional, flags);
+        break;
+      case 'build-video':
+      case 'create':
+        await cmdBuildVideo(positional, flags);
+        break;
       case 'metaphor':
       case 'metaphors':
         cmdMetaphor(positional);

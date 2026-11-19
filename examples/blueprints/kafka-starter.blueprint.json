@@ -1,0 +1,68 @@
+{
+  "title": "Why Apache Kafka Is So Fast",
+  "palette": "byteByteGoTrue",
+  "fps": 30,
+  "persona": "senior-sa",
+  "scenes": [
+    {
+      "id": "scene-1-bottleneck-vs-fast",
+      "chapter": "01. Bottleneck vs High-Throughput Architecture",
+      "backdrop": "dotMatrix",
+      "beats": [
+        {
+          "type": "versus-gauge",
+          "duration": 10,
+          "narration": "Why do high-throughput streaming engines outperform traditional queues? The secret is replacing random disk seeks with sequential append-only writes.",
+          "left": {
+            "icon": "hardDiskPlatter",
+            "tag": "RANDOM SEEK ❌",
+            "title": "Scattered Disk I/O",
+            "value": 100,
+            "unit": "KB/s",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "rocketBoost",
+            "value": 6000,
+            "label": "x FASTER",
+            "color": "#FACC15"
+          },
+          "right": {
+            "value": 600,
+            "unit": "MB/s",
+            "sub": "Sequential Stream ✔",
+            "valueRatio": 0.94,
+            "color": "#34D399"
+          },
+          "takeaway": "Sequential Disk Writes Are Up to 6,000x Faster Than Random Disk Seeks",
+          "tag": "6,000x SPEEDUP"
+        },
+        {
+          "type": "icon-flow",
+          "duration": 10,
+          "narration": "Instead of copying bytes across user space and kernel space, zero-copy transfers stream directly from kernel page cache to the network card.",
+          "nodes": [
+            {
+              "icon": "ramChip",
+              "tag": "OS PAGECACHE",
+              "title": "Kernel RAM Buffer",
+              "sub": "sendfile() Syscall",
+              "color": "#FACC15"
+            },
+            {
+              "icon": "networkCardNic",
+              "tag": "10GbE NIC ✔",
+              "title": "Direct DMA Stream",
+              "sub": "0 CPU Data Copies",
+              "color": "#34D399"
+            }
+          ],
+          "arrowLabel": "Direct Memory Access (0 CPU Cycles)",
+          "arrowColor": "#34D399",
+          "takeaway": "Zero-Copy DMA Bypasses User Space to Saturate 10+ Gbps Network Links",
+          "tag": "ZERO-COPY DMA"
+        }
+      ]
+    }
+  ]
+}

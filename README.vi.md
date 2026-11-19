@@ -1,4 +1,4 @@
-# Tech Video Studio (`tech-video-studio` v2.6 — Phiên bản Kinetic ByteByteGo)
+# Tech Video Studio (`tech-video-studio` v2.8 — Phiên bản Declarative ByteByteGo + `rea-video`)
 
 > **Thư viện Đồ họa Chuyển động (Motion Graphics Engine) & Bộ Kỹ năng AI (AI Skill Kit) giúp tạo video giải thích kỹ thuật / System Design chuẩn 1080p60 đăng YouTube với chất lượng tương đương kênh ByteByteGo.**
 
@@ -51,12 +51,25 @@ node bin/tech-video-studio.js metaphor "acid transaction rollback"
 node bin/tech-video-studio.js metaphor "sharding consistent hashing"
 ```
 
-### 3. Kiểm tra chất lượng hình ảnh (QA Contact Sheet + Đo khoảng trống)
+### 3. Tạo video chuẩn ByteByteGo chỉ bằng 1 file JSON & 1 câu lệnh (Không cần viết code Canvas!)
+```bash
+# 1. Khởi tạo file kịch bản JSON Blueprint (mặc định chuẩn DNA #232323 học từ ByteByteGo thật)
+node bin/tech-video-studio.js init-blueprint ./my_topic.blueprint.json --title "Tại sao Kafka lại nhanh"
+
+# 2. Một lệnh duy nhất: Biên dịch + Lồng tiếng Senior SA (120 WPM, nghỉ 0.28s) + Render MP4 1080p
+node bin/tech-video-studio.js build-video ./my_topic.blueprint.json -o ./my_topic_1080p.mp4 --voice senior-sa --fps 30
+
+# 3. Phân tích DNA bất kỳ video ByteByteGo mẫu nào & chấm điểm đối chiếu (tích hợp thuật toán rea-video)
+node bin/tech-video-studio.js rea-learn ./bytebytego_mau.mp4 -o ./out/VIDEO.md
+node bin/tech-video-studio.js rea-compare ./bytebytego_mau.mp4 ./my_topic_1080p.mp4
+```
+
+### 4. Kiểm tra chất lượng hình ảnh (QA Contact Sheet + Đo khoảng trống)
 ```bash
 node bin/tech-video-studio.js qa examples/bytebytego-system-design/index.html
 ```
 
-### 4. Xuất video MP4 1080p60 (Tự động ghép âm thanh hiệu ứng SFX)
+### 5. Xuất video MP4 1080p60 từ file HTML tùy biến
 ```bash
 node bin/tech-video-studio.js render examples/bytebytego-system-design/index.html -o examples/bytebytego-system-design/bytebytego_v2_showcase.mp4
 ```

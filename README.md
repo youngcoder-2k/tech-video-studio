@@ -1,4 +1,4 @@
-# Tech Video Studio (`tech-video-studio` v2.6 — Kinetic ByteByteGo Edition)
+# Tech Video Studio (`tech-video-studio` v2.8 — Declarative ByteByteGo + `rea-video` Edition)
 
 > **AI-Ready Visual Motion Graphics Engine & Multi-Agent Skill Kit for Producing Authentic ByteByteGo-Grade 1080p60 YouTube Technical Explainer Videos.**
 
@@ -45,15 +45,28 @@ npx techvid metaphor "acid transaction rollback"
 npx techvid metaphor "http2 multiplexing"
 ```
 
-### 3. Scaffold, QA, and Render
+### 3. One-Command Declarative Video Creation (Zero Canvas Boilerplate!)
 ```bash
-# Scaffold a new 1080p60 project
+# 1. Create a clean JSON Blueprint (calibrated to real ByteByteGo #232323 DNA)
+npx techvid init-blueprint ./my_topic.blueprint.json --title "How Kafka Works"
+
+# 2. One-command compile + Senior SA Narration (-10% relaxed pace, 0.28s gap) + 1080p MP4 render
+npx techvid build-video ./my_topic.blueprint.json -o ./my_topic_1080p.mp4 --voice senior-sa --fps 30
+
+# 3. Reverse-engineer any reference ByteByteGo video & score your remake parity (powered by rea-video forensics)
+npx techvid rea-learn ./reference_bytebytego.mp4 -o ./out/VIDEO.md
+npx techvid rea-compare ./reference_bytebytego.mp4 ./my_topic_1080p.mp4
+```
+
+### 4. Custom HTML5 Canvas Scaffold, QA, and Render
+```bash
+# Scaffold a custom 1080p60 project
 npx techvid new ./my-explainer --title "How HTTP/2 Multiplexing Works"
 
 # Capture scene keyframes + Negative-Space Telemetry + 2x2 QA Contact Sheet
 npx techvid qa ./examples/bytebytego-system-design/index.html
 
-# Render frame-exact 60FPS H.264 MP4 (with auto-synthesized Motion SFX)
+# Render frame-exact 60FPS H.264 MP4
 npx techvid render ./examples/bytebytego-system-design/index.html -o ./system_design_1080p60.mp4
 ```
 

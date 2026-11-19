@@ -200,3 +200,15 @@ test('rea-video native reverse-engineering analyzer classifies Lab ground, easin
   assert.equal(Rea.classifyEasing([0.5, 1, 2, 5, 8, 10]), 'ease_in');
   assert.equal(Rea.classifyDirection([0, 1, 2, 3, 4, 5, 6, 7], [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]), 'right');
 });
+
+test('Declarative Blueprint Compiler compiles JSON blueprint into ByteByteGo #232323 kinetic HTML scene', () => {
+  const Bp = require('../src/core/blueprint');
+  assert.equal(Studio.Theme.PALETTES.byteByteGoTrue.bg, '#232323');
+  assert.equal(Studio.Theme.BYTEBYTEGO_DNA.ground, '#232323');
+  const starter = Bp.createStarterBlueprint('How Kafka Scales');
+  const html = Bp.compileBlueprintToHtml(starter);
+  assert.match(html, /How Kafka Scales/);
+  assert.match(html, /byteByteGoTrue/);
+  assert.match(html, /Icons\.drawBadge/);
+  assert.match(html, /Effects\.liveGaugeArc/);
+});

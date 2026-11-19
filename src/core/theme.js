@@ -18,6 +18,17 @@ const PALETTES = {
     textSecondary: '#E2E8F0',
     textMuted: '#9CA3AF'
   },
+  byteByteGoTrue: {
+    bg: '#232323',
+    blobOuter: '#2A2A2A',
+    blobInner: '#313131',
+    surface: '#18181B',
+    surfaceElevated: '#27272A',
+    border: '#475569',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#E2E8F0',
+    textMuted: '#9CA3AF'
+  },
   charcoal: {
     bg: '#222222',
     blobOuter: '#2A2A2A',
@@ -611,8 +622,23 @@ function withBeat(ctx, localT, startSec, endSec, drawFn, opts = {}) {
   ctx.restore();
 }
 
+/**
+ * Forensic ByteByteGo Visual DNA Benchmark (measured via rea-video across real ByteByteGo videos:
+ * HTTP1/2/3, Database ACID, Linux Boot Process).
+ */
+const BYTEBYTEGO_DNA = {
+  ground: '#232323',
+  targetCoverPct: [5.0, 12.5],
+  targetNegSpacePct: [87.5, 95.0],
+  microBeatSec: 3.2,
+  beatDurationSec: 10.0,
+  interBeatPauseSec: 0.28,
+  maxHeroNodesPerBeat: 3
+};
+
 module.exports = {
   PALETTES,
+  BYTEBYTEGO_DNA,
   GLASS_TINTS,
   ACCENTS,
   FONTS,
