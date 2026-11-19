@@ -42,6 +42,15 @@ function loadVoiceStudio() {
   return found ? require(found) : null;
 }
 
+function loadReaAnalyzer() {
+  const candidates = [
+    path.join(ROOT, 'src/core/rea-analyzer.js'),
+    path.join(__dirname, 'rea-analyzer.js')
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  return found ? require(found) : null;
+}
+
 function findChromeExecutable() {
   if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
     return process.env.CHROME_PATH;
@@ -675,7 +684,66 @@ async function cmdVoice(positional, flags) {
 }
 
 // ============================================================================
-// COMMAND 5: install-skill [--target antigravity|claude|cursor|codex] [--dest <dir>]
+// COMMAND 6: rea-learn <ref-video.mp4> [-o VIDEO.md] (JuneYaooo/rea-video Forensics)
+// ============================================================================
+function cmdReaLearn(positional, flags) {
+  const rea = loadReaAnalyzer();
+  if (!rea) throw new Error('rea-analyzer.js module not found.');
+  const videoPath = positional[0] ? path.resolve(process.cwd(), positional[0]) : null;
+  if (!videoPath || !fs.existsSync(videoPath)) {
+    throw new Error('Usage: techvid rea-learn <reference-video.mp4> [-o out/VIDEO.md]');
+  }
+
+  console.log(`🔬 Running rea-video ByteByteGo forensics on: ${path.basename(videoPath)}...`);
+  const analysis = rea.analyzeVideoFile(videoPath, {
+    fps: flags.fps ? parseInt(flags.fps, 10) : 10,
+    maxDuration: flags.max ? parseFloat(flags.max) : 180
+  });
+
+  const outMd = flags.out
+    ? path.resolve(process.cwd(), flags.out)
+    : path.join(path.dirname(videoPath), `${path.basename(videoPath, path.extname(videoPath))}_VIDEO.md`);
+
+  rea.exportVideoMd(analysis, outMd);
+
+  console.log(`\n📊 Reverse-Engineered Visual DNA (rea-video metrics):`);
+  console.log(`   Duration:             ${analysis.durationSec}s (${analysis.sceneCount} visual beats, avg ${analysis.avgSceneDurationSec}s/beat)`);
+  console.log(`   Ground Colour:        ${analysis.ground}`);
+  console.log(`   Drawn Coverage:       ${analysis.avgCoverPct}%  (Negative Space: ${analysis.avgNegativeSpacePct}%)`);
+  console.log(`   Active Motion Frames: ${analysis.activeFramesPct}%  (Continuous Layer L: ${analysis.continuousMotionPct}%)`);
+  console.log(`   Exported VIDEO.md ->  ${outMd}\n`);
+}
+
+// ============================================================================
+// COMMAND 7: rea-compare <ref-video.mp4> <remake-video.mp4> (ByteByteGo Parity Scorer)
+// ============================================================================
+function cmdReaCompare(positional, flags) {
+  const rea = loadReaAnalyzer();
+  if (!rea) throw new Error('rea-analyzer.js module not found.');
+  const refPath = positional[0] ? path.resolve(process.cwd(), positional[0]) : null;
+  const remPath = positional[1] ? path.resolve(process.cwd(), positional[1]) : null;
+  if (!refPath || !remPath) {
+    throw new Error('Usage: techvid rea-compare <reference.mp4> <remake.mp4>');
+  }
+
+  console.log(`⚖️  Comparing Remake vs Reference using rea-video drawn-layer metrics...`);
+  const res = rea.compareVideos(refPath, remPath, {
+    fps: flags.fps ? parseInt(flags.fps, 10) : 8
+  });
+
+  console.log(`\n🏆 ByteByteGo Style Parity Score: ${res.overallScore}%`);
+  console.log(`   • Spatial Placement (16x9 Grid): ${res.placeScore}%`);
+  console.log(`   • Shape Overlap:                 ${res.shapeScore}%`);
+  console.log(`   • Drawn Density Balance:         ${res.amountScore}% (Ref: ${res.reference.avgCoverPct}% vs Remake: ${res.remake.avgCoverPct}%)`);
+  console.log(`   • Kinetic Liveliness:            ${res.motionScore}% (Ref: ${res.reference.activeFramesPct}% vs Remake: ${res.remake.activeFramesPct}%)`);
+  console.log(`   • Beat Pacing:                   Ref ${res.reference.avgSceneDurationSec}s/beat vs Remake ${res.remake.avgSceneDurationSec}s/beat`);
+  console.log(`\n💡 Actionable Advice:`);
+  res.advice.forEach((a) => console.log(`   - ${a}`));
+  console.log('');
+}
+
+// ============================================================================
+// COMMAND 8: install-skill [--target antigravity|claude|cursor|codex] [--dest <dir>]
 // ============================================================================
 function copyDirRecursive(src, dest) {
   fs.mkdirSync(dest, { recursive: true });
@@ -712,27 +780,31 @@ function cmdInstallSkill(flags) {
   if (fs.existsSync(sfxSrc)) fs.copyFileSync(sfxSrc, path.join(scriptsDir, 'sfx-gen.js'));
   const vsSrc = path.join(ROOT, 'src/audio/voicestudio.js');
   if (fs.existsSync(vsSrc)) fs.copyFileSync(vsSrc, path.join(scriptsDir, 'voicestudio.js'));
+  const reaSrc = path.join(ROOT, 'src/core/rea-analyzer.js');
+  if (fs.existsSync(reaSrc)) fs.copyFileSync(reaSrc, path.join(scriptsDir, 'rea-analyzer.js'));
   const mPath = findMetaphorsPath();
   if (mPath) fs.copyFileSync(mPath, path.join(scriptsDir, 'metaphors.json'));
   const bPath = findBundlePath();
   if (bPath) fs.copyFileSync(bPath, path.join(scriptsDir, 'tech-video-studio.bundle.js'));
 
-  console.log(`✅ Installed "tech-video-studio" (v2.2 Senior SA VoiceStudio Edition) AI Skill to: ${dest}`);
+  console.log(`✅ Installed "tech-video-studio" (v2.7 Kinetic ByteByteGo + rea-video Edition) AI Skill to: ${dest}`);
 }
 
 function printHelp() {
   console.log(`
-Tech Video Studio CLI (v2.2.0 — ByteByteGo + VoiceStudio Senior SA Edition)
+Tech Video Studio CLI (v2.7.0 — Kinetic ByteByteGo + VoiceStudio + rea-video Edition)
 
 Usage:
   techvid metaphor <keywords>                     Search diverse visual metaphors & avoid box monotony
   techvid new <folder> [--title "Video Title"]    Scaffold a new 1080p60 ByteByteGo explainer project
   techvid qa <scene.html> [--times 8,22,36,54]    Capture keyframes + negative-space QA + 2x2 contact sheet
+  techvid rea-learn <ref.mp4> [-o VIDEO.md]       Reverse-engineer a ByteByteGo video's layout, motion & easing
+  techvid rea-compare <ref.mp4> <remake.mp4>      Score remake parity against a reference ByteByteGo video
   techvid voice status [--url http://localhost:3900]
                                                   Check debpalash/VoiceStudio connection & Senior SA personas
   techvid voice design [--persona senior-sa|staff-engineer|tech-storyteller|vi-senior-sa]
                                                   Design a natural Senior SA voice profile in VoiceStudio
-  techvid voice narrate <scene.html> -o <out.wav> [--persona senior-sa] [--lang en|vi]
+  techvid voice narrate <scene.html> -o <out.wav> [--persona senior-sa] [--lang en|vi] [--rate -10%]
                                                   Synthesize scene-synchronized Senior SA voiceover track
   techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact 60FPS H.264 MP4 render
           [--voice senior-sa] [--audio voice.mp3] [--fps 60] [--no-sfx] [--retina]
@@ -756,6 +828,14 @@ Usage:
         break;
       case 'qa':
         await cmdQa(positional, flags);
+        break;
+      case 'rea-learn':
+      case 'learn':
+        cmdReaLearn(positional, flags);
+        break;
+      case 'rea-compare':
+      case 'compare':
+        cmdReaCompare(positional, flags);
         break;
       case 'voice':
       case 'voicestudio':

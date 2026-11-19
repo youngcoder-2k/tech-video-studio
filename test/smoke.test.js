@@ -190,3 +190,13 @@ test('CLI metaphor search returns domain-specific visual metaphors including new
 
   assert.match(out, /circuit-breaker-resilience|token-bucket-rate-limiter|load-balancer-reverse-proxy/);
 });
+
+test('rea-video native reverse-engineering analyzer classifies Lab ground, easing, and direction accurately', () => {
+  const Rea = require('../src/core/rea-analyzer');
+  const lab1 = Rea.rgbToLab(38, 38, 38);
+  const lab2 = Rea.rgbToLab(56, 189, 248);
+  assert.ok(Rea.labDistance(lab1, lab2) > 40, 'Cyan foreground must stand out from #262626 charcoal ground');
+  assert.equal(Rea.classifyEasing([10, 8, 5, 2, 1, 0.5]), 'ease_out');
+  assert.equal(Rea.classifyEasing([0.5, 1, 2, 5, 8, 10]), 'ease_in');
+  assert.equal(Rea.classifyDirection([0, 1, 2, 3, 4, 5, 6, 7], [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]), 'right');
+});
