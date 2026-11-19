@@ -63,6 +63,7 @@ npx techvid render ./examples/bytebytego-system-design/index.html -o ./system_de
 
 | Example | Description | Tech Stack / Archetypes | Key Visual Metaphors |
 |---|---|---|---|
+| **[How Redis Actually Works](./examples/how-redis-actually-works/index.html)** | 3-minute full deep dive into Redis internals, memory layout & clustering | SDS Struct, epoll Reactor, Progressive Rehashing, Sentinel, 16,384 Hash Slots, Sampled LRU | DRAM vs NVMe ($100\text{ns}$), Linux epoll, dict progressive migration, Copy-On-Write BGSAVE, Sentinel quorum failover, Cluster sharding, eviction mechanics |
 | **[Deep Query Optimization](./examples/deep-query-optimization/index.html)** | 60s in-depth masterclass on database indexing & execution plans | B+Tree, Wireframe Cylinder, Hero Metric Slam, Partition Shards | Seq Scan vs B+Tree ($O(N) \to O(\log N)$), Leftmost Prefix Rule, Covering Indexes (Zero Heap Lookups), Partition Pruning |
 | **[How Redis Works](./examples/how-redis-works/index.html)** | 60s architectural explainer on Redis in-memory speed & epoll | RAM Matrix, Wireframe Cylinder, PubSub Topic Box, BGSAVE Fork | DRAM vs NVMe ($<100\mu\text{s}$), epoll I/O multiplexer, SkipList ZSET, Copy-On-Write snapshotting |
 | **[ByteByteGo System Design](./examples/bytebytego-system-design/index.html)** | Distributed ACID transaction rollback & 2PC coordinator | Isometric Server Stack, Wireframe Browser, State Mutation Cards | Two-Phase Commit, distributed lock failure, auto-compensation |

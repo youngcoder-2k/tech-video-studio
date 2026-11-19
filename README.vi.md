@@ -67,6 +67,7 @@ node bin/tech-video-studio.js render examples/bytebytego-system-design/index.htm
 
 | Ví dụ | Mô tả kỹ thuật | Archetypes sử dụng | Khái niệm kiến trúc trực quan hóa |
 |---|---|---|---|
+| **[How Redis Actually Works](./examples/how-redis-actually-works/index.html)** | Masterclass chuyên sâu 3 phút về kiến trúc tầng sâu, bộ nhớ & cluster Redis | SDS Struct, epoll Reactor, Progressive Rehashing, Sentinel, 16,384 Hash Slots, Sampled LRU | DRAM vs NVMe ($100\text{ns}$), Linux epoll, dict progressive migration, Copy-On-Write BGSAVE, Sentinel quorum failover, Cluster sharding, cơ chế dọn dẹp bộ nhớ eviction |
 | **[Deep Query Optimization](./examples/deep-query-optimization/index.html)** | Tối ưu hóa Database Query & Execution Plan chuyên sâu 60s | B+Tree Hierarchy, Wireframe Cylinder, Hero Metric Slam, Partition Shards | Seq Scan vs B+Tree ($O(N) \to O(\log N)$), Leftmost Prefix Rule, Covering Index (Index-Only Scan 0 heap fetch), Partition Pruning |
 | **[How Redis Works](./examples/how-redis-works/index.html)** | Giải thích cơ chế hoạt động của Redis dưới tầng sâu 60s | RAM Matrix, Wireframe Cylinder, PubSub Topic Box, BGSAVE Fork | DRAM vs NVMe ($<100\mu\text{s}$), epoll I/O multiplexer, SkipList ZSET, Copy-On-Write background snapshots |
 | **[ByteByteGo System Design](./examples/bytebytego-system-design/index.html)** | Phân tán ACID Transaction Rollback & 2PC Coordinator | Isometric Server Stack, Wireframe Browser, State Mutation Cards | Two-Phase Commit, distributed lock failure, auto-compensation |

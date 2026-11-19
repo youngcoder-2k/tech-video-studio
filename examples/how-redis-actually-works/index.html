@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>How Redis Actually Works Under the Hood — ByteByteGo Deep Dive</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #262626; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="../../dist/tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Camera, Connectors, Icons, Illustrations, createVideo } = window.TechVideoStudio;
+
+    createVideo({
+      title: 'How Redis Actually Works Under the Hood',
+      palette: 'byteCharcoal',
+      fps: 30,
+      scenes: [
+        // ====================================================================
+        // SCENE 1: In-Memory Storage & SDS vs C Strings (0s -> 30s)
+        // ====================================================================
+        {
+          id: 'in-memory-and-sds',
+          chapter: '01. In-Memory Architecture & Simple Dynamic Strings (SDS)',
+          duration: 30,
+          qaTime: 12.0,
+          backdrop: 'waves',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.2, type: 'draw' },
+            { time: 2.5, type: 'whoosh' },
+            { time: 4.0, type: 'success' },
+            { time: 14.0, type: 'whoosh' },
+            { time: 20.0, type: 'tick' }
+          ],
+          captions: [
+            { start: 0.5, end: 13.5, text: 'Redis achieves extreme speed by keeping all working datasets directly in DRAM, where memory access takes just one hundred nanoseconds compared to ten thousand nanoseconds on fast NVMe disks.' },
+            { start: 14.5, end: 27.5, text: 'Under the hood, Redis replaces standard C null-terminated strings with Simple Dynamic Strings, storing pre-computed lengths for instant O of 1 lookups and binary-safe buffers.' }
+          ],
+          initialState: () => ({
+            diskCard: 0,
+            ramCard: 0,
+            hero: 0,
+            sdsCard: 0,
+            arrow: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { diskCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { ramCard: 1, duration: 0.8, ease: 'power2.out' }, 0.8)
+              .to(s, { hero: 1, duration: 0.7, ease: 'back.out(1.5)' }, 1.8)
+              .to(s, { sdsCard: 1, duration: 0.8, ease: 'power2.out' }, 14.0)
+              .to(s, { arrow: 1, duration: 0.6, ease: 'power2.out' }, 15.5);
+            Camera.zoomTo(tl, s, { x: 1380, y: 520, zoom: 1.22, duration: 1.4 }, 14.5);
+            Camera.reset(tl, s, 26.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Disk vs DRAM Latency Bottleneck
+            Theme.drawGlassCard(ctx, 160, 230, 480, 560, {
+              tint: 'slate',
+              badge: 'Physical Storage Latency',
+              badgeSide: 'left',
+              progress: state.diskCard
+            });
+
+            Icons.draw(ctx, 'postgresElephant', 400, 310, 60, { alpha: state.diskCard });
+
+            Illustrations.wireframeCylinderDb(ctx, 400, 440, {
+              width: 160,
+              height: 140,
+              color: '#94A3B8',
+              label: 'NVMe Disk (~10,000ns)',
+              progress: state.diskCard
+            });
+
+            if (state.diskCard > 0.5) {
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 16px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('• Heavy Kernel File System Syscalls', 400, 620);
+              ctx.fillText('• Page Buffer Swaps & Mechanical Latency', 400, 655);
+              ctx.fillStyle = '#F87171';
+              ctx.font = `600 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('Disk Seek Latency: 10 - 15 μs', 400, 710);
+            }
+
+            // Middle: Kinetic Speed Slam & Latency Hierarchy
+            if (state.hero > 0.05) {
+              Illustrations.heroMetricSlam(ctx, '< 100 ns', {
+                cx: 960,
+                cy: 380,
+                fontSize: 84,
+                color: '#5CE1E6',
+                subtitle: 'Direct DRAM Access Time',
+                scale: state.hero
+              });
+
+              Theme.drawGlassCard(ctx, 700, 490, 520, 190, {
+                tint: 'teal',
+                badge: '100x Speed Gap',
+                badgeSide: 'center',
+                progress: state.hero
+              });
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 19px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('DRAM: ~100ns  vs  NVMe SSD: ~10,000ns', 960, 555);
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `600 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('Throughput: 100,000+ QPS per Core', 960, 595);
+              ctx.fillStyle = '#6EE7B7';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.fillText('Zero Disk I/O Blocking in Hot Request Path', 960, 635);
+            }
+
+            // Right: Redis Internal Simple Dynamic String (SDS) Struct
+            Theme.drawGlassCard(ctx, 1280, 230, 480, 560, {
+              tint: 'crimson',
+              badge: 'SDS: Simple Dynamic String (sds.c)',
+              badgeSide: 'right',
+              progress: state.sdsCard > 0 ? state.sdsCard : state.ramCard
+            });
+
+            Icons.draw(ctx, 'redisCube', 1520, 310, 64, { glowColor: '#EF4444', alpha: state.ramCard });
+
+            if (state.sdsCard > 0.3) {
+              // SDS Struct Layout Frame
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+              ctx.beginPath();
+              ctx.roundRect(1320, 380, 400, 210, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#38BDF8';
+              ctx.lineWidth = 1.8;
+              ctx.stroke();
+
+              ctx.fillStyle = '#38BDF8';
+              ctx.font = `700 15px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('struct sdshdr32 {', 1340, 410);
+              ctx.fillStyle = '#FACC15';
+              ctx.fillText('  uint32_t len;   // length = 5 (O(1))', 1340, 440);
+              ctx.fillStyle = '#A7F3D0';
+              ctx.fillText('  uint32_t alloc; // capacity = 16', 1340, 470);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.fillText('  char flags;     // header type', 1340, 500);
+              ctx.fillStyle = '#F472B6';
+              ctx.fillText('  char buf[];     // "REDIS\\0"', 1340, 530);
+              ctx.fillStyle = '#38BDF8';
+              ctx.fillText('};', 1340, 560);
+
+              ctx.fillStyle = '#86EFAC';
+              ctx.font = `600 15.5px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('✔ O(1) strlen() without scanning strings', 1520, 635);
+              ctx.fillText('✔ 100% Binary Safe (Protobuf / Images)', 1520, 665);
+              ctx.fillText('✔ Pre-allocates buffer to avoid realloc()', 1520, 695);
+            } else {
+              Illustrations.cacheMemoryMatrix(ctx, 1340, 410, 360, 220, t, {
+                header: 'RAM Cache Matrix (DRAM)',
+                cols: 3,
+                rows: 3
+              });
+              ctx.fillStyle = '#FCA5A5';
+              ctx.font = `500 16px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Working data resident in DRAM', 1520, 690);
+            }
+
+            if (state.hero > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'DRAM Access & Simple Dynamic Strings (SDS) Guarantee Sub-Microsecond O(1) Speed');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 2: The Single-Threaded Event Loop & Linux epoll (30s -> 60s)
+        // ====================================================================
+        {
+          id: 'event-loop-and-epoll',
+          chapter: '02. Single-Threaded Event Loop & Linux epoll Reactor',
+          duration: 30,
+          qaTime: 12.0,
+          backdrop: 'blueprint',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.1, type: 'draw' },
+            { time: 2.2, type: 'tick' },
+            { time: 3.5, type: 'whoosh' },
+            { time: 14.0, type: 'whoosh' },
+            { time: 21.0, type: 'success' }
+          ],
+          captions: [
+            { start: 0.5, end: 13.5, text: 'Many wonder why Redis runs on a single execution thread. Multi-threading introduces mutex contention, lock synchronization, and expensive CPU context switches.' },
+            { start: 14.5, end: 27.5, text: 'Instead, Redis employs the Linux epoll reactor pattern, monitoring thousands of client sockets concurrently and executing queued commands sequentially with zero lock overhead.' }
+          ],
+          initialState: () => ({
+            clients: 0,
+            epoll: 0,
+            queue: 0,
+            core: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { clients: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { epoll: 1, duration: 0.8, ease: 'power2.out' }, 0.8)
+              .to(s, { queue: 1, duration: 0.7, ease: 'power2.out' }, 1.5)
+              .to(s, { core: 1, duration: 0.8, ease: 'power2.out' }, 2.3);
+            Camera.zoomTo(tl, s, { x: 1420, y: 520, zoom: 1.24, duration: 1.4 }, 14.5);
+            Camera.reset(tl, s, 26.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Concurrent TCP Clients
+            Theme.drawGlassCard(ctx, 160, 220, 360, 580, {
+              tint: 'teal',
+              badge: 'Concurrent Client Sockets',
+              badgeSide: 'left',
+              progress: state.clients
+            });
+
+            Illustrations.lineArtUser(ctx, 340, 330, { label: 'Client 1 (SET order:42)', color: '#5CE1E6', progress: state.clients });
+            Illustrations.lineArtUser(ctx, 340, 500, { label: 'Client 2 (GET user:99)', color: '#4ADE80', progress: state.clients });
+            Illustrations.lineArtUser(ctx, 340, 670, { label: 'Client 3 (INCR views)', color: '#C084FC', progress: state.clients });
+
+            // Center: Linux epoll Reactor
+            Theme.drawGlassCard(ctx, 580, 220, 490, 580, {
+              tint: 'olive',
+              badge: 'I/O Multiplexer (ae_epoll.c)',
+              badgeSide: 'center',
+              progress: state.epoll
+            });
+
+            Illustrations.loadBalancerRouter(ctx, 825, 410, {
+              radius: 64,
+              color: '#FACC15',
+              label: 'epoll_wait() Reactor',
+              algorithm: 'Kernel Event Notification',
+              progress: state.epoll
+            });
+
+            Connectors.solidArrow(ctx, 420, 330, 750, 390, { progress: state.epoll, color: '#5CE1E6', dashed: true, timeSec: t });
+            Connectors.solidArrow(ctx, 420, 500, 750, 410, { progress: state.epoll, color: '#4ADE80', dashed: true, timeSec: t });
+            Connectors.solidArrow(ctx, 420, 670, 750, 430, { progress: state.epoll, color: '#C084FC', dashed: true, timeSec: t });
+
+            if (state.epoll > 0.5) {
+              ctx.fillStyle = '#FEF08A';
+              ctx.font = `700 17px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Non-Blocking Event Polling', 825, 550);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.fillText('• 10,000+ Sockets monitored in O(1)', 825, 585);
+              ctx.fillText('• Awakens CPU only when socket has bytes', 825, 615);
+              ctx.fillText('• Zero thread context switching latency', 825, 645);
+            }
+
+            // Right: Single Execution Thread
+            Theme.drawGlassCard(ctx, 1130, 220, 630, 580, {
+              tint: 'emerald',
+              badge: 'Single Execution Thread (Lock-Free)',
+              badgeSide: 'right',
+              progress: state.core
+            });
+
+            Illustrations.pubSubTopicBox(ctx, 1170, 290, 550, 110, {
+              title: 'Sequential Ready Event Queue',
+              tint: 'slate',
+              offsets: ['SET #1', 'GET #2', 'INCR #3', 'READY'],
+              activeSlot: 2,
+              progress: state.queue
+            });
+
+            Connectors.solidArrow(ctx, 905, 410, 1170, 345, { progress: state.queue, color: '#FACC15', label: 'Push Events' });
+
+            Icons.draw(ctx, 'cpuSilicon', 1330, 540, 92, { glowColor: '#4ADE80', alpha: state.core });
+            Icons.draw(ctx, 'turboMeter', 1560, 540, 92, { glowColor: '#F59E0B', alpha: state.core });
+
+            if (state.core > 0.5) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 19px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Pure L1/L2 CPU Cache Localization', 1445, 660);
+              ctx.fillStyle = '#86EFAC';
+              ctx.font = `600 15.5px ${Theme.FONTS.mono}`;
+              ctx.fillText('No Mutex • No Race Conditions • No Deadlocks', 1445, 695);
+              ctx.fillStyle = '#94A3B8';
+              ctx.font = `500 14px ${Theme.FONTS.sans}`;
+              ctx.fillText('Note: Redis 6.0+ uses worker threads for socket parsing only', 1445, 730);
+            }
+
+            if (state.core > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'The epoll Reactor Pattern Eliminates Thread Locking and Context Switching Overhead');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 3: Deep Dive into Internal Data Structures (60s -> 90s)
+        // ====================================================================
+        {
+          id: 'data-structures-and-rehash',
+          chapter: '03. Internal Data Structures & Progressive Rehashing',
+          duration: 30,
+          qaTime: 12.0,
+          backdrop: 'waves',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.0, type: 'draw' },
+            { time: 2.5, type: 'tick' },
+            { time: 4.0, type: 'success' },
+            { time: 14.0, type: 'whoosh' },
+            { time: 22.0, type: 'tick' }
+          ],
+          captions: [
+            { start: 0.5, end: 13.5, text: 'Redis is far more than a key-value store; it is a specialized data structure engine with memory-compact encodings like listpacks and quicklists.' },
+            { start: 14.5, end: 27.5, text: 'When hash tables resize, Redis avoids global freezes through progressive rehashing, migrating small buckets incrementally during normal queries to prevent latency spikes.' }
+          ],
+          initialState: () => ({
+            topBadges: 0,
+            dictCard: 0,
+            skipListCard: 0,
+            rehashFlow: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { topBadges: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { dictCard: 1, duration: 0.8, ease: 'power2.out' }, 0.9)
+              .to(s, { skipListCard: 1, duration: 0.8, ease: 'power2.out' }, 1.7)
+              .to(s, { rehashFlow: 1, duration: 0.8, ease: 'power2.out' }, 14.0);
+            Camera.zoomTo(tl, s, { x: 580, y: 560, zoom: 1.25, duration: 1.4 }, 14.5);
+            Camera.reset(tl, s, 26.5, 1.0);
+          },
+          render(ctx, { state }) {
+            // Top Compact Memory Encodings Strip
+            if (state.topBadges > 0.05) {
+              const types = [
+                { tag: 'STRING', bg: '#0284C7', desc: 'SDS (raw bytes / caching)' },
+                { tag: 'LISTPACK', bg: '#10B981', desc: 'Contiguous compact memory' },
+                { tag: 'HASHTABLE', bg: '#F59E0B', desc: 'dict with progressive rehash' },
+                { tag: 'SKIPLIST', bg: '#8B5CF6', desc: 'ZSET multi-level pointers' },
+                { tag: 'QUICKLIST', bg: '#EC4899', desc: 'Linked list of listpacks' }
+              ];
+              const spanW = 1600;
+              const startX = (1920 - spanW) / 2;
+              const stepW = spanW / types.length;
+
+              types.forEach((item, idx) => {
+                const cx = startX + idx * stepW + stepW / 2;
+                Illustrations.foldedFileBadge(ctx, cx, 230, item.tag, {
+                  ribbonBg: item.bg,
+                  width: 90,
+                  height: 104,
+                  caption: item.desc,
+                  progress: state.topBadges
+                });
+              });
+            }
+
+            // Left: Progressive Rehashing (dict.c)
+            Theme.drawGlassCard(ctx, 160, 360, 760, 450, {
+              tint: 'teal',
+              badge: 'Progressive Rehashing (dict.c)',
+              badgeSide: 'left',
+              progress: state.dictCard
+            });
+
+            if (state.dictCard > 0.2) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 18px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('Incremental Migration: ht[0] (Old) -> ht[1] (2x New)', 200, 415);
+
+              // ht[0] bucket
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(200, 440, 340, 110, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#F87171';
+              ctx.lineWidth = 1.6;
+              ctx.stroke();
+
+              ctx.fillStyle = '#F87171';
+              ctx.font = `700 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('ht[0] (Size: 4,096 Buckets)', 220, 470);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 13.5px ${Theme.FONTS.mono}`;
+              ctx.fillText('• bucket[0]: Migrated ✔', 220, 498);
+              ctx.fillText('• bucket[1]: Migrating... ⚡', 220, 524);
+
+              // ht[1] bucket
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(570, 440, 320, 110, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.lineWidth = 1.6;
+              ctx.stroke();
+
+              ctx.fillStyle = '#34D399';
+              ctx.font = `700 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('ht[1] (Size: 8,192 Buckets)', 590, 470);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 13.5px ${Theme.FONTS.mono}`;
+              ctx.fillText('• Receives migrated entries', 590, 498);
+              ctx.fillText('• All new writes go here', 590, 524);
+
+              // Connector Arrow
+              Connectors.solidArrow(ctx, 420, 550, 680, 550, {
+                progress: state.rehashFlow,
+                color: '#FACC15',
+                label: 'rehashidx: 1 bucket per query'
+              });
+
+              ctx.fillStyle = '#5CE1E6';
+              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.fillText('✔ Zero "Stop-The-World" Latency Spikes during table resize', 200, 640);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('• Searches check ht[0] first, then ht[1]', 200, 675);
+              ctx.fillText('• Once rehashidx == size, ht[1] becomes ht[0] and memory is freed', 200, 705);
+            }
+
+            // Right: ZSET Multi-Level SkipList Hierarchy
+            Theme.drawGlassCard(ctx, 960, 360, 800, 450, {
+              tint: 'emerald',
+              badge: 'Sorted Sets: SkipList + Hash Table',
+              badgeSide: 'right',
+              progress: state.skipListCard
+            });
+
+            Illustrations.bTreeHierarchy(ctx, 1360, 430, {
+              root: ['L3: 100', 'L3: 500'],
+              children: [
+                { keys: ['L2: 50', 'L2: 100'], active: false },
+                { keys: ['L2: 250', 'L2: 500'], active: true },
+                { keys: ['L2: 750', 'L2: 999'], active: false }
+              ],
+              progress: state.skipListCard
+            });
+
+            if (state.skipListCard > 0.4) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 18px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('O(log N) Leaderboards & Range Queries', 1360, 690);
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `600 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('Forward pointers skip up to 32 levels with probabilistic balancing', 1360, 725);
+            }
+
+            if (state.dictCard > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Progressive Rehashing and Multi-Level SkipLists Guarantee Zero Stop-The-World Freezes');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 4: Non-Blocking Persistence: RDB Copy-On-Write vs AOF (90s -> 120s)
+        // ====================================================================
+        {
+          id: 'persistence-cow-and-aof',
+          chapter: '04. Non-Blocking Persistence: RDB Copy-On-Write vs AOF',
+          duration: 30,
+          qaTime: 12.0,
+          backdrop: 'speedlines',
+          transition: 'fade',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.2, type: 'draw' },
+            { time: 2.5, type: 'tick' },
+            { time: 4.0, type: 'success' },
+            { time: 14.0, type: 'whoosh' },
+            { time: 22.0, type: 'tick' }
+          ],
+          captions: [
+            { start: 0.5, end: 13.5, text: 'To survive restarts without sacrificing performance, Redis combines point-in-time RDB snapshots with continuous Append-Only File journaling.' },
+            { start: 14.5, end: 27.5, text: 'RDB forks a background worker utilizing operating system Copy-On-Write, streaming memory to disk while the parent continues serving client writes uninterrupted.' }
+          ],
+          initialState: () => ({
+            mainProc: 0,
+            forkProc: 0,
+            aofStream: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { mainProc: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { forkProc: 1, duration: 0.8, ease: 'power2.out' }, 1.0)
+              .to(s, { aofStream: 1, duration: 0.8, ease: 'power2.out' }, 14.0);
+            Camera.zoomTo(tl, s, { x: 740, y: 520, zoom: 1.25, duration: 1.4 }, 14.5);
+            Camera.reset(tl, s, 26.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Main Parent Process (Uninterrupted Client Traffic)
+            Theme.drawGlassCard(ctx, 160, 220, 520, 580, {
+              tint: 'crimson',
+              badge: 'Parent Process (Port 6379)',
+              badgeSide: 'left',
+              progress: state.mainProc
+            });
+
+            Icons.draw(ctx, 'redisCube', 420, 310, 64, { glowColor: '#EF4444', alpha: state.mainProc });
+
+            if (state.mainProc > 0.3) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 20px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Live In-Memory State', 420, 385);
+              ctx.fillStyle = '#4ADE80';
+              ctx.font = `600 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('✔ Serves 100K QPS Uninterrupted', 420, 420);
+
+              const memBlocks = [
+                { name: 'Page 0x1A: [Shared Read-Only]', color: '#38BDF8' },
+                { name: 'Page 0x1B: [Shared Read-Only]', color: '#38BDF8' },
+                { name: 'Page 0x1C: [Copy-On-Write Mutated ⚡]', color: '#FACC15' }
+              ];
+              memBlocks.forEach((mb, idx) => {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(220, 460 + idx * 56, 400, 46, 8);
+                ctx.fill();
+                ctx.strokeStyle = mb.color;
+                ctx.lineWidth = 1.6;
+                ctx.stroke();
+
+                ctx.fillStyle = mb.color;
+                ctx.font = `600 15px ${Theme.FONTS.mono}`;
+                ctx.fillText(mb.name, 420, 490 + idx * 56);
+              });
+
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('Client write duplicates only the modified 4KB page', 420, 680);
+            }
+
+            // Middle: Forked Child Process (BGSAVE & RDB Snapshot)
+            Theme.drawGlassCard(ctx, 720, 220, 490, 580, {
+              tint: 'olive',
+              badge: 'BGSAVE (fork() Snapshot)',
+              badgeSide: 'center',
+              progress: state.forkProc
+            });
+
+            Connectors.solidArrow(ctx, 640, 350, 720, 350, {
+              progress: state.forkProc,
+              color: '#FACC15',
+              label: 'fork() Syscall'
+            });
+
+            if (state.forkProc > 0.3) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 20px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Isolated Child Snapshot', 965, 310);
+
+              Illustrations.foldedFileBadge(ctx, 965, 430, 'RDB', {
+                ribbonBg: '#10B981',
+                caption: 'dump.rdb (Compact Binary)',
+                progress: state.forkProc
+              });
+
+              ctx.fillStyle = '#FEF08A';
+              ctx.font = `700 17px ${Theme.FONTS.sans}`;
+              ctx.fillText('Operating System Copy-On-Write', 965, 570);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('• Shares parent RAM without memory duplication', 965, 605);
+              ctx.fillText('• Streams to disk at maximum NVMe write speeds', 965, 635);
+              ctx.fillText('• Zero lock holding on active client connections', 965, 665);
+            }
+
+            // Right: Append-Only File (AOF Journaling)
+            Theme.drawGlassCard(ctx, 1250, 220, 510, 580, {
+              tint: 'teal',
+              badge: 'AOF Stream (Append-Only File)',
+              badgeSide: 'right',
+              progress: state.aofStream
+            });
+
+            Illustrations.pubSubTopicBox(ctx, 1280, 300, 450, 110, {
+              title: 'appendonly.aof (Write Journal)',
+              tint: 'teal',
+              offsets: ['*3 $3 SET', '$4 user', '$5 Alice'],
+              activeSlot: 2,
+              progress: state.aofStream
+            });
+
+            if (state.aofStream > 0.4) {
+              Illustrations.wireframeCylinderDb(ctx, 1505, 530, {
+                width: 140,
+                height: 130,
+                color: '#38BDF8',
+                label: 'fsync: everysec (1s Max Loss)',
+                progress: state.aofStream
+              });
+
+              ctx.fillStyle = '#4ADE80';
+              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('BGREWRITEAOF Compacts Journal', 1505, 670);
+              ctx.fillStyle = '#94A3B8';
+              ctx.font = `500 13.5px ${Theme.FONTS.mono}`;
+              ctx.fillText('Truncates 1,000 INCR -> Single SET command', 1505, 705);
+            }
+
+            if (state.forkProc > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'OS Copy-On-Write & AOF Streaming Deliver Maximum Durability with Zero Client Latency');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 5: High Availability & Clustering: Sentinel vs Hash Slots (120s -> 150s)
+        // ====================================================================
+        {
+          id: 'sentinel-and-cluster-slots',
+          chapter: '05. High Availability & Clustering: Sentinel vs Hash Slots',
+          duration: 30,
+          qaTime: 12.0,
+          backdrop: 'blueprint',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.1, type: 'draw' },
+            { time: 2.5, type: 'tick' },
+            { time: 4.0, type: 'success' },
+            { time: 14.0, type: 'whoosh' },
+            { time: 22.0, type: 'tick' }
+          ],
+          captions: [
+            { start: 0.5, end: 13.5, text: 'For high availability, Redis Sentinel monitors master health through quorum heartbeats, automatically promoting replicas and updating topology when a node fails.' },
+            { start: 14.5, end: 27.5, text: 'For horizontal scale, Redis Cluster shards datasets across sixteen thousand three hundred eighty-four hash slots, allowing smart clients to route requests directly to the owning shard.' }
+          ],
+          initialState: () => ({
+            sentinelCard: 0,
+            clusterCard: 0,
+            failover: 0,
+            slots: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { sentinelCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { clusterCard: 1, duration: 0.8, ease: 'power2.out' }, 0.9)
+              .to(s, { failover: 1, duration: 0.8, ease: 'power2.out' }, 1.8)
+              .to(s, { slots: 1, duration: 0.8, ease: 'power2.out' }, 14.0);
+            Camera.zoomTo(tl, s, { x: 1370, y: 520, zoom: 1.25, duration: 1.4 }, 14.5);
+            Camera.reset(tl, s, 26.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Redis Sentinel (HA Failover & Quorum)
+            Theme.drawGlassCard(ctx, 160, 220, 740, 580, {
+              tint: 'olive',
+              badge: 'Redis Sentinel: Quorum & Auto-Failover',
+              badgeSide: 'left',
+              progress: state.sentinelCard
+            });
+
+            if (state.sentinelCard > 0.2) {
+              // Master + Replica Architecture
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 18px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('Replication Topology & Heartbeats:', 200, 275);
+
+              // Master Node
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(200, 300, 310, 80, 8);
+              ctx.fill();
+              ctx.strokeStyle = state.failover > 0.5 ? '#EF4444' : '#34D399';
+              ctx.lineWidth = 1.8;
+              ctx.stroke();
+
+              ctx.fillStyle = state.failover > 0.5 ? '#F87171' : '#34D399';
+              ctx.font = `700 16px ${Theme.FONTS.mono}`;
+              ctx.fillText(state.failover > 0.5 ? 'Master (FAILED ❌)' : 'Master (Port 6379) ⚡', 220, 332);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 13px ${Theme.FONTS.sans}`;
+              ctx.fillText('Async replication with psync2 backlog ring', 220, 360);
+
+              // Replica Node
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(200, 410, 310, 80, 8);
+              ctx.fill();
+              ctx.strokeStyle = state.failover > 0.5 ? '#34D399' : '#38BDF8';
+              ctx.lineWidth = 1.8;
+              ctx.stroke();
+
+              ctx.fillStyle = state.failover > 0.5 ? '#34D399' : '#38BDF8';
+              ctx.font = `700 16px ${Theme.FONTS.mono}`;
+              ctx.fillText(state.failover > 0.5 ? 'Replica -> PROMOTED MASTER ✔' : 'Replica (Port 6380)', 220, 442);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 13px ${Theme.FONTS.sans}`;
+              ctx.fillText('Ready for zero-downtime promotion', 220, 470);
+
+              // 3 Sentinel Nodes
+              const sentinels = ['Sentinel 1', 'Sentinel 2', 'Sentinel 3'];
+              sentinels.forEach((sn, idx) => {
+                const sy = 300 + idx * 64;
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(550, sy, 310, 50, 8);
+                ctx.fill();
+                ctx.strokeStyle = '#FACC15';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                Icons.draw(ctx, 'shieldGuard', 580, sy + 25, 28, { glowColor: '#FACC15' });
+                ctx.fillStyle = '#FEF08A';
+                ctx.font = `600 15px ${Theme.FONTS.mono}`;
+                ctx.fillText(sn + ' (PING Quorum)', 610, sy + 32);
+              });
+
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.fillText('Failover: sdown (Subjective) -> odown (Quorum Consensus)', 200, 545);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('• Raft-like leader election among Sentinels', 200, 580);
+              ctx.fillText('• Reconfigures clients automatically via Pub/Sub notifications', 200, 615);
+              ctx.fillText('• Split-brain protection via min-replicas-to-write setting', 200, 650);
+            }
+
+            // Right: Redis Cluster (16,384 Hash Slots)
+            Theme.drawGlassCard(ctx, 940, 220, 820, 580, {
+              tint: 'teal',
+              badge: 'Redis Cluster: 16,384 Hash Slots',
+              badgeSide: 'right',
+              progress: state.clusterCard
+            });
+
+            if (state.clusterCard > 0.2) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 19px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Deterministic Key Sharding Algorithm:', 1350, 275);
+
+              // Hash Formula Box
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+              ctx.beginPath();
+              ctx.roundRect(1020, 305, 660, 54, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#5CE1E6';
+              ctx.lineWidth = 1.8;
+              ctx.stroke();
+
+              ctx.fillStyle = '#5CE1E6';
+              ctx.font = `700 18px ${Theme.FONTS.mono}`;
+              ctx.fillText('Slot = CRC16(key) % 16,384 Hash Slots', 1350, 340);
+
+              // 3 Cluster Shards
+              const shards = [
+                { name: 'Master Shard 1', slots: 'Slots 0 - 5,460', keys: 'user:101 .. user:320', color: '#38BDF8' },
+                { name: 'Master Shard 2', slots: 'Slots 5,461 - 10,922', keys: 'order:420 .. order:980', color: '#34D399' },
+                { name: 'Master Shard 3', slots: 'Slots 10,923 - 16,383', keys: 'item:800 .. item:1200', color: '#FACC15' }
+              ];
+
+              shards.forEach((sh, idx) => {
+                const sx = 980 + idx * 250;
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(sx, 390, 230, 160, 8);
+                ctx.fill();
+                ctx.strokeStyle = sh.color;
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                ctx.fillStyle = sh.color;
+                ctx.font = `700 16px ${Theme.FONTS.mono}`;
+                ctx.fillText(sh.name, sx + 115, 425);
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `600 14px ${Theme.FONTS.mono}`;
+                ctx.fillText(sh.slots, sx + 115, 460);
+                ctx.fillStyle = '#94A3B8';
+                ctx.font = `500 12.5px ${Theme.FONTS.mono}`;
+                ctx.fillText(sh.keys, sx + 115, 495);
+                ctx.fillStyle = '#4ADE80';
+                ctx.font = `600 13px ${Theme.FONTS.sans}`;
+                ctx.fillText('Active Shard ✔', sx + 115, 528);
+              });
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 17px ${Theme.FONTS.sans}`;
+              ctx.fillText('Smart Client Direct Routing & Gossip Protocol', 1350, 600);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('• Clients cache slot mapping to send queries directly to owner', 1350, 635);
+              ctx.fillText('• If slot moves during resharding: server returns -MOVED redirect', 1350, 665);
+              ctx.fillText('• Gossip ping/pong protocol maintains cluster topology state', 1350, 695);
+            }
+
+            if (state.clusterCard > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Sentinel Auto-Failover and 16,384 Hash Slots Enable Resilient Horizontal Scale');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 6: Memory Eviction, TTL Expiration & Production Gotchas (150s -> 180s)
+        // ====================================================================
+        {
+          id: 'eviction-ttl-and-gotchas',
+          chapter: '06. Memory Eviction, TTL Expiration & Production Best Practices',
+          duration: 30,
+          qaTime: 12.0,
+          backdrop: 'waves',
+          transition: 'fade',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.2, type: 'draw' },
+            { time: 2.5, type: 'tick' },
+            { time: 4.0, type: 'success' },
+            { time: 14.0, type: 'whoosh' },
+            { time: 22.0, type: 'tick' }
+          ],
+          captions: [
+            { start: 0.5, end: 13.5, text: 'When memory reaches capacity, Redis protects itself using approximated LRU or LFU algorithms, sampling candidate keys without the overhead of heavy linked lists.' },
+            { start: 14.5, end: 27.5, text: 'In production, always avoid massive keys that block the single thread, replace synchronous delete with unlink, and configure max-memory limits to prevent kernel OOM kills.' }
+          ],
+          initialState: () => ({
+            evictionCard: 0,
+            gotchasCard: 0,
+            lruSample: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { evictionCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { gotchasCard: 1, duration: 0.8, ease: 'power2.out' }, 0.9)
+              .to(s, { lruSample: 1, duration: 0.8, ease: 'power2.out' }, 14.0);
+            Camera.zoomTo(tl, s, { x: 1360, y: 520, zoom: 1.25, duration: 1.4 }, 14.5);
+            Camera.reset(tl, s, 26.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Memory Eviction Mechanics & TTL
+            Theme.drawGlassCard(ctx, 160, 220, 740, 580, {
+              tint: 'crimson',
+              badge: 'Memory Eviction (maxmemory-policy)',
+              badgeSide: 'left',
+              progress: state.evictionCard
+            });
+
+            if (state.evictionCard > 0.2) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 18px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('Approximated LRU (Sampled Algorithm):', 200, 275);
+
+              // 5 Key Samples
+              const samples = [
+                { k: 'k1', idle: '120s idle', evict: false },
+                { k: 'k2', idle: '840s idle', evict: false },
+                { k: 'k3', idle: '4,200s idle (OLDEST)', evict: true },
+                { k: 'k4', idle: '30s idle', evict: false },
+                { k: 'k5', idle: '520s idle', evict: false }
+              ];
+
+              samples.forEach((sm, i) => {
+                const sy = 300 + i * 46;
+                ctx.fillStyle = sm.evict ? 'rgba(239, 68, 68, 0.25)' : 'rgba(15, 23, 42, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(200, sy, 660, 40, 6);
+                ctx.fill();
+                ctx.strokeStyle = sm.evict ? '#EF4444' : '#38BDF8';
+                ctx.lineWidth = sm.evict ? 2 : 1.2;
+                ctx.stroke();
+
+                ctx.fillStyle = sm.evict ? '#FCA5A5' : '#38BDF8';
+                ctx.font = `700 14px ${Theme.FONTS.mono}`;
+                ctx.fillText(`Sample [${i}]: ${sm.k}`, 220, sy + 25);
+                ctx.fillStyle = sm.evict ? '#EF4444' : '#CBD5E1';
+                ctx.fillText(sm.idle, 420, sy + 25);
+                ctx.fillStyle = sm.evict ? '#F87171' : '#4ADE80';
+                ctx.fillText(sm.evict ? 'EVICTED ⚡' : 'Kept', 740, sy + 25);
+              });
+
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.fillText('Why Sampled LRU? Zero Memory Overhead!', 200, 560);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14px ${Theme.FONTS.sans}`;
+              ctx.fillText('• Pure LRU requires pointers on every key (costing gigabytes of RAM)', 200, 595);
+              ctx.fillText('• Redis samples 5 random keys, inspects 24-bit clock, evicts oldest', 200, 625);
+              ctx.fillText('• Active Expiration: 10 times/sec, samples 20 keys with TTL and purges', 200, 655);
+            }
+
+            // Right: Senior SA Production Best Practices
+            Theme.drawGlassCard(ctx, 940, 220, 820, 580, {
+              tint: 'emerald',
+              badge: 'Senior Architect Production Rules',
+              badgeSide: 'right',
+              progress: state.gotchasCard
+            });
+
+            if (state.gotchasCard > 0.2) {
+              const rules = [
+                {
+                  title: '1. Big Keys Hazard (Avoid Keys > 10MB)',
+                  desc: 'Serializing or deleting large hashes blocks the single thread for seconds. Use scan and UNLINK instead of DEL.',
+                  color: '#F87171'
+                },
+                {
+                  title: '2. Non-Blocking UNLINK vs Synchronous DEL',
+                  desc: 'DEL deallocates memory in the main thread. UNLINK dispatches memory freeing to a background thread asynchronously.',
+                  color: '#34D399'
+                },
+                {
+                  title: '3. Lua Script Timeouts & Atomicity',
+                  desc: 'Lua scripts run atomically without interruptions. A slow script or infinite loop freezes the entire Redis server.',
+                  color: '#FACC15'
+                },
+                {
+                  title: '4. maxmemory Limit & TCP Keepalive',
+                  desc: 'Always set maxmemory to 75% of machine RAM so background BGSAVE and replication buffers never trigger OS OOM killer.',
+                  color: '#38BDF8'
+                }
+              ];
+
+              rules.forEach((r, idx) => {
+                const ry = 280 + idx * 115;
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.beginPath();
+                ctx.roundRect(980, ry, 740, 100, 8);
+                ctx.fill();
+                ctx.strokeStyle = r.color;
+                ctx.lineWidth = 1.6;
+                ctx.stroke();
+
+                ctx.fillStyle = r.color;
+                ctx.font = `700 16px ${Theme.FONTS.sans}`;
+                ctx.textAlign = 'left';
+                ctx.fillText(r.title, 1005, ry + 32);
+
+                ctx.fillStyle = '#CBD5E1';
+                ctx.font = `500 14px ${Theme.FONTS.sans}`;
+                ctx.fillText(r.desc, 1005, ry + 65);
+              });
+            }
+
+            if (state.gotchasCard > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Sampled Eviction, Non-Blocking Unlink, and Sharded Keys Guarantee Production Stability');
+            }
+          }
+        }
+      ]
+    });
+  </script>
+</body>
+</html>
