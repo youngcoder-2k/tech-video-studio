@@ -59,6 +59,18 @@ npx techvid render ./examples/bytebytego-system-design/index.html -o ./system_de
 
 ---
 
+## 🎬 Showcase Examples
+
+| Example | Description | Tech Stack / Archetypes | Key Visual Metaphors |
+|---|---|---|---|
+| **[Deep Query Optimization](./examples/deep-query-optimization/index.html)** | 60s in-depth masterclass on database indexing & execution plans | B+Tree, Wireframe Cylinder, Hero Metric Slam, Partition Shards | Seq Scan vs B+Tree ($O(N) \to O(\log N)$), Leftmost Prefix Rule, Covering Indexes (Zero Heap Lookups), Partition Pruning |
+| **[How Redis Works](./examples/how-redis-works/index.html)** | 60s architectural explainer on Redis in-memory speed & epoll | RAM Matrix, Wireframe Cylinder, PubSub Topic Box, BGSAVE Fork | DRAM vs NVMe ($<100\mu\text{s}$), epoll I/O multiplexer, SkipList ZSET, Copy-On-Write snapshotting |
+| **[ByteByteGo System Design](./examples/bytebytego-system-design/index.html)** | Distributed ACID transaction rollback & 2PC coordinator | Isometric Server Stack, Wireframe Browser, State Mutation Cards | Two-Phase Commit, distributed lock failure, auto-compensation |
+| **[JVM Under The Hood](./examples/jvm-under-the-hood/index.html)** | Java bytecode execution, JIT compiler, and hardware die | Bytecode Capsule, Stack Chamber, Memory Heap Grid | Bytecode interpreter $\to$ Tiered C1/C2 compilation $\to$ Native machine code |
+| **[HTTP Request Lifecycle](./examples/http-request-lifecycle/index.html)** | Packet traversal from DNS resolver to CDN edge & origin | Wireframe Browser, CDN Edge Globe, Network Packet Frame | DNS lookup $\to$ TLS 1.3 handshake $\to$ CDN cache hit $\to$ Edge termination |
+
+---
+
 ## 🤖 Install as an AI Skill (Antigravity, Claude Code, Cursor, Codex)
 
 Install the portable self-contained skill (includes the standalone browser bundle, metaphor catalog, and SFX synthesizer) into your AI coding agent:

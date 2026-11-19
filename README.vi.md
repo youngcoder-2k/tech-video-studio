@@ -63,6 +63,18 @@ node bin/tech-video-studio.js render examples/bytebytego-system-design/index.htm
 
 ---
 
+## 🎬 Video mẫu thực tế (Showcase Examples)
+
+| Ví dụ | Mô tả kỹ thuật | Archetypes sử dụng | Khái niệm kiến trúc trực quan hóa |
+|---|---|---|---|
+| **[Deep Query Optimization](./examples/deep-query-optimization/index.html)** | Tối ưu hóa Database Query & Execution Plan chuyên sâu 60s | B+Tree Hierarchy, Wireframe Cylinder, Hero Metric Slam, Partition Shards | Seq Scan vs B+Tree ($O(N) \to O(\log N)$), Leftmost Prefix Rule, Covering Index (Index-Only Scan 0 heap fetch), Partition Pruning |
+| **[How Redis Works](./examples/how-redis-works/index.html)** | Giải thích cơ chế hoạt động của Redis dưới tầng sâu 60s | RAM Matrix, Wireframe Cylinder, PubSub Topic Box, BGSAVE Fork | DRAM vs NVMe ($<100\mu\text{s}$), epoll I/O multiplexer, SkipList ZSET, Copy-On-Write background snapshots |
+| **[ByteByteGo System Design](./examples/bytebytego-system-design/index.html)** | Phân tán ACID Transaction Rollback & 2PC Coordinator | Isometric Server Stack, Wireframe Browser, State Mutation Cards | Two-Phase Commit, distributed lock failure, auto-compensation |
+| **[JVM Under The Hood](./examples/jvm-under-the-hood/index.html)** | Thực thi Java bytecode, JIT compiler và chip phần cứng | Bytecode Capsule, Stack Chamber, Memory Heap Grid | Bytecode interpreter $\to$ Tiered C1/C2 compilation $\to$ Mã máy CPU |
+| **[HTTP Request Lifecycle](./examples/http-request-lifecycle/index.html)** | Luồng gói tin từ DNS resolver đến CDN edge & origin server | Wireframe Browser, CDN Edge Globe, Network Packet Frame | DNS lookup $\to$ TLS 1.3 handshake $\to$ CDN cache hit $\to$ Edge termination |
+
+---
+
 ## 🤖 Cài đặt làm AI Skill (Cho Antigravity, Claude Code, Cursor, Codex)
 
 ```bash

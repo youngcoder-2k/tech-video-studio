@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Deep Database Query Optimization — ByteByteGo Explainer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #262626; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="../../dist/tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Camera, Connectors, Icons, Illustrations, createVideo } = window.TechVideoStudio;
+
+    createVideo({
+      title: 'Deep Database Query Optimization',
+      palette: 'byteCharcoal',
+      fps: 60,
+      scenes: [
+        // ====================================================================
+        // SCENE 1: Table Heap Scan Bottleneck vs B+Tree Index Traversal (0s -> 15s)
+        // ====================================================================
+        {
+          id: 'seq-scan-vs-btree',
+          chapter: '01. Table Heap Scan Bottleneck vs B+Tree Index Traversal',
+          duration: 15,
+          qaTime: 5.5,
+          backdrop: 'waves',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.0, type: 'draw' },
+            { time: 2.2, type: 'whoosh' },
+            { time: 3.5, type: 'success' },
+            { time: 8.0, type: 'whoosh' }
+          ],
+          captions: [
+            { start: 0.4, end: 5.5, text: 'Without an index, querying ten million records triggers a brutal sequential scan across every disk block.' },
+            { start: 6.0, end: 11.5, text: 'A B-plus tree index organizes keys into a balanced hierarchy, slashing disk lookups to just three page reads.' },
+            { start: 12.0, end: 14.8, text: 'This transforms an expensive O of N disk seek into an instantaneous O log N operation.' }
+          ],
+          initialState: () => ({
+            heapCard: 0,
+            btreeCard: 0,
+            hero: 0,
+            arrows: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { heapCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { btreeCard: 1, duration: 0.8, ease: 'power2.out' }, 0.8)
+              .to(s, { hero: 1, duration: 0.7, ease: 'back.out(1.5)' }, 1.6)
+              .to(s, { arrows: 1, duration: 0.8, ease: 'power2.out' }, 2.4);
+            Camera.zoomTo(tl, s, { x: 1520, y: 510, zoom: 1.25, duration: 1.2 }, 8.0);
+            Camera.reset(tl, s, 12.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: 10M Row Table Heap (Full Table Scan)
+            Theme.drawGlassCard(ctx, 160, 230, 480, 570, {
+              tint: 'crimson',
+              badge: 'Full Table Scan (Seq Scan)',
+              badgeSide: 'left',
+              progress: state.heapCard
+            });
+
+            Icons.draw(ctx, 'postgresElephant', 400, 320, 64, { alpha: state.heapCard });
+
+            Illustrations.wireframeCylinderDb(ctx, 400, 460, {
+              width: 170,
+              height: 170,
+              color: '#F87171',
+              label: '10M Rows Table Heap',
+              progress: state.heapCard
+            });
+
+            if (state.heapCard > 0.6) {
+              // Laser scan effect line across cylinder
+              const scanY = 400 + ((t * 120) % 120);
+              ctx.save();
+              ctx.strokeStyle = '#EF4444';
+              ctx.lineWidth = 2.5;
+              ctx.shadowColor = '#EF4444';
+              ctx.shadowBlur = 12;
+              ctx.beginPath();
+              ctx.moveTo(320, scanY);
+              ctx.lineTo(480, scanY);
+              ctx.stroke();
+              ctx.restore();
+
+              ctx.fillStyle = '#FECACA';
+              ctx.font = `500 16px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('• Reads 10,000,000 disk pages sequentially', 400, 675);
+              ctx.fillText('• Massive disk I/O bottleneck: ~12,400 ms', 400, 710);
+              ctx.fillText('• Pollutes database buffer cache with cold data', 400, 745);
+            }
+
+            // Middle: Kinetic Latency Comparison Banner & Hero Metric
+            if (state.hero > 0.05) {
+              Illustrations.heroMetricSlam(ctx, '12s -> 0.8ms', {
+                cx: 960,
+                cy: 390,
+                fontSize: 88,
+                color: '#34D399',
+                subtitle: '99.9% Disk I/O Slashing',
+                scale: state.hero
+              });
+
+              Theme.drawGlassCard(ctx, 700, 520, 520, 180, {
+                tint: 'olive',
+                badge: 'EXPLAIN ANALYZE Summary',
+                badgeSide: 'center',
+                progress: state.hero
+              });
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 19px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Disk Reads: 10,000,000 -> 3 Pages', 960, 590);
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `600 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('Seq Scan: O(N)  vs  B+Tree: O(log N)', 960, 630);
+              ctx.fillStyle = '#6EE7B7';
+              ctx.font = `600 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('Total Cost: 284,912.00 -> 8.45', 960, 665);
+            }
+
+            // Right: B+Tree Index Hierarchy
+            Theme.drawGlassCard(ctx, 1280, 230, 480, 570, {
+              tint: 'emerald',
+              badge: 'B+Tree Index Traversal',
+              badgeSide: 'right',
+              progress: state.btreeCard
+            });
+
+            Illustrations.bTreeHierarchy(ctx, 1520, 310, {
+              root: ['500K'],
+              children: [
+                { keys: ['250K'], active: false },
+                { keys: ['750K'], active: true },
+                { keys: ['950K'], active: false }
+              ],
+              progress: state.btreeCard
+            });
+
+            if (state.btreeCard > 0.6) {
+              // Direct TID pointer badge
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(1320, 560, 400, 48, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.lineWidth = 1.8;
+              ctx.stroke();
+
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `700 16px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Leaf TID -> Pointer (Page 402, Slot 8)', 1520, 590);
+
+              ctx.fillStyle = '#A7F3D0';
+              ctx.font = `500 16px ${Theme.FONTS.sans}`;
+              ctx.fillText('• Traverses Root -> Branch -> Leaf in 3 I/Os', 1520, 675);
+              ctx.fillText('• O(log N) Search guarantees consistent latency', 1520, 710);
+              ctx.fillText('• Instant lookups even at billions of rows', 1520, 745);
+            }
+
+            // Connector Arcing Gracefully Over the Center
+            Connectors.curvedArrow(ctx, 640, 320, 1280, 320, {
+              progress: state.arrows,
+              curvature: -0.22,
+              color: '#34D399',
+              label: 'B+Tree Index Range Search (<1ms)'
+            });
+
+            if (state.hero > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'B+Tree Indexes Reduce O(N) Disk Scans to O(log N) Tree Traversal');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 2: The Leftmost Prefix Rule in Composite Indexes (15s -> 30s)
+        // ====================================================================
+        {
+          id: 'composite-index-leftmost-prefix',
+          chapter: '02. The Leftmost Prefix Rule in Composite Indexes',
+          duration: 15,
+          qaTime: 5.5,
+          backdrop: 'blueprint',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.1, type: 'draw' },
+            { time: 2.2, type: 'tick' },
+            { time: 3.4, type: 'whoosh' },
+            { time: 4.5, type: 'success' },
+            { time: 7.5, type: 'whoosh' }
+          ],
+          captions: [
+            { start: 0.4, end: 5.5, text: 'A composite index on tenant ID, status, and date sorts records strictly in lexicographical order.' },
+            { start: 6.0, end: 10.5, text: 'Querying on status alone skips the leftmost column, forcing the optimizer to fall back to a full scan.' },
+            { start: 11.0, end: 14.8, text: 'Always structure composite indexes with the highest selectivity leading column to lock into target ranges.' }
+          ],
+          initialState: () => ({
+            topIndex: 0,
+            badQuery: 0,
+            goodQuery: 0,
+            arrows: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { topIndex: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { badQuery: 1, duration: 0.8, ease: 'power2.out' }, 0.8)
+              .to(s, { goodQuery: 1, duration: 0.8, ease: 'power2.out' }, 1.5)
+              .to(s, { arrows: 1, duration: 0.7, ease: 'power2.out' }, 2.3);
+            Camera.zoomTo(tl, s, { x: 1390, y: 580, zoom: 1.24, duration: 1.2 }, 7.5);
+            Camera.reset(tl, s, 12.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Top: Composite Index Definition & Memory Layout
+            Theme.drawGlassCard(ctx, 300, 220, 1320, 110, {
+              tint: 'slate',
+              badge: 'Composite Index Definition: idx_orders_tenant_status_date',
+              badgeSide: 'center',
+              progress: state.topIndex
+            });
+
+            if (state.topIndex > 0.2) {
+              const cols = [
+                { name: '1. tenant_id', role: 'Leftmost Prefix (Primary Sort Key)', bg: '#065F46', border: '#34D399', text: '#A7F3D0' },
+                { name: '2. status', role: 'Secondary Sort Key (Within Tenant)', bg: '#1E3A8A', border: '#60A5FA', text: '#BFDBFE' },
+                { name: '3. created_at', role: 'Tertiary Sort Key (Tie Breaker)', bg: '#374151', border: '#9CA3AF', text: '#E5E7EB' }
+              ];
+              cols.forEach((col, idx) => {
+                const cx = 340 + idx * 420;
+                ctx.fillStyle = col.bg;
+                ctx.beginPath();
+                ctx.roundRect(cx, 260, 380, 52, 8);
+                ctx.fill();
+                ctx.strokeStyle = col.border;
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                ctx.fillStyle = col.text;
+                ctx.font = `700 16px ${Theme.FONTS.mono}`;
+                ctx.textAlign = 'left';
+                ctx.fillText(col.name, cx + 18, 284);
+                ctx.fillStyle = '#CBD5E1';
+                ctx.font = `500 13px ${Theme.FONTS.sans}`;
+                ctx.fillText(col.role, cx + 18, 302);
+              });
+            }
+
+            // Left: Query A (Skipping Leftmost Prefix -> Full Scan Failure)
+            Theme.drawGlassCard(ctx, 160, 360, 760, 460, {
+              tint: 'crimson',
+              badge: 'Query A: WHERE status = "PAID" (Index Skipped)',
+              badgeSide: 'left',
+              progress: state.badQuery
+            });
+
+            if (state.badQuery > 0.2) {
+              // SQL Box
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(200, 410, 680, 54, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#EF4444';
+              ctx.lineWidth = 1.6;
+              ctx.stroke();
+
+              ctx.fillStyle = '#FCA5A5';
+              ctx.font = `600 17px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('SELECT * FROM orders WHERE status = \'PAID\';', 220, 444);
+
+              // Failure badge
+              ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
+              ctx.beginPath();
+              ctx.roundRect(200, 480, 680, 80, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#F87171';
+              ctx.stroke();
+
+              ctx.fillStyle = '#EF4444';
+              ctx.font = `700 18px ${Theme.FONTS.sans}`;
+              ctx.fillText('❌ Leftmost Column (tenant_id) Missing in Predicate', 220, 512);
+              ctx.fillStyle = '#FECACA';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.fillText('Since index is sorted by tenant_id first, status "PAID" is scattered across all leaves.', 220, 542);
+
+              // EXPLAIN Output
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('EXPLAIN Execution Plan:', 200, 595);
+
+              const planBad = [
+                '-> Seq Scan on orders (cost=0.00..29180.00)',
+                '   Filter: (status = \'PAID\')',
+                '   Rows Removed by Filter: 9,850,000 | Time: 8,420 ms'
+              ];
+              planBad.forEach((line, i) => {
+                ctx.fillStyle = i === 2 ? '#F87171' : '#94A3B8';
+                ctx.font = `500 14.5px ${Theme.FONTS.mono}`;
+                ctx.fillText(line, 220, 628 + i * 28);
+              });
+
+              ctx.fillStyle = '#FCA5A5';
+              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.fillText('Result: Catastrophic 8.4s disk scan across all tenants', 200, 770);
+            }
+
+            // Right: Query B (Matching Leftmost Prefix -> Exact Range Scan)
+            Theme.drawGlassCard(ctx, 1000, 360, 760, 460, {
+              tint: 'emerald',
+              badge: 'Query B: WHERE tenant_id = 42 AND status = "PAID"',
+              badgeSide: 'right',
+              progress: state.goodQuery
+            });
+
+            if (state.goodQuery > 0.2) {
+              // SQL Box
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(1040, 410, 680, 54, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.lineWidth = 1.6;
+              ctx.stroke();
+
+              ctx.fillStyle = '#86EFAC';
+              ctx.font = `600 17px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('SELECT * FROM orders WHERE tenant_id = 42 AND status = \'PAID\';', 1060, 444);
+
+              // Success badge
+              ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+              ctx.beginPath();
+              ctx.roundRect(1040, 480, 680, 80, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.stroke();
+
+              ctx.fillStyle = '#34D399';
+              ctx.font = `700 18px ${Theme.FONTS.sans}`;
+              ctx.fillText('✔ Strict Leftmost Prefix Match (tenant_id -> status)', 1060, 512);
+              ctx.fillStyle = '#A7F3D0';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.fillText('Locks index navigation into tenant 42 bucket, then seeks status "PAID" instantly.', 1060, 542);
+
+              // EXPLAIN Output
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('EXPLAIN Execution Plan:', 1040, 595);
+
+              const planGood = [
+                '-> Index Scan using idx_orders_tenant_status_date (cost=0.43..8.45)',
+                '   Index Cond: ((tenant_id = 42) AND (status = \'PAID\'))',
+                '   Rows Returned: 42 | Buffer Page Hits: 4 | Time: 0.65 ms'
+              ];
+              planGood.forEach((line, i) => {
+                ctx.fillStyle = i === 2 ? '#34D399' : '#94A3B8';
+                ctx.font = `500 14.5px ${Theme.FONTS.mono}`;
+                ctx.fillText(line, 1060, 628 + i * 28);
+              });
+
+              ctx.fillStyle = '#34D399';
+              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.fillText('Result: 0.65ms execution with zero unnecessary row scans', 1040, 770);
+            }
+
+            if (state.goodQuery > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Composite Indexes Require Strict Left-to-Right Column Matching to Avoid Full Scans');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 3: Covering Indexes & Index-Only Scans (Zero Heap Fetches) (30s -> 45s)
+        // ====================================================================
+        {
+          id: 'covering-index-index-only-scan',
+          chapter: '03. Covering Indexes & Index-Only Scans (Zero Heap Fetches)',
+          duration: 15,
+          qaTime: 5.5,
+          backdrop: 'waves',
+          transition: 'slideLeft',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.0, type: 'draw' },
+            { time: 2.2, type: 'tick' },
+            { time: 3.5, type: 'success' },
+            { time: 7.5, type: 'whoosh' }
+          ],
+          captions: [
+            { start: 0.4, end: 5.5, text: 'Even with an index, fetching non-indexed columns incurs costly random I-O lookups in the table heap.' },
+            { start: 6.0, end: 10.8, text: 'A covering index with an include clause embeds payload columns directly into the leaf nodes.' },
+            { start: 11.2, end: 14.8, text: 'The engine executes an index-only scan, returning query results directly without touching table pages.' }
+          ],
+          initialState: () => ({
+            stdIndex: 0,
+            covIndex: 0,
+            heapAccess: 0,
+            directFlow: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { stdIndex: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { heapAccess: 1, duration: 0.8, ease: 'power2.out' }, 0.9)
+              .to(s, { covIndex: 1, duration: 0.8, ease: 'power2.out' }, 1.6)
+              .to(s, { directFlow: 1, duration: 0.8, ease: 'power2.out' }, 2.4);
+            Camera.zoomTo(tl, s, { x: 1380, y: 520, zoom: 1.22, duration: 1.2 }, 7.5);
+            Camera.reset(tl, s, 12.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Standard Index Scan (Random Table Heap Read Penalty)
+            Theme.drawGlassCard(ctx, 160, 230, 760, 570, {
+              tint: 'slate',
+              badge: 'Standard Index Scan (Random Heap I/O)',
+              badgeSide: 'left',
+              progress: state.stdIndex
+            });
+
+            if (state.stdIndex > 0.2) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 18px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('Query: SELECT user_id, total_amount FROM orders WHERE user_id = 902;', 200, 280);
+
+              // B+Tree Leaf
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(200, 310, 680, 56, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#38BDF8';
+              ctx.lineWidth = 1.8;
+              ctx.stroke();
+
+              ctx.fillStyle = '#38BDF8';
+              ctx.font = `700 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('Index Leaf: [user_id: 902] -> Pointer: TID(Block #4128, Offset 14)', 220, 345);
+
+              // Connecting Arrow to Heap
+              Connectors.solidArrow(ctx, 540, 366, 540, 440, {
+                progress: state.heapAccess,
+                color: '#EF4444',
+                label: 'Random Disk I/O Heap Lookup'
+              });
+
+              // Table Heap Cylinder
+              Illustrations.wireframeCylinderDb(ctx, 540, 520, {
+                width: 160,
+                height: 120,
+                color: '#94A3B8',
+                label: 'Table Heap Page (Non-Indexed total_amount)',
+                progress: state.heapAccess
+              });
+
+              ctx.fillStyle = '#FECACA';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('• Index only stores user_id; misses total_amount', 540, 650);
+              ctx.fillText('• Must perform random I/O read on physical disk heap', 540, 680);
+              ctx.fillStyle = '#F87171';
+              ctx.font = `700 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('Heap Fetches: 1,000 rows | Latency: 14.8 ms', 540, 720);
+            }
+
+            // Right: Covering Index with INCLUDE Clause (Zero Heap Access)
+            Theme.drawGlassCard(ctx, 1000, 230, 760, 570, {
+              tint: 'teal',
+              badge: 'Covering Index: INCLUDE (total_amount)',
+              badgeSide: 'right',
+              progress: state.covIndex
+            });
+
+            if (state.covIndex > 0.2) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 18px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('Index: CREATE INDEX idx_covering ON orders (user_id) INCLUDE (total_amount);', 1040, 280);
+
+              // Enriched Leaf Block with Payload
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+              ctx.beginPath();
+              ctx.roundRect(1040, 310, 680, 84, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.lineWidth = 2.2;
+              ctx.stroke();
+
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `700 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('Leaf Key: [user_id: 902]', 1060, 342);
+              ctx.fillStyle = '#34D399';
+              ctx.font = `700 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('Embedded Payload: [total_amount: $1,420.00, status: "SHIPPED"]', 1060, 372);
+
+              // Direct client return arc bypassing the heap
+              Connectors.curvedArrow(ctx, 1380, 394, 1380, 520, {
+                progress: state.directFlow,
+                curvature: -0.35,
+                color: '#34D399',
+                label: 'Zero Heap Lookups (Index-Only Scan)'
+              });
+
+              // Speed & Success badge
+              Theme.drawGlassCard(ctx, 1100, 520, 560, 160, {
+                tint: 'emerald',
+                badge: 'Index-Only Scan Fast Path',
+                badgeSide: 'center',
+                progress: state.directFlow
+              });
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 18px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Heap Fetches: 0 (Zero Disk I/O Needed)', 1380, 580);
+              ctx.fillStyle = '#6EE7B7';
+              ctx.font = `600 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('All query columns satisfied directly from leaf buffer', 1380, 615);
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `700 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('Latency: 0.35 ms (Pure RAM / L2 Cache Hit)', 1380, 650);
+
+              ctx.fillStyle = '#A7F3D0';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.fillText('• Eliminates 100% of random read disk thrashing', 1380, 720);
+            }
+
+            if (state.directFlow > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Covering Indexes Eliminate Expensive Random Table Heap Lookups via Index-Only Scans');
+            }
+          }
+        },
+
+        // ====================================================================
+        // SCENE 4: Declarative Partition Pruning & Join Filter Pushdown (45s -> 60s)
+        // ====================================================================
+        {
+          id: 'partition-pruning-filter-pushdown',
+          chapter: '04. Declarative Partition Pruning & Join Filter Pushdown',
+          duration: 15,
+          qaTime: 5.5,
+          backdrop: 'speedlines',
+          transition: 'fade',
+          sfx: [
+            { time: 0.3, type: 'pop' },
+            { time: 1.2, type: 'draw' },
+            { time: 2.4, type: 'tick' },
+            { time: 3.5, type: 'success' },
+            { time: 7.5, type: 'whoosh' }
+          ],
+          captions: [
+            { start: 0.4, end: 5.5, text: 'For massive multi-gigabyte tables, partitioning by date or region divides the physical data into shards.' },
+            { start: 6.0, end: 10.5, text: 'The optimizer uses declarative partition pruning to discard irrelevant years before disk reads begin.' },
+            { start: 11.0, end: 14.8, text: 'Pairing pruning with join filter pushdown ensures only relevant partitions enter the hash join engine.' }
+          ],
+          initialState: () => ({
+            queryCard: 0,
+            shards: 0,
+            pruneResult: 0
+          }),
+          build(tl, s) {
+            tl.to(s, { queryCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { shards: 1, duration: 0.8, ease: 'power2.out' }, 0.9)
+              .to(s, { pruneResult: 1, duration: 0.8, ease: 'power2.out' }, 1.8);
+            Camera.zoomTo(tl, s, { x: 1240, y: 520, zoom: 1.22, duration: 1.2 }, 7.5);
+            Camera.reset(tl, s, 12.5, 1.0);
+          },
+          render(ctx, { state, t }) {
+            // Left: Query & Pushdown Optimizer Engine
+            Theme.drawGlassCard(ctx, 160, 230, 480, 570, {
+              tint: 'olive',
+              badge: 'Query Optimizer Engine',
+              badgeSide: 'left',
+              progress: state.queryCard
+            });
+
+            if (state.queryCard > 0.2) {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 18px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('Target Query with Date Range:', 200, 280);
+
+              // SQL Box
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              ctx.beginPath();
+              ctx.roundRect(200, 300, 400, 110, 8);
+              ctx.fill();
+              ctx.strokeStyle = '#FACC15';
+              ctx.lineWidth = 1.6;
+              ctx.stroke();
+
+              ctx.fillStyle = '#FACC15';
+              ctx.font = `500 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('SELECT c.name, SUM(o.amount)', 220, 330);
+              ctx.fillText('FROM orders o JOIN customers c ON ...', 220, 360);
+              ctx.fillStyle = '#34D399';
+              ctx.font = `700 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('WHERE o.order_date >= \'2026-01-01\';', 220, 390);
+
+              // Router / Optimizer Core
+              Illustrations.loadBalancerRouter(ctx, 400, 510, {
+                radius: 56,
+                color: '#FACC15',
+                label: 'Compile-Time Pruner',
+                algorithm: 'Predicate Pushdown',
+                progress: state.queryCard
+              });
+
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 15px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('• Inspects partition boundary metadata', 400, 640);
+              ctx.fillText('• Bypasses 2024 & 2025 table definitions', 400, 675);
+              ctx.fillText('• Passes only 2026 into Hash Join stage', 400, 710);
+            }
+
+            // Right: 500M Row Physical Partitions
+            Theme.drawGlassCard(ctx, 680, 230, 1080, 570, {
+              tint: 'slate',
+              badge: 'Partitioned Table Hierarchy: orders (500,000,000 Total Rows)',
+              badgeSide: 'right',
+              progress: state.shards
+            });
+
+            if (state.shards > 0.2) {
+              const partitions = [
+                {
+                  name: 'orders_2024',
+                  range: '2024-01-01 .. 2024-12-31',
+                  rows: '180,000,000 Rows',
+                  status: 'PRUNED (0 I/O)',
+                  active: false,
+                  bg: 'rgba(239, 68, 68, 0.15)',
+                  border: '#EF4444',
+                  tagBg: '#7F1D1D'
+                },
+                {
+                  name: 'orders_2025',
+                  range: '2025-01-01 .. 2025-12-31',
+                  rows: '190,000,000 Rows',
+                  status: 'PRUNED (0 I/O)',
+                  active: false,
+                  bg: 'rgba(239, 68, 68, 0.15)',
+                  border: '#EF4444',
+                  tagBg: '#7F1D1D'
+                },
+                {
+                  name: 'orders_2026',
+                  range: '2026-01-01 .. 2026-12-31',
+                  rows: '130,000,000 Rows',
+                  status: 'ACTIVE SCAN',
+                  active: true,
+                  bg: 'rgba(16, 185, 129, 0.22)',
+                  border: '#34D399',
+                  tagBg: '#065F46'
+                }
+              ];
+
+              partitions.forEach((part, idx) => {
+                const px = 720 + idx * 340;
+                ctx.fillStyle = part.bg;
+                ctx.beginPath();
+                ctx.roundRect(px, 300, 320, 220, 10);
+                ctx.fill();
+                ctx.strokeStyle = part.border;
+                ctx.lineWidth = part.active ? 2.5 : 1.5;
+                ctx.stroke();
+
+                // Status pill
+                ctx.fillStyle = part.tagBg;
+                ctx.beginPath();
+                ctx.roundRect(px + 16, 320, 150, 30, 6);
+                ctx.fill();
+                ctx.fillStyle = part.active ? '#34D399' : '#FCA5A5';
+                ctx.font = `700 13px ${Theme.FONTS.mono}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(part.status, px + 91, 340);
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `700 18px ${Theme.FONTS.sans}`;
+                ctx.textAlign = 'left';
+                ctx.fillText(part.name, px + 20, 385);
+
+                ctx.fillStyle = '#94A3B8';
+                ctx.font = `500 14px ${Theme.FONTS.mono}`;
+                ctx.fillText(part.range, px + 20, 420);
+                ctx.fillStyle = part.active ? '#FACC15' : '#64748B';
+                ctx.font = `600 15px ${Theme.FONTS.mono}`;
+                ctx.fillText(part.rows, px + 20, 455);
+
+                if (part.active) {
+                  Icons.draw(ctx, 'lightningBolt', px + 260, 360, 40, { glowColor: '#34D399' });
+                }
+              });
+
+              // Connector from Optimizer to 2026 partition
+              Connectors.solidArrow(ctx, 500, 510, 1400, 480, {
+                progress: state.pruneResult,
+                color: '#34D399',
+                label: 'Routed Only to Matching 2026 Shard'
+              });
+
+              // Bottom Pruning Metric Summary
+              if (state.pruneResult > 0.3) {
+                Theme.drawGlassCard(ctx, 720, 560, 1000, 170, {
+                  tint: 'emerald',
+                  badge: 'Optimization Impact',
+                  badgeSide: 'center',
+                  progress: state.pruneResult
+                });
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `700 20px ${Theme.FONTS.sans}`;
+                ctx.textAlign = 'center';
+                ctx.fillText('74% Physical Disk I/O Eliminated at Plan Time (370M Rows Skipped)', 1220, 620);
+
+                ctx.fillStyle = '#34D399';
+                ctx.font = `600 16px ${Theme.FONTS.mono}`;
+                ctx.fillText('Hash Join Memory: 2.1 GB -> 420 MB  |  Buffer Cache Clean  |  Query Speed: 48x Faster', 1220, 665);
+              }
+            }
+
+            if (state.pruneResult > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Partition Pruning & Filter Pushdown Eliminate Irrelevant Partitions at Query Planning');
+            }
+          }
+        }
+      ]
+    });
+  </script>
+</body>
+</html>
