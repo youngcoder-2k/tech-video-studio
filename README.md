@@ -1,4 +1,4 @@
-# Tech Video Studio (`tech-video-studio` v2.0 — ByteByteGo Edition)
+# Tech Video Studio (`tech-video-studio` v2.6 — Kinetic ByteByteGo Edition)
 
 > **AI-Ready Visual Motion Graphics Engine & Multi-Agent Skill Kit for Producing Authentic ByteByteGo-Grade 1080p60 YouTube Technical Explainer Videos.**
 
@@ -63,6 +63,7 @@ npx techvid render ./examples/bytebytego-system-design/index.html -o ./system_de
 
 | Example | Description | Tech Stack / Archetypes | Key Visual Metaphors |
 |---|---|---|---|
+| **[Why Apache Kafka Is So Fast](./examples/why-kafka-is-so-fast/index.html)** | 2-minute kinetic deep dive into Kafka high-throughput architecture | `Icons.drawBadge`, `liveGaugeArc`, `zeroCopyDmaPipeline`, `partitionConsumerMesh`, `quorumTriangleMesh`, `scorecardMatrix` | Sequential Disk I/O ($600+\text{MB/s}$), OS PageCache vs JVM GC, `mmap` sparse `.index`, Linux `sendfile()` Zero-Copy DMA, LZ4 batching, ISR replication |
 | **[How Redis Actually Works](./examples/how-redis-actually-works/index.html)** | 3-minute full deep dive into Redis internals, memory layout & clustering | SDS Struct, epoll Reactor, Progressive Rehashing, Sentinel, 16,384 Hash Slots, Sampled LRU | DRAM vs NVMe ($100\text{ns}$), Linux epoll, dict progressive migration, Copy-On-Write BGSAVE, Sentinel quorum failover, Cluster sharding, eviction mechanics |
 | **[Deep Query Optimization](./examples/deep-query-optimization/index.html)** | 60s in-depth masterclass on database indexing & execution plans | B+Tree, Wireframe Cylinder, Hero Metric Slam, Partition Shards | Seq Scan vs B+Tree ($O(N) \to O(\log N)$), Leftmost Prefix Rule, Covering Indexes (Zero Heap Lookups), Partition Pruning |
 | **[How Redis Works](./examples/how-redis-works/index.html)** | 60s architectural explainer on Redis in-memory speed & epoll | RAM Matrix, Wireframe Cylinder, PubSub Topic Box, BGSAVE Fork | DRAM vs NVMe ($<100\mu\text{s}$), epoll I/O multiplexer, SkipList ZSET, Copy-On-Write snapshotting |

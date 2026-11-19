@@ -1,4 +1,4 @@
-# Tech Video Studio (`tech-video-studio` v2.0 — Phiên bản chuẩn ByteByteGo)
+# Tech Video Studio (`tech-video-studio` v2.6 — Phiên bản Kinetic ByteByteGo)
 
 > **Thư viện Đồ họa Chuyển động (Motion Graphics Engine) & Bộ Kỹ năng AI (AI Skill Kit) giúp tạo video giải thích kỹ thuật / System Design chuẩn 1080p60 đăng YouTube với chất lượng tương đương kênh ByteByteGo.**
 
@@ -67,6 +67,7 @@ node bin/tech-video-studio.js render examples/bytebytego-system-design/index.htm
 
 | Ví dụ | Mô tả kỹ thuật | Archetypes sử dụng | Khái niệm kiến trúc trực quan hóa |
 |---|---|---|---|
+| **[Why Apache Kafka Is So Fast](./examples/why-kafka-is-so-fast/index.html)** | Masterclass động (Kinetic v2.6) 2 phút giải thích vì sao Kafka đạt >1M msg/s | `Icons.drawBadge`, `liveGaugeArc`, `zeroCopyDmaPipeline`, `partitionConsumerMesh`, `quorumTriangleMesh`, `scorecardMatrix` | Sequential Disk I/O ($600+\text{MB/s}$), Linux Kernel PageCache, chỉ mục thưa `mmap .index`, Zero-Copy `sendfile()` DMA, gom lô nén LZ4, đồng thuận ISR |
 | **[How Redis Actually Works](./examples/how-redis-actually-works/index.html)** | Masterclass chuyên sâu 3 phút về kiến trúc tầng sâu, bộ nhớ & cluster Redis | SDS Struct, epoll Reactor, Progressive Rehashing, Sentinel, 16,384 Hash Slots, Sampled LRU | DRAM vs NVMe ($100\text{ns}$), Linux epoll, dict progressive migration, Copy-On-Write BGSAVE, Sentinel quorum failover, Cluster sharding, cơ chế dọn dẹp bộ nhớ eviction |
 | **[Deep Query Optimization](./examples/deep-query-optimization/index.html)** | Tối ưu hóa Database Query & Execution Plan chuyên sâu 60s | B+Tree Hierarchy, Wireframe Cylinder, Hero Metric Slam, Partition Shards | Seq Scan vs B+Tree ($O(N) \to O(\log N)$), Leftmost Prefix Rule, Covering Index (Index-Only Scan 0 heap fetch), Partition Pruning |
 | **[How Redis Works](./examples/how-redis-works/index.html)** | Giải thích cơ chế hoạt động của Redis dưới tầng sâu 60s | RAM Matrix, Wireframe Cylinder, PubSub Topic Box, BGSAVE Fork | DRAM vs NVMe ($<100\mu\text{s}$), epoll I/O multiplexer, SkipList ZSET, Copy-On-Write background snapshots |
