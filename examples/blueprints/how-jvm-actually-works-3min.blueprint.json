@@ -1,0 +1,345 @@
+{
+  "title": "How the JVM Actually Works Under the Hood",
+  "palette": "byteByteGoTrue",
+  "fps": 30,
+  "persona": "senior-sa",
+  "scenes": [
+    {
+      "id": "scene-1-bytecode-and-classloader",
+      "chapter": "01. Write Once, Run Anywhere & Class Loading",
+      "backdrop": "waves",
+      "beats": [
+        {
+          "type": "pill-chain",
+          "duration": 12,
+          "narration": "How does Java run on every machine? First, javac compiles your source code into portable bytecode.",
+          "heroMetric": "WRITE ONCE, RUN ANYWHERE",
+          "heroSub": "Java Source -> Platform-Neutral Bytecode",
+          "pills": ["Main.java", "javac Compiler", "Main.class", "JVM Runtime"],
+          "takeaway": "javac Compiles Java Source Code Into Platform-Independent .class Bytecode",
+          "tag": "BYTECODE"
+        },
+        {
+          "type": "wireframe-fanout",
+          "duration": 12,
+          "narration": "Instead of targeting one CPU, bytecode runs inside a JVM. The same file runs on any OS.",
+          "source": {
+            "badge": "CLASS",
+            "title": "Main.class (Bytecode)",
+            "color": "#10B981"
+          },
+          "targets": [
+            { "badge": "LINUX", "title": "Linux x86_64 JVM", "color": "#22D3EE", "arrowLabel": "Same Bytecode" },
+            { "badge": "MACOS", "title": "Apple Silicon JVM", "color": "#10B981", "arrowLabel": "Same Bytecode" },
+            { "badge": "WIN", "title": "Windows JVM", "color": "#FACC15", "arrowLabel": "Same Bytecode" }
+          ],
+          "takeaway": "Each Operating System Runs Its Own JVM to Execute the Exact Same Bytecode",
+          "tag": "PORTABILITY"
+        },
+        {
+          "type": "flat-step-flow",
+          "duration": 12,
+          "direction": "horizontal",
+          "narration": "At startup, the ClassLoader reads bytecode into memory. It verifies security, prepares static fields, and initializes classes.",
+          "steps": [
+            { "title": "1. Loading", "sub": "Read .class Bytes", "fill": "#00B894", "textColor": "#FFFFFF", "icon": "javaLogo" },
+            { "title": "2. Linking", "sub": "Verify & Prepare", "fill": "#22D3EE", "textColor": "#0F172A", "icon": "shieldGuard" },
+            { "title": "3. Init", "sub": "Run Static Blocks", "fill": "#F59E0B", "textColor": "#0F172A", "icon": "lightningBolt" }
+          ],
+          "takeaway": "The JVM ClassLoader Verifies Bytecode Safety Before Any Code Executes",
+          "tag": "CLASSLOADER"
+        }
+      ]
+    },
+    {
+      "id": "scene-2-runtime-memory-areas",
+      "chapter": "02. JVM Memory Areas: Stack, Heap & Metaspace",
+      "backdrop": "blueprint",
+      "beats": [
+        {
+          "type": "dashed-group-stack",
+          "duration": 12,
+          "narration": "Every thread gets its own private Stack. Method calls push frames onto it, storing local variables safely.",
+          "header": "Per-Thread JVM Stack",
+          "subtitle": "Thread-private LIFO frames — zero lock contention",
+          "stackTitle": "Thread #1 Stack",
+          "stackItems": ["main() frame", "process() frame", "calc() frame", "local vars"],
+          "pillColor": "#EF4444",
+          "arrowLabel": "Object References",
+          "dbLabel": "Shared Heap",
+          "takeaway": "Each Thread Owns a Private Stack for Fast, Lock-Free Method Execution",
+          "tag": "THREAD STACK"
+        },
+        {
+          "type": "comparison-cards",
+          "duration": 12,
+          "narration": "While stacks are private per thread, the Heap is shared. Every object you allocate lives on the Heap.",
+          "left": {
+            "title": "JVM Thread Stack",
+            "headerBg": "#6E7A3B",
+            "bodyBg": "#213D37",
+            "bullets": [
+              "Private to each thread",
+              "Stores primitives & refs",
+              "Auto-freed on return",
+              "Fast LIFO memory access"
+            ]
+          },
+          "right": {
+            "title": "Shared JVM Heap",
+            "headerBg": "#0F766E",
+            "bodyBg": "#19373D",
+            "bullets": [
+              "Shared across all threads",
+              "Stores all Objects & Arrays",
+              "Managed by Garbage Collector",
+              "Sized via -Xms and -Xmx"
+            ]
+          },
+          "takeaway": "Stack Frames Store Local References While the Shared Heap Holds All Objects",
+          "tag": "STACK VS HEAP"
+        },
+        {
+          "type": "flat-step-flow",
+          "duration": 12,
+          "direction": "vertical",
+          "narration": "Class definitions and method bytecode live in Metaspace. Metaspace uses native OS memory, separate from the Heap.",
+          "steps": [
+            {
+              "title": "JVM Heap",
+              "sub": "Live Object Instances",
+              "fill": "#00B894",
+              "textColor": "#FFFFFF",
+              "icon": "ramChip",
+              "arrowLabel": "Class Pointer"
+            },
+            {
+              "title": "Metaspace (Native)",
+              "sub": "Class Metadata & Bytecode",
+              "fill": "#22D3EE",
+              "textColor": "#0F172A",
+              "icon": "cpuSilicon"
+            }
+          ],
+          "takeaway": "Metaspace Stores Class Blueprints in Native Memory Outside the Java Heap",
+          "tag": "METASPACE"
+        }
+      ]
+    },
+    {
+      "id": "scene-3-interpreter-and-jit",
+      "chapter": "03. Execution Engine: Interpreter vs HotSpot JIT Compiler",
+      "backdrop": "spotlight",
+      "beats": [
+        {
+          "type": "flat-step-flow",
+          "duration": 12,
+          "direction": "horizontal",
+          "narration": "First, the JVM interpreter executes bytecode line by line. Startup is instant, yet repeated loops stay slow.",
+          "steps": [
+            { "title": "Bytecode", "sub": "Portable Opcodes", "fill": "#475569", "textColor": "#FFFFFF", "icon": "javaLogo" },
+            { "title": "Interpreter", "sub": "Line-by-Line Decode", "fill": "#F59E0B", "textColor": "#0F172A", "icon": "magnifyingGlass" },
+            { "title": "CPU Execution", "sub": "Fast Boot, Slower Loops", "fill": "#22D3EE", "textColor": "#0F172A", "icon": "cpuSilicon" }
+          ],
+          "takeaway": "The Bytecode Interpreter Gives Instant Startup Before Heavy Optimizations Kick In",
+          "tag": "INTERPRETER"
+        },
+        {
+          "type": "versus-gauge",
+          "duration": 12,
+          "narration": "The HotSpot profiler spots frequently called methods. Then the JIT compiler turns them into fast native machine code.",
+          "left": {
+            "icon": "warningAlert",
+            "tag": "INTERPRETED ❌",
+            "title": "Line-by-Line Decode",
+            "value": 1,
+            "unit": "x Baseline",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "rocketBoost",
+            "value": 50,
+            "label": "x FASTER",
+            "color": "#FACC15"
+          },
+          "right": {
+            "value": 100,
+            "unit": "% Native",
+            "sub": "HotSpot C2 Machine Code ✔",
+            "valueRatio": 0.95,
+            "color": "#34D399"
+          },
+          "takeaway": "HotSpot JIT Compiles Hot Loops Into Native CPU Instructions — Up to 50x Faster",
+          "tag": "HOTSPOT JIT"
+        },
+        {
+          "type": "pill-chain",
+          "duration": 12,
+          "narration": "Compiled native code is stored in the Code Cache. Your CPU then runs it at full speed.",
+          "heroMetric": "TIERED JIT COMPILATION",
+          "heroSub": "Profiled Runtime Optimizations Beat Static Compilers",
+          "pills": ["Interpreter", "C1 Fast JIT", "C2 Peak JIT", "Code Cache"],
+          "takeaway": "Tiered C1 and C2 JIT Compilers Cache Optimized Native Machine Code on the Fly",
+          "tag": "CODE CACHE"
+        }
+      ]
+    },
+    {
+      "id": "scene-4-generational-gc",
+      "chapter": "04. Generational Garbage Collection (Eden, Old Gen & ZGC)",
+      "backdrop": "isometric",
+      "beats": [
+        {
+          "type": "commit-log-stream",
+          "duration": 12,
+          "narration": "Most Java objects die very young. So the JVM allocates new objects rapidly inside Eden Space.",
+          "source": {
+            "icon": "lightningBolt",
+            "tag": "NEW OBJECTS",
+            "title": "Bump-Pointer Alloc",
+            "sub": "O(1) Allocation",
+            "color": "#FACC15"
+          },
+          "arrowLabel": "Instant TLAB Alloc",
+          "tapeTitle": "Young Generation — Eden Space Allocation Strip",
+          "cells": [
+            { "label": "Obj #1", "sub": "Short-Lived", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.18)", "span": 1 },
+            { "label": "Obj #2", "sub": "Short-Lived", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.18)", "span": 1 },
+            { "label": "Obj #3", "sub": "Short-Lived", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.18)", "span": 1 },
+            { "label": "Bump Ptr ⚡", "sub": "ALLOC HEAD", "color": "#FACC15", "bg": "rgba(250, 204, 21, 0.30)", "span": 1.3 },
+            { "label": "Free Eden", "sub": "Zero Locks ->", "color": "#34D399", "bg": "rgba(52, 211, 153, 0.14)", "span": 1.2, "dashed": true }
+          ],
+          "takeaway": "95% of Objects Die Young — Eden Space Makes Allocation as Fast as Incrementing a Pointer",
+          "tag": "EDEN SPACE"
+        },
+        {
+          "type": "flat-step-flow",
+          "duration": 12,
+          "direction": "horizontal",
+          "narration": "Minor GC clears dead objects from Eden in milliseconds. Survivors age and get promoted into Old Generation.",
+          "steps": [
+            { "title": "1. Eden", "sub": "New Allocations", "fill": "#00B894", "textColor": "#FFFFFF", "icon": "ramChip", "arrowLabel": "Minor GC" },
+            { "title": "2. Survivor", "sub": "S0 <-> S1 Copy", "fill": "#22D3EE", "textColor": "#0F172A", "icon": "shieldGuard", "arrowLabel": "Age >= 15" },
+            { "title": "3. Old Gen", "sub": "Long-Lived Data", "fill": "#A78BFA", "textColor": "#0F172A", "icon": "hardDiskPlatter" }
+          ],
+          "takeaway": "Generational GC Isolates Short-Lived Objects So Minor Collections Finish in Milliseconds",
+          "tag": "GENERATIONAL GC"
+        },
+        {
+          "type": "comparison-cards",
+          "duration": 12,
+          "narration": "Modern collectors eliminate long freezes. G1GC balances throughput, while ZGC keeps pause times under one millisecond.",
+          "left": {
+            "title": "G1GC (Default Collector)",
+            "headerBg": "#6E7A3B",
+            "bodyBg": "#213D37",
+            "bullets": [
+              "Splits Heap into equal regions",
+              "Collects highest-garbage first",
+              "Predictable ~10-50 ms pauses",
+              "Great balanced default choice"
+            ]
+          },
+          "right": {
+            "title": "ZGC (Ultra-Low Latency)",
+            "headerBg": "#0F766E",
+            "bodyBg": "#19373D",
+            "bullets": [
+              "Concurrent colored pointers",
+              "Sub-millisecond (<1 ms) pauses",
+              "Scales up to 16 TB Heaps",
+              "Zero stop-the-world stalls"
+            ]
+          },
+          "takeaway": "Modern G1GC and ZGC Deliver High Throughput With Sub-Millisecond Latency Pauses",
+          "tag": "G1GC VS ZGC"
+        }
+      ]
+    },
+    {
+      "id": "scene-5-escape-analysis-and-tuning",
+      "chapter": "05. Escape Analysis, Warmup & Production Tuning Rules",
+      "backdrop": "waves",
+      "beats": [
+        {
+          "type": "dashed-group-stack",
+          "duration": 12,
+          "narration": "With Escape Analysis, the JIT detects local-only objects. It skips Heap allocation entirely and removes useless locks.",
+          "header": "JIT Escape Analysis",
+          "subtitle": "Local-only objects never touch the Heap or GC",
+          "stackTitle": "Scalar Replaced",
+          "stackItems": ["x = obj.x", "y = obj.y", "lock elided ✔", "0 Heap bytes"],
+          "pillColor": "#10B981",
+          "arrowLabel": "0 GC Pressure",
+          "dbLabel": "CPU Registers",
+          "takeaway": "Escape Analysis Eliminates Heap Allocations and Unnecessary Locks Automatically",
+          "tag": "ESCAPE ANALYSIS"
+        },
+        {
+          "type": "versus-gauge",
+          "duration": 12,
+          "narration": "This is why JVM services speed up over time. After warmup, JIT-compiled code runs over ten times faster.",
+          "left": {
+            "icon": "warningAlert",
+            "tag": "COLD START ❌",
+            "title": "Interpreted Bytecode",
+            "value": 15,
+            "unit": "K req/s",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "rocketBoost",
+            "value": 16,
+            "label": "x FASTER",
+            "color": "#FACC15"
+          },
+          "right": {
+            "value": 250,
+            "unit": "K req/s",
+            "sub": "Warmed-Up C2 Native ✔",
+            "valueRatio": 0.94,
+            "color": "#34D399"
+          },
+          "takeaway": "Warming Up HotSpot JIT Unlocks Over 10x Higher Throughput in Production Services",
+          "tag": "JIT WARMUP"
+        },
+        {
+          "type": "scorecard",
+          "duration": 12,
+          "narration": "In production, size your Heap cleanly, choose G1GC or ZGC, and warm up services before serving traffic.",
+          "items": [
+            {
+              "type": "dont",
+              "title": "Unbounded Container Heap",
+              "cmd": "❌ Default RAM without limits",
+              "desc": "Triggers sudden Kubernetes OOMKill under traffic spikes",
+              "color": "#F87171"
+            },
+            {
+              "type": "do",
+              "title": "Explicit Heap Percentage",
+              "cmd": "✔ -XX:MaxRAMPercentage=75.0",
+              "desc": "Leaves 25% headroom for Metaspace, Code Cache, and stacks",
+              "color": "#34D399"
+            },
+            {
+              "type": "dont",
+              "title": "Sending Cold Traffic Immediately",
+              "cmd": "❌ 100% load before JIT warmup",
+              "desc": "Causes p99 latency spikes while bytecode is still interpreted",
+              "color": "#F87171"
+            },
+            {
+              "type": "do",
+              "title": "Modern GC + Warmup Probes",
+              "cmd": "✔ -XX:+UseZGC + Startup Warmup",
+              "desc": "Locks in sub-millisecond GC pauses and peak native speed",
+              "color": "#38BDF8"
+            }
+          ],
+          "takeaway": "Cap Heap at 75% RAM, Pick G1GC or ZGC, and Warm Up HotSpot Before Peak Traffic"
+        }
+      ]
+    }
+  ]
+}

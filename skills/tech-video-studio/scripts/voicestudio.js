@@ -32,13 +32,13 @@ const SENIOR_SA_PERSONAS = {
     id: 'senior-sa',
     name: 'Senior Solutions Architect',
     language: 'en',
-    speed: 0.94,
-    rate: '-6%',
+    speed: 0.88,
+    rate: '-12%',
     neuralVoice: 'en-US-SteffanNeural',
     description:
-      'A crisp, modern, authoritative Senior Solutions Architect and YouTube tech presenter explaining distributed systems and cloud architecture. Clean studio condenser microphone, natural conversational pacing, subtle emphasis on engineering trade-offs.',
+      'A crisp, calm, authoritative Senior Solutions Architect and YouTube tech presenter explaining distributed systems and runtime internals. Clean studio condenser microphone, deliberate sentence pauses, easy-to-follow pacing.',
     instruct:
-      'Speak at a crisp, calm, easy-to-follow pace like an experienced Senior Solutions Architect walking a fellow engineer through a ByteByteGo system design diagram.'
+      'Speak calmly and clearly with deliberate pauses between sentences, like a Senior Solutions Architect walking an engineer through a ByteByteGo diagram.'
   },
   'staff-engineer': {
     id: 'staff-engineer',
@@ -204,6 +204,14 @@ function polishSeniorSaScript(rawText, lang = 'en') {
     .replace(/\bTTL\b/g, 'T-T-L')
     .replace(/\bMVCC\b/g, 'M-V-C-C')
     .replace(/\bWAL\b/g, 'write-ahead log')
+    .replace(/\bJVM\b/g, 'J-V-M')
+    .replace(/\bJIT\b/g, 'J-I-T')
+    .replace(/\bG1GC\b/g, 'G-one garbage collector')
+    .replace(/\bZGC\b/g, 'Z-G-C')
+    .replace(/\bGC\b/g, 'G-C')
+    .replace(/\bjavac\b/g, 'java-C')
+    .replace(/\.class\b/g, ' dot class')
+    .replace(/\.java\b/g, ' dot java')
     .replace(/;\s+/g, ', ')
     .replace(/\s+—\s+/g, '... ')
     .replace(/\s+/g, ' ');
@@ -649,6 +657,8 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
 
 /**
  * Async version of synthesizeClipLocalFallback for parallel batch synthesis.
+ * Splits multi-sentence beats into individual sentences and inserts a crisp 450ms
+ * natural breathing pause between sentences so the presenter never rushes or babbles.
  */
 async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
   const personaKey = opts.persona || 'senior-sa';
@@ -656,6 +666,7 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
   const lang = opts.lang || persona.language || 'en';
   const polishedText = polishSeniorSaScript(text, lang);
   const ffmpeg = findFfmpegExecutable();
+  const sentencePauseSec = Number.isFinite(Number(opts.sentencePauseSec)) ? Number(opts.sentencePauseSec) : 0.45;
 
   const edgeCmd = findEdgeTtsCommand();
   if (edgeCmd) {
@@ -666,49 +677,112 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
       neuralVoice = SENIOR_SA_PERSONAS[neuralVoice].neuralVoice;
     }
     if (!neuralVoice) {
-      neuralVoice = lang === 'vi' ? 'vi-VN-NamMinhNeural' : 'en-US-AndrewMultilingualNeural';
+      neuralVoice = lang === 'vi' ? 'vi-VN-NamMinhNeural' : 'en-US-SteffanNeural';
     }
 
     const rate = resolveEdgeRate(opts, persona);
-    const tmpMp3 = `${outWavPath}.edge.mp3`;
+    const sentences = polishedText
+      .split(/(?<=[.?!])\s+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const fullArgs = [
-          ...edgeCmd.args,
-          `--voice=${neuralVoice}`,
-          `--rate=${rate}`,
-          `--text=${polishedText}`,
-          `--write-media=${tmpMp3}`
-        ];
-        await execFileAsync(edgeCmd.bin, fullArgs, { timeout: 60000 });
+    const eqFilters = [
+      'highpass=f=70',
+      'equalizer=f=135:t=q:w=1.1:g=1.4',
+      'equalizer=f=360:t=q:w=1.6:g=-1.6',
+      'equalizer=f=6400:t=q:w=1.5:g=-1.2'
+    ].join(',');
 
-        if (fs.existsSync(tmpMp3) && fs.statSync(tmpMp3).size > 1000) {
-          const filters = [
-            'highpass=f=70',
-            'equalizer=f=135:t=q:w=1.1:g=1.4',
-            'equalizer=f=360:t=q:w=1.6:g=-1.6',
-            'equalizer=f=6400:t=q:w=1.5:g=-1.2'
+    // Helper to synthesize one single sentence via Edge-TTS
+    const synthOneSentence = async (sentText, dstMp3) => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const fullArgs = [
+            ...edgeCmd.args,
+            `--voice=${neuralVoice}`,
+            `--rate=${rate}`,
+            `--text=${sentText}`,
+            `--write-media=${dstMp3}`
           ];
+          await execFileAsync(edgeCmd.bin, fullArgs, { timeout: 60000 });
+          if (fs.existsSync(dstMp3) && fs.statSync(dstMp3).size > 800) {
+            return true;
+          }
+        } catch {
+          // Retry transient WebSocket error
+        }
+      }
+      return false;
+    };
+
+    const tempFiles = [];
+    try {
+      if (sentences.length <= 1) {
+        const tmpMp3 = `${outWavPath}.edge.mp3`;
+        tempFiles.push(tmpMp3);
+        const ok = await synthOneSentence(polishedText, tmpMp3);
+        if (ok) {
+          await execFileAsync(ffmpeg, [
+            '-y', '-i', tmpMp3, '-af', eqFilters,
+            '-ar', '48000', '-ac', '2', '-c:a', 'pcm_s16le', outWavPath
+          ]);
+          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice}, rate=${rate}, paused)`, voiceId: neuralVoice, rate };
+        }
+      } else {
+        // Synthesize each sentence and join with explicit breathing silence between sentences
+        const sentMp3s = [];
+        let allOk = true;
+        for (let si = 0; si < sentences.length; si++) {
+          const mp3Path = `${outWavPath}.s${si}.mp3`;
+          tempFiles.push(mp3Path);
+          const ok = await synthOneSentence(sentences[si], mp3Path);
+          if (!ok) {
+            allOk = false;
+            break;
+          }
+          sentMp3s.push(mp3Path);
+        }
+
+        if (allOk && sentMp3s.length > 0) {
+          const ffInputs = [];
+          const concatInputs = [];
+          const filterParts = [];
+          let inCounter = 0;
+
+          sentMp3s.forEach((mp3, idx) => {
+            ffInputs.push('-i', mp3);
+            filterParts.push(`[${inCounter}:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,${eqFilters}[s${idx}]`);
+            concatInputs.push(`[s${idx}]`);
+            inCounter++;
+
+            if (idx < sentMp3s.length - 1 && sentencePauseSec > 0.05) {
+              ffInputs.push('-f', 'lavfi', '-t', String(sentencePauseSec), '-i', 'anullsrc=r=48000:cl=stereo');
+              filterParts.push(`[${inCounter}:a]aformat=sample_fmts=fltp:channel_layouts=stereo[p${idx}]`);
+              concatInputs.push(`[p${idx}]`);
+              inCounter++;
+            }
+          });
+
+          filterParts.push(`${concatInputs.join('')}concat=n=${concatInputs.length}:v=0:a=1[outa]`);
           await execFileAsync(ffmpeg, [
             '-y',
-            '-i', tmpMp3,
-            '-af', filters.join(','),
+            ...ffInputs,
+            '-filter_complex', filterParts.join(';'),
+            '-map', '[outa]',
             '-ar', '48000',
             '-ac', '2',
             '-c:a', 'pcm_s16le',
             outWavPath
           ]);
-
-          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice}, rate=${rate})`, voiceId: neuralVoice, rate };
-        }
-      } catch {
-        // Retry on transient WebSocket drop
-      } finally {
-        if (fs.existsSync(tmpMp3)) {
-          try { fs.unlinkSync(tmpMp3); } catch {}
+          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice}, rate=${rate}, +${Math.round(sentencePauseSec * 1000)}ms pause)`, voiceId: neuralVoice, rate };
         }
       }
+    } finally {
+      tempFiles.forEach((tf) => {
+        if (fs.existsSync(tf)) {
+          try { fs.unlinkSync(tf); } catch {}
+        }
+      });
     }
   }
 
@@ -717,13 +791,13 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
 
 /**
  * Fits a synthesized speech WAV clip into its target scene/beat duration window (`slotSeconds`)
- * without rushing the speaker. Caps max tempo adjustment at 1.04x (4% max) so the voice
- * always retains its calm, natural, easy-to-listen Senior SA cadence.
+ * without rushing the speaker. Caps max tempo adjustment at 1.02x (2% max) so the voice
+ * always stays calm, unhurried, and crystal clear.
  */
 function fitAndMasterClip(inWavPath, outWavPath, slotSeconds, opts = {}) {
   const ffmpeg = findFfmpegExecutable();
   const actualDur = getAudioDurationSec(inWavPath);
-  const maxTempo = Number.isFinite(Number(opts.maxTempo)) ? Number(opts.maxTempo) : 1.07;
+  const maxTempo = Number.isFinite(Number(opts.maxTempo)) ? Number(opts.maxTempo) : 1.02;
 
   if (!slotSeconds || actualDur <= slotSeconds * 1.015 || maxTempo <= 1.001) {
     fs.copyFileSync(inWavPath, outWavPath);
@@ -731,7 +805,7 @@ function fitAndMasterClip(inWavPath, outWavPath, slotSeconds, opts = {}) {
   }
 
   const ratio = Math.min(maxTempo, Math.max(1.0, actualDur / slotSeconds));
-  if (ratio <= 1.01) {
+  if (ratio <= 1.005) {
     fs.copyFileSync(inWavPath, outWavPath);
     return { durationSec: actualDur, rawDurationSec: actualDur, tempoApplied: 1.0 };
   }
@@ -755,19 +829,19 @@ function fitAndMasterClip(inWavPath, outWavPath, slotSeconds, opts = {}) {
 
 /**
  * Synthesizes a full-length, scene- and beat-synchronized 48kHz stereo narration track
- * for a multi-scene video project with calm, unhurried Senior SA pacing and tight,
- * natural inter-beat breathing pauses (~0.35s - 0.6s, eliminating multi-second dead air).
+ * for a multi-scene video project with calm, unhurried Senior SA pacing and natural
+ * inter-sentence (450ms) + inter-beat (700ms) breathing pauses.
  *
  * @param {Array<{start:number, duration:number, text:string, leadIn?:number, persona?:string, lang?:string}>} segments
  * @param {number} totalDurationSec
  * @param {string} outWavPath
- * @param {object} opts - { url, persona, voice, lang, rate, speed, maxTempo, minPauseSec, allowFallback }
+ * @param {object} opts - { url, persona, voice, lang, rate, speed, maxTempo, minPauseSec, sentencePauseSec, allowFallback }
  */
 async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavPath, opts = {}) {
   const status = await checkStatus(opts);
   const useVoiceStudio = status.running;
   const allowFallback = opts.allowFallback !== false;
-  const minPauseSec = Number.isFinite(Number(opts.minPauseSec)) ? Number(opts.minPauseSec) : 0.28;
+  const minPauseSec = Number.isFinite(Number(opts.minPauseSec)) ? Number(opts.minPauseSec) : 0.70;
 
   if (!useVoiceStudio && !allowFallback) {
     throw new Error(
