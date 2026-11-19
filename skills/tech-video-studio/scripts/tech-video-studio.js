@@ -60,6 +60,15 @@ function loadBlueprintCompiler() {
   return found ? require(found) : null;
 }
 
+function loadNarrativeEngine() {
+  const candidates = [
+    path.join(ROOT, 'src/core/narrative.js'),
+    path.join(__dirname, 'narrative.js')
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  return found ? require(found) : null;
+}
+
 function findChromeExecutable() {
   if (process.env.CHROME_PATH && fs.existsSync(process.env.CHROME_PATH)) {
     return process.env.CHROME_PATH;
@@ -752,7 +761,68 @@ function cmdReaCompare(positional, flags) {
 }
 
 // ============================================================================
-// COMMAND 8: init-blueprint <out.json> [--title "..."]
+// COMMAND 8: plan-story <topic> [--arc deep-dive-3min|speed-paradox-2min|quick-explainer-60s] [-o out.json]
+// ============================================================================
+function cmdPlanStory(positional, flags) {
+  const nav = loadNarrativeEngine();
+  if (!nav) throw new Error('narrative.js module not found.');
+  const topic = positional.join(' ').trim() || flags.title || 'How Distributed Systems Scale';
+  const arcKey = flags.arc || 'deep-dive-3min';
+  const slug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'story';
+  const outJson = path.resolve(process.cwd(), flags.out || `${slug}.blueprint.json`);
+
+  const blueprint = nav.scaffoldNarrativeBlueprint(topic, arcKey);
+  fs.mkdirSync(path.dirname(outJson), { recursive: true });
+  fs.writeFileSync(outJson, JSON.stringify(blueprint, null, 2), 'utf8');
+
+  const arcMeta = nav.EXPLAINER_ARCS[arcKey] || nav.EXPLAINER_ARCS['deep-dive-3min'];
+  console.log(`📖 Scaffolded Narrative-First ByteByteGo Blueprint (${arcMeta.name}):`);
+  console.log(`   File: ${outJson}`);
+  console.log(`   Narrative Line (rea-video 8-Role Theory):`);
+  let n = 0;
+  blueprint.scenes.forEach((sc) => {
+    sc.beats.forEach((b) => {
+      n++;
+      console.log(`     #${String(n).padStart(2, '0')} [${b.role.toUpperCase().padEnd(7)}] -> ${b.type.padEnd(18)} (${b.duration}s)`);
+    });
+  });
+  console.log(`\n   Next: Fill in your facts, audit with \`techvid audit-story "${outJson}"\`, and render with \`techvid build-video "${outJson}"\`.`);
+}
+
+// ============================================================================
+// COMMAND 9: audit-story <blueprint.json> (rea-video Narrative & Pacing Auditor)
+// ============================================================================
+function cmdAuditStory(positional) {
+  const nav = loadNarrativeEngine();
+  if (!nav) throw new Error('narrative.js module not found.');
+  const bpPath = positional[0] ? path.resolve(process.cwd(), positional[0]) : null;
+  if (!bpPath || !fs.existsSync(bpPath)) {
+    throw new Error('Usage: techvid audit-story <blueprint.json>');
+  }
+  const bp = JSON.parse(fs.readFileSync(bpPath, 'utf8'));
+  const report = nav.auditBlueprintNarrative(bp);
+
+  console.log(`\n📝 Narrative & Content Quality Audit (${path.basename(bpPath)}):`);
+  console.log(`   Score:           ${report.score}/100`);
+  console.log(`   Total Duration:  ${report.totalDurationSec}s (${report.beatCount} beats)`);
+  console.log(`   Visual Styles:   ${report.uniqueVisualStyles.length} unique (${report.uniqueVisualStyles.join(', ')})`);
+  console.log(`   Narrative Roles: ${report.rolesPresent.join(' -> ')}\n`);
+
+  report.narrativeLine.forEach((b) => {
+    console.log(`   #${String(b.index).padStart(2, '0')} ${String(b.start).padStart(3)}s-${String(b.end).padStart(3)}s | ${b.role.toUpperCase().padEnd(7)} | ${b.type.padEnd(18)} | ${String(b.words).padStart(2)} words (${b.sentences} sent, ~${b.estWpm} WPM)`);
+  });
+
+  if (report.warnings.length > 0) {
+    console.log(`\n⚠️  Content & Pacing Recommendations (${report.warnings.length}):`);
+    report.warnings.forEach((w) => console.log(`   - ${w}`));
+  } else {
+    console.log(`\n✅ Narrative arc, visual diversity, and sentence breathability all PASS 100%!`);
+  }
+  console.log('');
+}
+
+// ============================================================================
+// COMMAND 10: init-blueprint <out.json> [--title "..."]
 // ============================================================================
 function cmdInitBlueprint(positional, flags) {
   const bp = loadBlueprintCompiler();
@@ -850,23 +920,28 @@ function cmdInstallSkill(flags) {
   if (fs.existsSync(reaSrc)) fs.copyFileSync(reaSrc, path.join(scriptsDir, 'rea-analyzer.js'));
   const bpSrc = path.join(ROOT, 'src/core/blueprint.js');
   if (fs.existsSync(bpSrc)) fs.copyFileSync(bpSrc, path.join(scriptsDir, 'blueprint.js'));
+  const navSrc = path.join(ROOT, 'src/core/narrative.js');
+  if (fs.existsSync(navSrc)) fs.copyFileSync(navSrc, path.join(scriptsDir, 'narrative.js'));
   const mPath = findMetaphorsPath();
   if (mPath) fs.copyFileSync(mPath, path.join(scriptsDir, 'metaphors.json'));
   const bPath = findBundlePath();
   if (bPath) fs.copyFileSync(bPath, path.join(scriptsDir, 'tech-video-studio.bundle.js'));
 
-  console.log(`✅ Installed "tech-video-studio" (v2.8 Declarative ByteByteGo + rea-video Edition) AI Skill to: ${dest}`);
+  console.log(`✅ Installed "tech-video-studio" (v3.0 Narrative-First ByteByteGo + rea-video Edition) AI Skill to: ${dest}`);
 }
 
 function printHelp() {
   console.log(`
-Tech Video Studio CLI (v2.8.0 — Declarative ByteByteGo + VoiceStudio + rea-video Edition)
+Tech Video Studio CLI (v3.0.0 — Narrative-First ByteByteGo + VoiceStudio + rea-video Edition)
 
 Usage:
+  techvid plan-story "<Topic>" [--arc deep-dive-3min|speed-paradox-2min|quick-explainer-60s] [-o out.json]
+                                                  Scaffold a rea-video 8-role Narrative-First ByteByteGo Blueprint
+  techvid audit-story <blueprint.json>            Audit narrative arc (hook->context->turn->info->proof->payoff) & pacing
   techvid init-blueprint <out.json> [--title "..."]
-                                                  Create a declarative JSON video blueprint (zero Canvas boilerplate)
+                                                  Create a starter declarative JSON video blueprint
   techvid build-video <blueprint.json> -o <out.mp4> [--voice senior-sa] [--fps 30] [--qa]
-                                                  One-command compile + Senior SA narration + 1080p MP4 render
+                                                  One-command compile + Steffan narration (-5%, +280ms pauses) + 1080p MP4
   techvid rea-learn <ref.mp4> [-o VIDEO.md]       Reverse-engineer a ByteByteGo video's layout, motion & easing
   techvid rea-compare <ref.mp4> <remake.mp4>      Score remake parity against a reference ByteByteGo video
   techvid metaphor <keywords>                     Search diverse visual metaphors & avoid box monotony
@@ -874,8 +949,8 @@ Usage:
   techvid qa <scene.html> [--times 8,22,36,54]    Capture keyframes + negative-space QA + 2x2 contact sheet
   techvid voice status [--url http://localhost:3900]
                                                   Check debpalash/VoiceStudio connection & Senior SA personas
-  techvid voice narrate <scene.html> -o <out.wav> [--persona senior-sa] [--lang en|vi] [--rate -10%]
-                                                  Synthesize scene-synchronized Senior SA voiceover track
+  techvid voice narrate <scene.html> -o <out.wav> [--persona senior-sa] [--lang en|vi] [--rate -5%]
+                                                  Synthesize sentence-paused Senior SA voiceover track
   techvid render <scene.html> -o <video.mp4>      Deterministic frame-exact H.264 MP4 render
           [--voice senior-sa] [--audio voice.mp3] [--fps 60] [--no-sfx] [--retina]
   techvid install-skill [--target antigravity|claude|cursor|codex|local] [--dest <path>]
@@ -888,6 +963,14 @@ Usage:
 
   try {
     switch (cmd) {
+      case 'plan-story':
+      case 'story':
+        cmdPlanStory(positional, flags);
+        break;
+      case 'audit-story':
+      case 'audit':
+        cmdAuditStory(positional);
+        break;
       case 'init-blueprint':
       case 'blueprint':
         cmdInitBlueprint(positional, flags);

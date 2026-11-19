@@ -83,6 +83,7 @@ fs.copyFileSync(path.join(ROOT, 'src/audio/sfx-gen.js'), path.join(skillScriptsD
 fs.copyFileSync(path.join(ROOT, 'src/audio/voicestudio.js'), path.join(skillScriptsDir, 'voicestudio.js'));
 fs.copyFileSync(path.join(ROOT, 'src/core/rea-analyzer.js'), path.join(skillScriptsDir, 'rea-analyzer.js'));
 fs.copyFileSync(path.join(ROOT, 'src/core/blueprint.js'), path.join(skillScriptsDir, 'blueprint.js'));
+fs.copyFileSync(path.join(ROOT, 'src/core/narrative.js'), path.join(skillScriptsDir, 'narrative.js'));
 fs.copyFileSync(path.join(ROOT, 'data/metaphors.json'), path.join(skillScriptsDir, 'metaphors.json'));
 
 console.log(`Built ${outPath} (${(Buffer.byteLength(bundle) / 1024).toFixed(1)} KB) & synced standalone skill scripts.`);

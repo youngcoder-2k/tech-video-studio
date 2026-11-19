@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>How the JVM Actually Works Under the Hood</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #232323; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="./tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Effects, Connectors, Icons, Illustrations, createVideo } = window.TechVideoStudio;
+    const BLUEPRINT = {
+  "title": "How the JVM Actually Works Under the Hood",
+  "palette": "byteByteGoTrue",
+  "fps": 30,
+  "persona": "senior-sa",
+  "scenes": [
+    {
+      "id": "scene-1-bytecode-and-classloader",
+      "chapter": "01. Write Once, Run Anywhere & Class Loading",
+      "backdrop": "waves",
+      "beats": [
+        {
+          "type": "pill-chain",
+          "duration": 12,
+          "narration": "How does Java run on every machine? First, javac compiles your source code into portable bytecode.",
+          "heroMetric": "WRITE ONCE, RUN ANYWHERE",
+          "heroSub": "Java Source -> Platform-Neutral Bytecode",
+          "pills": [
+            "Main.java",
+            "javac Compiler",
+            "Main.class",
+            "JVM Runtime"
+          ],
+          "takeaway": "javac Compiles Java Source Code Into Platform-Independent .class Bytecode",
+          "tag": "BYTECODE"
+        },
+        {
+          "type": "wireframe-fanout",
+          "duration": 12,
+          "narration": "Instead of targeting one CPU, bytecode runs inside a JVM. The same file runs on any OS.",
+          "source": {
+            "badge": "CLASS",
+            "title": "Main.class (Bytecode)",
+            "color": "#10B981"
+          },
+          "targets": [
+            {
+              "badge": "LINUX",
+              "title": "Linux x86_64 JVM",
+              "color": "#22D3EE",
+              "arrowLabel": "Same Bytecode"
+            },
+            {
+              "badge": "MACOS",
+              "title": "Apple Silicon JVM",
+              "color": "#10B981",
+              "arrowLabel": "Same Bytecode"
+            },
+            {
+              "badge": "WIN",
+              "title": "Windows JVM",
+              "color": "#FACC15",
+              "arrowLabel": "Same Bytecode"
+            }
+          ],
+          "takeaway": "Each Operating System Runs Its Own JVM to Execute the Exact Same Bytecode",
+          "tag": "PORTABILITY"
+        },
+        {
+          "type": "flat-step-flow",
+          "duration": 12,
+          "direction": "horizontal",
+          "narration": "At startup, the ClassLoader reads bytecode into memory. It verifies security, prepares static fields, and initializes classes.",
+          "steps": [
+            {
+              "title": "1. Loading",
+              "sub": "Read .class Bytes",
+              "fill": "#00B894",
+              "textColor": "#FFFFFF",
+              "icon": "javaLogo"
+            },
+            {
+              "title": "2. Linking",
+              "sub": "Verify & Prepare",
+              "fill": "#22D3EE",
+              "textColor": "#0F172A",
+              "icon": "shieldGuard"
+            },
+            {
+              "title": "3. Init",
+              "sub": "Run Static Blocks",
+              "fill": "#F59E0B",
+              "textColor": "#0F172A",
+              "icon": "lightningBolt"
+            }
+          ],
+          "takeaway": "The JVM ClassLoader Verifies Bytecode Safety Before Any Code Executes",
+          "tag": "CLASSLOADER"
+        }
+      ]
+    },
+    {
+      "id": "scene-2-runtime-memory-areas",
+      "chapter": "02. JVM Memory Areas: Stack, Heap & Metaspace",
+      "backdrop": "blueprint",
+      "beats": [
+        {
+          "type": "dashed-group-stack",
+          "duration": 12,
+          "narration": "Every thread gets its own private Stack. Method calls push frames onto it, storing local variables safely.",
+          "header": "Per-Thread JVM Stack",
+          "subtitle": "Thread-private LIFO frames — zero lock contention",
+          "stackTitle": "Thread #1 Stack",
+          "stackItems": [
+            "main() frame",
+            "process() frame",
+            "calc() frame",
+            "local vars"
+          ],
+          "pillColor": "#EF4444",
+          "arrowLabel": "Object References",
+          "dbLabel": "Shared Heap",
+          "takeaway": "Each Thread Owns a Private Stack for Fast, Lock-Free Method Execution",
+          "tag": "THREAD STACK"
+        },
+        {
+          "type": "comparison-cards",
+          "duration": 12,
+          "narration": "While stacks are private per thread, the Heap is shared. Every object you allocate lives on the Heap.",
+          "left": {
+            "title": "JVM Thread Stack",
+            "headerBg": "#6E7A3B",
+            "bodyBg": "#213D37",
+            "bullets": [
+              "Private to each thread",
+              "Stores primitives & refs",
+              "Auto-freed on return",
+              "Fast LIFO memory access"
+            ]
+          },
+          "right": {
+            "title": "Shared JVM Heap",
+            "headerBg": "#0F766E",
+            "bodyBg": "#19373D",
+            "bullets": [
+              "Shared across all threads",
+              "Stores all Objects & Arrays",
+              "Managed by Garbage Collector",
+              "Sized via -Xms and -Xmx"
+            ]
+          },
+          "takeaway": "Stack Frames Store Local References While the Shared Heap Holds All Objects",
+          "tag": "STACK VS HEAP"
+        },
+        {
+          "type": "flat-step-flow",
+          "duration": 12,
+          "direction": "vertical",
+          "narration": "Class definitions and method bytecode live in Metaspace. Metaspace uses native OS memory, separate from the Heap.",
+          "steps": [
+            {
+              "title": "JVM Heap",
+              "sub": "Live Object Instances",
+              "fill": "#00B894",
+              "textColor": "#FFFFFF",
+              "icon": "ramChip",
+              "arrowLabel": "Class Pointer"
+            },
+            {
+              "title": "Metaspace (Native)",
+              "sub": "Class Metadata & Bytecode",
+              "fill": "#22D3EE",
+              "textColor": "#0F172A",
+              "icon": "cpuSilicon"
+            }
+          ],
+          "takeaway": "Metaspace Stores Class Blueprints in Native Memory Outside the Java Heap",
+          "tag": "METASPACE"
+        }
+      ]
+    },
+    {
+      "id": "scene-3-interpreter-and-jit",
+      "chapter": "03. Execution Engine: Interpreter vs HotSpot JIT Compiler",
+      "backdrop": "spotlight",
+      "beats": [
+        {
+          "type": "flat-step-flow",
+          "duration": 12,
+          "direction": "horizontal",
+          "narration": "First, the JVM interpreter executes bytecode line by line. Startup is instant, yet repeated loops stay slow.",
+          "steps": [
+            {
+              "title": "Bytecode",
+              "sub": "Portable Opcodes",
+              "fill": "#475569",
+              "textColor": "#FFFFFF",
+              "icon": "javaLogo"
+            },
+            {
+              "title": "Interpreter",
+              "sub": "Line-by-Line Decode",
+              "fill": "#F59E0B",
+              "textColor": "#0F172A",
+              "icon": "magnifyingGlass"
+            },
+            {
+              "title": "CPU Execution",
+              "sub": "Fast Boot, Slower Loops",
+              "fill": "#22D3EE",
+              "textColor": "#0F172A",
+              "icon": "cpuSilicon"
+            }
+          ],
+          "takeaway": "The Bytecode Interpreter Gives Instant Startup Before Heavy Optimizations Kick In",
+          "tag": "INTERPRETER"
+        },
+        {
+          "type": "versus-gauge",
+          "duration": 12,
+          "narration": "The HotSpot profiler spots frequently called methods. Then the JIT compiler turns them into fast native machine code.",
+          "left": {
+            "icon": "warningAlert",
+            "tag": "INTERPRETED ❌",
+            "title": "Line-by-Line Decode",
+            "value": 1,
+            "unit": "x Baseline",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "rocketBoost",
+            "value": 50,
+            "label": "x FASTER",
+            "color": "#FACC15"
+          },
+          "right": {
+            "value": 100,
+            "unit": "% Native",
+            "sub": "HotSpot C2 Machine Code ✔",
+            "valueRatio": 0.95,
+            "color": "#34D399"
+          },
+          "takeaway": "HotSpot JIT Compiles Hot Loops Into Native CPU Instructions — Up to 50x Faster",
+          "tag": "HOTSPOT JIT"
+        },
+        {
+          "type": "pill-chain",
+          "duration": 12,
+          "narration": "Compiled native code is stored in the Code Cache. Your CPU then runs it at full speed.",
+          "heroMetric": "TIERED JIT COMPILATION",
+          "heroSub": "Profiled Runtime Optimizations Beat Static Compilers",
+          "pills": [
+            "Interpreter",
+            "C1 Fast JIT",
+            "C2 Peak JIT",
+            "Code Cache"
+          ],
+          "takeaway": "Tiered C1 and C2 JIT Compilers Cache Optimized Native Machine Code on the Fly",
+          "tag": "CODE CACHE"
+        }
+      ]
+    },
+    {
+      "id": "scene-4-generational-gc",
+      "chapter": "04. Generational Garbage Collection (Eden, Old Gen & ZGC)",
+      "backdrop": "isometric",
+      "beats": [
+        {
+          "type": "commit-log-stream",
+          "duration": 12,
+          "narration": "Most Java objects die very young. So the JVM allocates new objects rapidly inside Eden Space.",
+          "source": {
+            "icon": "lightningBolt",
+            "tag": "NEW OBJECTS",
+            "title": "Bump-Pointer Alloc",
+            "sub": "O(1) Allocation",
+            "color": "#FACC15"
+          },
+          "arrowLabel": "Instant TLAB Alloc",
+          "tapeTitle": "Young Generation — Eden Space Allocation Strip",
+          "cells": [
+            {
+              "label": "Obj #1",
+              "sub": "Short-Lived",
+              "color": "#38BDF8",
+              "bg": "rgba(56, 189, 248, 0.18)",
+              "span": 1
+            },
+            {
+              "label": "Obj #2",
+              "sub": "Short-Lived",
+              "color": "#38BDF8",
+              "bg": "rgba(56, 189, 248, 0.18)",
+              "span": 1
+            },
+            {
+              "label": "Obj #3",
+              "sub": "Short-Lived",
+              "color": "#38BDF8",
+              "bg": "rgba(56, 189, 248, 0.18)",
+              "span": 1
+            },
+            {
+              "label": "Bump Ptr ⚡",
+              "sub": "ALLOC HEAD",
+              "color": "#FACC15",
+              "bg": "rgba(250, 204, 21, 0.30)",
+              "span": 1.3
+            },
+            {
+              "label": "Free Eden",
+              "sub": "Zero Locks ->",
+              "color": "#34D399",
+              "bg": "rgba(52, 211, 153, 0.14)",
+              "span": 1.2,
+              "dashed": true
+            }
+          ],
+          "takeaway": "95% of Objects Die Young — Eden Space Makes Allocation as Fast as Incrementing a Pointer",
+          "tag": "EDEN SPACE"
+        },
+        {
+          "type": "flat-step-flow",
+          "duration": 12,
+          "direction": "horizontal",
+          "narration": "Minor GC clears dead objects from Eden in milliseconds. Survivors age and get promoted into Old Generation.",
+          "steps": [
+            {
+              "title": "1. Eden",
+              "sub": "New Allocations",
+              "fill": "#00B894",
+              "textColor": "#FFFFFF",
+              "icon": "ramChip",
+              "arrowLabel": "Minor GC"
+            },
+            {
+              "title": "2. Survivor",
+              "sub": "S0 <-> S1 Copy",
+              "fill": "#22D3EE",
+              "textColor": "#0F172A",
+              "icon": "shieldGuard",
+              "arrowLabel": "Age >= 15"
+            },
+            {
+              "title": "3. Old Gen",
+              "sub": "Long-Lived Data",
+              "fill": "#A78BFA",
+              "textColor": "#0F172A",
+              "icon": "hardDiskPlatter"
+            }
+          ],
+          "takeaway": "Generational GC Isolates Short-Lived Objects So Minor Collections Finish in Milliseconds",
+          "tag": "GENERATIONAL GC"
+        },
+        {
+          "type": "comparison-cards",
+          "duration": 12,
+          "narration": "Modern collectors eliminate long freezes. G1GC balances throughput, while ZGC keeps pause times under one millisecond.",
+          "left": {
+            "title": "G1GC (Default Collector)",
+            "headerBg": "#6E7A3B",
+            "bodyBg": "#213D37",
+            "bullets": [
+              "Splits Heap into equal regions",
+              "Collects highest-garbage first",
+              "Predictable ~10-50 ms pauses",
+              "Great balanced default choice"
+            ]
+          },
+          "right": {
+            "title": "ZGC (Ultra-Low Latency)",
+            "headerBg": "#0F766E",
+            "bodyBg": "#19373D",
+            "bullets": [
+              "Concurrent colored pointers",
+              "Sub-millisecond (<1 ms) pauses",
+              "Scales up to 16 TB Heaps",
+              "Zero stop-the-world stalls"
+            ]
+          },
+          "takeaway": "Modern G1GC and ZGC Deliver High Throughput With Sub-Millisecond Latency Pauses",
+          "tag": "G1GC VS ZGC"
+        }
+      ]
+    },
+    {
+      "id": "scene-5-escape-analysis-and-tuning",
+      "chapter": "05. Escape Analysis, Warmup & Production Tuning Rules",
+      "backdrop": "waves",
+      "beats": [
+        {
+          "type": "dashed-group-stack",
+          "duration": 12,
+          "narration": "With Escape Analysis, the JIT detects local-only objects. It skips Heap allocation entirely and removes useless locks.",
+          "header": "JIT Escape Analysis",
+          "subtitle": "Local-only objects never touch the Heap or GC",
+          "stackTitle": "Scalar Replaced",
+          "stackItems": [
+            "x = obj.x",
+            "y = obj.y",
+            "lock elided ✔",
+            "0 Heap bytes"
+          ],
+          "pillColor": "#10B981",
+          "arrowLabel": "0 GC Pressure",
+          "dbLabel": "CPU Registers",
+          "takeaway": "Escape Analysis Eliminates Heap Allocations and Unnecessary Locks Automatically",
+          "tag": "ESCAPE ANALYSIS"
+        },
+        {
+          "type": "versus-gauge",
+          "duration": 12,
+          "narration": "This is why JVM services speed up over time. After warmup, JIT-compiled code runs over ten times faster.",
+          "left": {
+            "icon": "warningAlert",
+            "tag": "COLD START ❌",
+            "title": "Interpreted Bytecode",
+            "value": 15,
+            "unit": "K req/s",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "rocketBoost",
+            "value": 16,
+            "label": "x FASTER",
+            "color": "#FACC15"
+          },
+          "right": {
+            "value": 250,
+            "unit": "K req/s",
+            "sub": "Warmed-Up C2 Native ✔",
+            "valueRatio": 0.94,
+            "color": "#34D399"
+          },
+          "takeaway": "Warming Up HotSpot JIT Unlocks Over 10x Higher Throughput in Production Services",
+          "tag": "JIT WARMUP"
+        },
+        {
+          "type": "scorecard",
+          "duration": 12,
+          "narration": "In production, size your Heap cleanly, choose G1GC or ZGC, and warm up services before serving traffic.",
+          "items": [
+            {
+              "type": "dont",
+              "title": "Unbounded Container Heap",
+              "cmd": "❌ Default RAM without limits",
+              "desc": "Triggers sudden Kubernetes OOMKill under traffic spikes",
+              "color": "#F87171"
+            },
+            {
+              "type": "do",
+              "title": "Explicit Heap Percentage",
+              "cmd": "✔ -XX:MaxRAMPercentage=75.0",
+              "desc": "Leaves 25% headroom for Metaspace, Code Cache, and stacks",
+              "color": "#34D399"
+            },
+            {
+              "type": "dont",
+              "title": "Sending Cold Traffic Immediately",
+              "cmd": "❌ 100% load before JIT warmup",
+              "desc": "Causes p99 latency spikes while bytecode is still interpreted",
+              "color": "#F87171"
+            },
+            {
+              "type": "do",
+              "title": "Modern GC + Warmup Probes",
+              "cmd": "✔ -XX:+UseZGC + Startup Warmup",
+              "desc": "Locks in sub-millisecond GC pauses and peak native speed",
+              "color": "#38BDF8"
+            }
+          ],
+          "takeaway": "Cap Heap at 75% RAM, Pick G1GC or ZGC, and Warm Up HotSpot Before Peak Traffic"
+        }
+      ]
+    }
+  ]
+};
+
+    function renderBeatBody(ctx, beat, helpers, t) {
+      const { stagger, countUp } = helpers;
+      const type = beat.type || 'icon-flow';
+
+      if (type === 'versus-gauge') {
+        const p1 = stagger(0, 0.45, 0.7);
+        const p2 = stagger(1, 0.5, 0.7);
+        const p3 = stagger(2, 0.55, 0.75);
+        const p4 = stagger(3, 0.6, 0.6);
+
+        const L = beat.left || {};
+        Icons.drawBadge(ctx, L.icon || 'hardDiskPlatter', 460, 435, 130, {
+          color: L.color || '#EF4444',
+          tag: L.tag || 'BOTTLENECK ❌',
+          title: L.title || 'Slow Path',
+          sub: L.value !== undefined ? `${countUp(L.value, 1.5, 0.2)} ${L.unit || ''}`.trim() : (L.sub || ''),
+          progress: p1,
+          timeSec: t
+        });
+
+        const C = beat.center || {};
+        if (p2 > 0.05) {
+          ctx.save();
+          ctx.globalAlpha *= p2;
+          Effects.sonarPulse(ctx, 960, 430, t, { color: C.color || '#FACC15', minRadius: 35, maxRadius: 115 });
+          Icons.draw(ctx, C.icon || 'rocketBoost', 960, 410, 96, { glowColor: C.color || '#FACC15', timeSec: t });
+          ctx.fillStyle = '#FEF08A';
+          ctx.font = `900 30px ${Theme.FONTS.mono}`;
+          ctx.textAlign = 'center';
+          const cText = C.value !== undefined ? `${countUp(C.value, 1.8, 0.5)}${C.label || 'x FASTER'}` : (C.label || 'VS');
+          ctx.fillText(cText, 960, 515);
+          ctx.restore();
+        }
+
+        const R = beat.right || {};
+        if (p3 > 0.05) {
+          ctx.save();
+          ctx.globalAlpha *= p3;
+          Effects.sonarPulse(ctx, 1460, 425, t, { color: R.color || '#34D399', minRadius: 55, maxRadius: 150 });
+          Effects.liveGaugeArc(ctx, 1460, 430, 118, p3, {
+            color: R.color || '#34D399',
+            valueRatio: R.valueRatio !== undefined ? R.valueRatio : 0.92,
+            label: R.value !== undefined ? `${countUp(R.value, 1.8, 0.7)} ${R.unit || ''}`.trim() : (R.label || 'FAST'),
+            sub: R.sub || 'Optimized Path ✔'
+          });
+          ctx.restore();
+        }
+
+        if (beat.takeaway && p4 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, {
+            variant: beat.takeawayVariant || 'banner',
+            tag: beat.tag || 'KEY INSIGHT',
+            border: R.color || '#34D399',
+            alpha: p4
+          });
+        }
+        return;
+      }
+
+      if (type === 'commit-log-stream') {
+        const p1 = stagger(0, 0.4, 0.65);
+        const p2 = stagger(1, 0.5, 0.75);
+        const p3 = stagger(2, 0.65, 0.6);
+        const src = beat.source || {};
+
+        Icons.drawBadge(ctx, src.icon || 'lightningBolt', 350, 470, 115, {
+          color: src.color || '#FACC15',
+          tag: src.tag || 'EVENT STREAM',
+          title: src.title || 'Incoming Events',
+          sub: src.sub || 'O(1) Append',
+          progress: p1,
+          timeSec: t
+        });
+
+        if (p2 > 0.2) {
+          Connectors.flowArrow(ctx, 460, 470, 660, 470, t, {
+            color: src.color || '#FACC15',
+            lineWidth: 3,
+            label: beat.arrowLabel || 'O(1) Append',
+            orbs: 3
+          });
+          Effects.dataStreamParticles(ctx, 470, 470, 650, 470, t, { color: src.color || '#FACC15', count: 3, speed: 1.4 });
+        }
+
+        Illustrations.byteArrayTape(ctx, 680, 415, 1020, 110, {
+          title: beat.tapeTitle || 'Immutable Commit Log',
+          progress: p2,
+          cells: beat.cells
+        });
+
+        if (beat.takeaway && p3 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, {
+            variant: 'banner',
+            tag: beat.tag || 'COMMIT LOG',
+            border: '#FACC15',
+            alpha: p3
+          });
+        }
+        return;
+      }
+
+      if (type === 'zero-copy-dma') {
+        const p1 = stagger(0, 0.35, 0.65);
+        const p2 = stagger(1, 0.5, 0.7);
+        const p3 = stagger(2, 0.65, 0.6);
+
+        if (p1 > 0.1) {
+          ctx.save();
+          ctx.globalAlpha *= p1 * 0.78;
+          ctx.beginPath();
+          ctx.roundRect(560, 195, 800, 64, 32);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fill();
+          ctx.strokeStyle = '#34D399';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 6]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#6EE7B7';
+          ctx.font = `800 18px ${Theme.FONTS.mono}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.bypassBanner || '▲ USER-SPACE BYPASSED — ZERO CPU DATA COPIES ✔', 960, 234);
+          ctx.restore();
+        }
+
+        const L = beat.left || {};
+        const R = beat.right || {};
+        Icons.drawBadge(ctx, L.icon || 'ramChip', 480, 500, 135, {
+          color: L.color || '#FACC15',
+          tag: L.tag || 'KERNEL PAGECACHE',
+          title: L.title || 'OS RAM Buffer',
+          sub: L.sub || 'sendfile() Syscall',
+          progress: p1,
+          timeSec: t
+        });
+
+        if (p2 > 0.05) {
+          Connectors.flowArrow(ctx, 645, 500, 1275, 500, t, {
+            progress: p2,
+            color: '#34D399',
+            lineWidth: 4,
+            label: beat.arrowLabel || 'Direct Memory Access (DMA — 0 CPU)',
+            orbs: 4,
+            speed: 1.6
+          });
+          Effects.dataStreamParticles(ctx, 660, 500, 1260, 500, t, { color: '#34D399', count: 5, speed: 1.5 });
+        }
+
+        Icons.drawBadge(ctx, R.icon || 'networkCardNic', 1440, 500, 135, {
+          color: R.color || '#34D399',
+          tag: R.tag || 'NIC TX BUFFER ✔',
+          title: R.title || '10+ Gbps Wire Speed',
+          sub: R.sub || 'Direct Hardware Transfer',
+          progress: p2,
+          timeSec: t
+        });
+
+        if (beat.takeaway && p3 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, {
+            variant: 'banner',
+            tag: beat.tag || 'ZERO-COPY DMA',
+            border: '#34D399',
+            alpha: p3
+          });
+        }
+        return;
+      }
+
+      if (type === 'batch-flow') {
+        const p1 = stagger(0, 0.4, 0.65);
+        const p2 = stagger(1, 0.5, 0.7);
+        const p3 = stagger(2, 0.6, 0.6);
+
+        Illustrations.pubSubTopicBox(ctx, 220, 400, 620, 150, {
+          title: beat.batchTitle || 'RecordAccumulator (64KB Batch)',
+          tint: beat.tint || 'teal',
+          offsets: beat.offsets || ['Msg #1', 'Msg #2', 'Msg #3', 'Msg #4', 'READY ⚡'],
+          activeSlot: (beat.offsets ? beat.offsets.length - 1 : 4),
+          progress: p1
+        });
+
+        if (p2 > 0.05) {
+          Connectors.flowArrow(ctx, 860, 475, 1240, 475, t, {
+            progress: p2,
+            color: '#34D399',
+            lineWidth: 3.6,
+            label: beat.arrowLabel || '1 Single Batch RPC',
+            orbs: 3
+          });
+          Effects.dataStreamParticles(ctx, 870, 475, 1230, 475, t, { color: '#38BDF8', count: 3, speed: 1.3 });
+        }
+
+        const dst = beat.target || {};
+        Icons.drawBadge(ctx, dst.icon || 'kafkaLogo', 1430, 475, 135, {
+          color: dst.color || '#34D399',
+          tag: dst.tag || 'BROKER ✔',
+          title: dst.title || '1M+ Events/sec',
+          sub: dst.sub || 'Single Sequential Append',
+          progress: p2,
+          timeSec: t
+        });
+
+        if (beat.takeaway && p3 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, {
+            variant: 'banner',
+            tag: beat.tag || 'BATCHING',
+            border: '#38BDF8',
+            alpha: p3
+          });
+        }
+        return;
+      }
+
+      if (type === 'partition-mesh') {
+        const p1 = stagger(0, 0.35, 0.8);
+        const p2 = stagger(1, 0.65, 0.6);
+        Illustrations.partitionConsumerMesh(ctx, 220, 225, 1480, 530, {
+          progress: p1,
+          timeSec: t,
+          partitions: beat.partitions
+        });
+        if (beat.takeaway && p2 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#38BDF8', alpha: p2 });
+        }
+        return;
+      }
+
+      if (type === 'quorum-triangle') {
+        const p1 = stagger(0, 0.35, 0.75);
+        const p2 = stagger(1, 0.65, 0.6);
+        Effects.sonarPulse(ctx, 960, 465, t, { color: '#FACC15', minRadius: 45, maxRadius: 195 });
+        Illustrations.quorumTriangleMesh(ctx, 960, 470, {
+          radius: 215,
+          progress: p1,
+          timeSec: t,
+          nodes: beat.nodes
+        });
+        if (beat.takeaway && p2 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#34D399', alpha: p2 });
+        }
+        return;
+      }
+
+      if (type === 'scorecard') {
+        const p1 = stagger(0, 0.35, 0.85);
+        const p2 = stagger(1, 0.65, 0.6);
+        Illustrations.scorecardMatrix(ctx, 360, 230, 1200, 580, {
+          progress: p1,
+          items: beat.items
+        });
+        if (beat.takeaway && p2 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'terminal', alpha: p2 });
+        }
+        return;
+      }
+
+      // STYLE 1 (Real ByteByteGo linux_20s.png): Solid Flat Vibrant Rounded Step Blocks + Crisp White Arrows
+      if (type === 'flat-step-flow') {
+        const steps = Array.isArray(beat.steps) && beat.steps.length ? beat.steps : [
+          { title: 'Step 1', sub: 'Input', fill: '#00B894', textColor: '#FFFFFF', icon: 'lightningBolt' },
+          { title: 'Step 2', sub: 'Process', fill: '#22D3EE', textColor: '#0F172A', icon: 'cpuSilicon' }
+        ];
+        const vertical = beat.direction === 'vertical' || steps.length <= 2;
+        const count = Math.min(4, steps.length);
+
+        if (vertical) {
+          const boxW = 300;
+          const boxH = 210;
+          const gap = 140;
+          const totalH = count * boxH + (count - 1) * gap;
+          const startY = Math.max(195, (920 - totalH) / 2);
+
+          steps.slice(0, count).forEach((st, idx) => {
+            const p = stagger(idx, 0.55, 0.65);
+            if (p <= 0.01) return;
+            const y = startY + idx * (boxH + gap);
+            const pop = p < 0.75 ? (p / 0.75) * 1.05 : 1.05 - ((p - 0.75) / 0.25) * 0.05;
+
+            ctx.save();
+            ctx.globalAlpha *= p;
+            ctx.translate(960, y + boxH / 2);
+            ctx.scale(pop, pop);
+            ctx.beginPath();
+            ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 28);
+            ctx.fillStyle = st.fill || (idx % 2 === 0 ? '#00B894' : '#22D3EE');
+            ctx.fill();
+
+            ctx.fillStyle = st.textColor || (idx % 2 === 0 ? '#FFFFFF' : '#0F172A');
+            ctx.font = `800 28px ${Theme.FONTS.sans}`;
+            ctx.textAlign = 'center';
+            ctx.fillText(st.title || '', 0, st.icon ? -44 : -4);
+
+            if (st.icon) {
+              Icons.draw(ctx, st.icon, 0, 18, 72, { timeSec: t, pulseRing: false });
+            }
+            if (st.sub) {
+              ctx.font = `700 18px ${Theme.FONTS.mono}`;
+              ctx.fillText(st.sub, 0, st.icon ? 82 : 34);
+            }
+            ctx.restore();
+
+            if (idx < count - 1) {
+              const pa = stagger(idx + 1, 0.55, 0.55);
+              Connectors.solidArrow(ctx, 960, y + boxH + 6, 960, y + boxH + gap - 10, {
+                progress: pa,
+                color: '#FFFFFF',
+                lineWidth: 3.2,
+                label: st.arrowLabel || '',
+                timeSec: t
+              });
+            }
+          });
+        } else {
+          const boxW = 310;
+          const boxH = 220;
+          const gap = 150;
+          const totalW = count * boxW + (count - 1) * gap;
+          const startX = (1920 - totalW) / 2;
+          const y = 370;
+
+          steps.slice(0, count).forEach((st, idx) => {
+            const p = stagger(idx, 0.5, 0.65);
+            if (p <= 0.01) return;
+            const x = startX + idx * (boxW + gap);
+            const pop = p < 0.75 ? (p / 0.75) * 1.05 : 1.05 - ((p - 0.75) / 0.25) * 0.05;
+
+            ctx.save();
+            ctx.globalAlpha *= p;
+            ctx.translate(x + boxW / 2, y + boxH / 2);
+            ctx.scale(pop, pop);
+            ctx.beginPath();
+            ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 26);
+            ctx.fillStyle = st.fill || ['#00B894', '#22D3EE', '#F59E0B', '#A78BFA'][idx % 4];
+            ctx.fill();
+
+            ctx.fillStyle = st.textColor || (idx === 1 || idx === 2 ? '#0F172A' : '#FFFFFF');
+            ctx.font = `800 26px ${Theme.FONTS.sans}`;
+            ctx.textAlign = 'center';
+            ctx.fillText(st.title || '', 0, st.icon ? -48 : -6);
+
+            if (st.icon) {
+              Icons.draw(ctx, st.icon, 0, 14, 70, { timeSec: t, pulseRing: false });
+            }
+            if (st.sub) {
+              ctx.font = `700 17px ${Theme.FONTS.mono}`;
+              ctx.fillText(st.sub, 0, st.icon ? 82 : 34);
+            }
+            ctx.restore();
+
+            if (idx < count - 1) {
+              const pa = stagger(idx + 1, 0.5, 0.55);
+              Connectors.solidArrow(ctx, x + boxW + 8, y + boxH / 2, x + boxW + gap - 10, y + boxH / 2, {
+                progress: pa,
+                color: '#FFFFFF',
+                lineWidth: 3.2,
+                label: st.arrowLabel || '',
+                timeSec: t
+              });
+            }
+          });
+        }
+
+        const pBanner = stagger(count, 0.5, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'BYTEBYTEGO', border: '#00B894', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 2 (Real ByteByteGo http_25s.png): Self-Drawing Wireframe Fan-Out + 3 Crisp White Diagonal Arrows
+      if (type === 'wireframe-fanout') {
+        const pSrc = stagger(0, 0.35, 0.75);
+        const src = beat.source || { badge: 'TOPIC', title: 'Kafka Topic', color: '#10B981' };
+        const targets = Array.isArray(beat.targets) && beat.targets.length ? beat.targets : [
+          { badge: 'BILLING', title: 'Group A (Live)', color: '#22D3EE' },
+          { badge: 'SEARCH', title: 'Group B (Index)', color: '#10B981' },
+          { badge: 'ML', title: 'Group C (Replay)', color: '#FACC15' }
+        ];
+
+        Illustrations.foldedFileBadge(ctx, 560, 480, src.badge || 'TOPIC', {
+          ribbonBg: src.color || '#10B981',
+          width: 145,
+          height: 170,
+          caption: src.title || '',
+          progress: pSrc
+        });
+
+        const ys = [275, 480, 685];
+        targets.slice(0, 3).forEach((tg, idx) => {
+          const pArr = stagger(idx + 1, 0.5, 0.65);
+          const pDst = stagger(idx + 1, 0.6, 0.7);
+          Connectors.solidArrow(ctx, 680, 445 + idx * 35, 1170, ys[idx], {
+            progress: pArr,
+            color: '#FFFFFF',
+            lineWidth: 3,
+            label: tg.arrowLabel || '',
+            timeSec: t
+          });
+          Illustrations.foldedFileBadge(ctx, 1300, ys[idx], tg.badge || `C${idx + 1}`, {
+            ribbonBg: tg.color || '#22D3EE',
+            width: 118,
+            height: 138,
+            caption: tg.title || '',
+            progress: pDst
+          });
+        });
+
+        const pBanner = stagger(4, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#22D3EE', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 3 (Real ByteByteGo bbg_card_style.png): Dashed-Border Group Container + Stacked Event Pills -> Wireframe DB
+      if (type === 'dashed-group-stack') {
+        const pBox = stagger(0, 0.3, 0.65);
+        const pStack = stagger(1, 0.4, 0.7);
+        const pArrow = stagger(2, 0.45, 0.65);
+        const pDb = stagger(3, 0.5, 0.7);
+
+        if (pBox > 0.02) {
+          ctx.save();
+          ctx.globalAlpha *= pBox;
+          // Outer dashed teal group box
+          ctx.beginPath();
+          ctx.roundRect(380, 200, 1160, 610, 24);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+          ctx.fill();
+          ctx.strokeStyle = '#38BDF8';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([12, 8]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Solid teal header pill
+          ctx.beginPath();
+          ctx.roundRect(740, 224, 440, 56, 16);
+          ctx.fillStyle = beat.headerBg || '#1E7A8C';
+          ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `800 28px ${Theme.FONTS.sans}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.header || 'Record Batching', 960, 261);
+
+          // Olive subtitle pill
+          if (beat.subtitle) {
+            ctx.beginPath();
+            ctx.roundRect(660, 296, 600, 44, 14);
+            ctx.fillStyle = '#7A6A28';
+            ctx.fill();
+            ctx.strokeStyle = '#FACC15';
+            ctx.lineWidth = 1.6;
+            ctx.setLineDash([7, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `700 20px ${Theme.FONTS.sans}`;
+            ctx.fillText(beat.subtitle, 960, 325);
+          }
+
+          // Inner plum dashed frame
+          ctx.beginPath();
+          ctx.roundRect(440, 362, 1040, 412, 20);
+          ctx.fillStyle = 'rgba(88, 52, 82, 0.42)';
+          ctx.fill();
+          ctx.strokeStyle = '#C084FC';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([10, 7]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+
+        // Left Amber Batch Column with Bright Flat Crimson/Amber Event Pills
+        if (pStack > 0.02) {
+          const items = beat.stackItems || ['event 1', 'event 2', 'event 3', 'event 4'];
+          ctx.save();
+          ctx.globalAlpha *= pStack;
+          ctx.beginPath();
+          ctx.roundRect(490, 392, 310, 352, 16);
+          ctx.fillStyle = '#8C7428';
+          ctx.fill();
+          ctx.strokeStyle = '#FACC15';
+          ctx.lineWidth = 2.4;
+          ctx.stroke();
+
+          items.slice(0, 4).forEach((lbl, idx) => {
+            const pi = stagger(idx, 0.28, 0.45);
+            if (pi <= 0.01) return;
+            ctx.save();
+            ctx.globalAlpha *= pi;
+            ctx.beginPath();
+            ctx.roundRect(516, 412 + idx * 70, 258, 54, 10);
+            ctx.fillStyle = beat.pillColor || '#EF4444';
+            ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `700 22px ${Theme.FONTS.sans}`;
+            ctx.textAlign = 'center';
+            ctx.fillText(lbl, 645, 447 + idx * 70);
+            ctx.restore();
+          });
+
+          ctx.fillStyle = '#FEF08A';
+          ctx.font = `700 20px ${Theme.FONTS.sans}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.stackTitle || '64KB Batch', 645, 722);
+          ctx.restore();
+        }
+
+        // Dashed Pure White Arrow -> Wireframe Cylinder Storage
+        Connectors.dashedArrow(ctx, 810, 568, 1170, 568, {
+          progress: pArrow,
+          color: '#FFFFFF',
+          lineWidth: 3.4,
+          label: beat.arrowLabel || '1 single RPC',
+          timeSec: t
+        });
+
+        Illustrations.wireframeCylinderDb(ctx, 1310, 555, {
+          width: 175,
+          height: 155,
+          color: '#38BDF8',
+          label: beat.dbLabel || 'Kafka Log',
+          progress: pDb
+        });
+
+        const pBanner = stagger(4, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'BATCHING', border: '#FACC15', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 4 (Real ByteByteGo linux_40s.png): Clean Two-Column Matte Olive-Header / Dark-Teal Comparison Cards
+      if (type === 'comparison-cards') {
+        const left = beat.left || { title: 'Traditional', bullets: ['Slower random I/O', 'Per-message locks'] };
+        const right = beat.right || { title: 'Apache Kafka', bullets: ['600+ MB/s sequential log', 'Zero broker locks'] };
+        const pLeft = stagger(0, 0.4, 0.7);
+        const pRight = stagger(1, 0.55, 0.7);
+        const pBanner = stagger(2, 0.65, 0.6);
+
+        const drawPanel = (x, panel, p, headerFill, bodyFill) => {
+          if (p <= 0.01) return;
+          ctx.save();
+          ctx.globalAlpha *= p;
+          const w = 680;
+          const h = 470;
+          const y = 265;
+
+          // Body
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, h, 22);
+          ctx.fillStyle = bodyFill;
+          ctx.fill();
+
+          // Matte Header Strip
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, 68, [22, 22, 0, 0]);
+          ctx.fillStyle = headerFill;
+          ctx.fill();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `800 28px ${Theme.FONTS.sans}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(panel.title || '', x + w / 2, y + 44);
+
+          // Crisp White Bullet Points
+          ctx.textAlign = 'left';
+          ctx.font = `600 25px ${Theme.FONTS.sans}`;
+          (panel.bullets || []).slice(0, 5).forEach((line, idx) => {
+            const pb = stagger(idx + 1, 0.35, 0.5);
+            if (pb <= 0.01) return;
+            ctx.save();
+            ctx.globalAlpha *= pb;
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillText(`-  ${line}`, x + 42, y + 132 + idx * 72);
+            ctx.restore();
+          });
+          ctx.restore();
+        };
+
+        drawPanel(250, left, pLeft, left.headerBg || '#6E7A3B', left.bodyBg || '#213D37');
+        drawPanel(990, right, pRight, right.headerBg || '#0F766E', right.bodyBg || '#19373D');
+
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'COMPARISON', border: '#34D399', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 5 (Real ByteByteGo http_10s.png): Horizontal Gold-Outline Pill Chain + Pure White Arrows
+      if (type === 'pill-chain') {
+        const pills = Array.isArray(beat.pills) && beat.pills.length ? beat.pills : ['Producer', 'LZ4 Batch', 'Partition Log', 'Consumer'];
+        const count = Math.min(4, pills.length);
+        const pillW = 260;
+        const pillH = 82;
+        const gap = 115;
+        const totalW = count * pillW + (count - 1) * gap;
+        const startX = (1920 - totalW) / 2;
+        const cy = 500;
+
+        if (beat.heroMetric) {
+          const ph = stagger(0, 0.25, 0.65);
+          ctx.save();
+          ctx.globalAlpha *= ph;
+          ctx.fillStyle = '#FACC15';
+          ctx.font = `900 54px ${Theme.FONTS.mono}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.heroMetric, 960, 320);
+          if (beat.heroSub) {
+            ctx.fillStyle = '#CBD5E1';
+            ctx.font = `600 22px ${Theme.FONTS.sans}`;
+            ctx.fillText(beat.heroSub, 960, 368);
+          }
+          ctx.restore();
+        }
+
+        pills.slice(0, count).forEach((lbl, idx) => {
+          const p = stagger(idx, 0.42, 0.6);
+          if (p <= 0.01) return;
+          const x = startX + idx * (pillW + gap);
+          const isHighlight = idx === count - 1;
+
+          ctx.save();
+          ctx.globalAlpha *= p;
+          ctx.beginPath();
+          ctx.roundRect(x, cy - pillH / 2, pillW, pillH, 26);
+          ctx.fillStyle = isHighlight ? 'rgba(16, 185, 129, 0.22)' : 'rgba(20, 24, 30, 0.92)';
+          ctx.fill();
+          ctx.strokeStyle = isHighlight ? '#34D399' : '#FACC15';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `800 26px ${Theme.FONTS.sans}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(lbl, x + pillW / 2, cy + 9);
+          ctx.restore();
+
+          if (idx < count - 1) {
+            const pa = stagger(idx + 1, 0.42, 0.5);
+            Connectors.solidArrow(ctx, x + pillW + 4, cy, x + pillW + gap - 6, cy, {
+              progress: pa,
+              color: '#FFFFFF',
+              lineWidth: 3.2,
+              timeSec: t
+            });
+          }
+        });
+
+        const pBanner = stagger(count, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#FACC15', alpha: pBanner });
+        }
+        return;
+      }
+
+      // Default: 'icon-flow' (2 or 3 large animated icon medallions connected by glowing comet streams)
+      const nodes = Array.isArray(beat.nodes) && beat.nodes.length ? beat.nodes : [
+        { icon: 'cpuSilicon', tag: 'SOURCE', title: 'Input Stage', color: '#38BDF8' },
+        { icon: 'checkShield', tag: 'TARGET', title: 'Output Stage', color: '#34D399' }
+      ];
+      const count = Math.min(3, nodes.length);
+      const xs = count === 2 ? [500, 1420] : [380, 960, 1540];
+      const size = count === 2 ? 132 : 120;
+
+      nodes.slice(0, count).forEach((node, idx) => {
+        const pn = stagger(idx, 0.42, 0.65);
+        Icons.drawBadge(ctx, node.icon || 'cpuSilicon', xs[idx], 455, size, {
+          color: node.color || '#38BDF8',
+          tag: node.tag,
+          title: node.title,
+          sub: node.sub,
+          progress: pn,
+          timeSec: t
+        });
+        if (node.crossOut && pn > 0.7) {
+          Effects.crossOutFailure(ctx, xs[idx], 455, (pn - 0.7) / 0.3, { size: 92 });
+        }
+        if (idx < count - 1) {
+          const pa = stagger(idx + 1, 0.45, 0.65);
+          const lbl = Array.isArray(beat.arrowLabels) ? beat.arrowLabels[idx] : (beat.arrowLabel || '');
+          const col = Array.isArray(beat.arrowColors) ? beat.arrowColors[idx] : (beat.arrowColor || node.color || '#34D399');
+          Connectors.flowArrow(ctx, xs[idx] + size + 16, 455, xs[idx + 1] - size - 16, 455, t, {
+            progress: pa,
+            color: col,
+            lineWidth: 3.2,
+            label: lbl,
+            orbs: 3
+          });
+        }
+      });
+
+      const pBanner = stagger(count, 0.5, 0.6);
+      if (beat.takeaway && pBanner > 0.05) {
+        Theme.drawTakeawayPill(ctx, beat.takeaway, {
+          variant: beat.takeawayVariant || 'banner',
+          tag: beat.tag || 'KEY INSIGHT',
+          border: beat.border || '#34D399',
+          alpha: pBanner
+        });
+      }
+    }
+
+    const compiledScenes = (BLUEPRINT.scenes || []).map((sc, scIdx) => {
+      const beats = Array.isArray(sc.beats) ? sc.beats : [];
+      let cursor = 0;
+      const timedBeats = beats.map((b) => {
+        const dur = b.duration || 10;
+        const entry = { ...b, startSec: cursor, endSec: cursor + dur };
+        cursor += dur;
+        return entry;
+      });
+      const totalSceneDur = cursor || sc.duration || 20;
+
+      return {
+        id: sc.id || `scene-${scIdx + 1}`,
+        chapter: sc.chapter || `0${scIdx + 1}. Section ${scIdx + 1}`,
+        duration: totalSceneDur,
+        qaTime: Math.min(totalSceneDur - 1, 4.5),
+        backdrop: sc.backdrop || 'dotMatrix',
+        transition: sc.transition || 'fade',
+        sfx: [],
+        captions: timedBeats
+          .filter((b) => b.narration && b.narration.trim())
+          .map((b) => ({
+            start: Number((b.startSec + 0.1).toFixed(2)),
+            end: Number((b.endSec - 0.15).toFixed(2)),
+            text: b.narration.trim()
+          })),
+        render(ctx, { localT, t }) {
+          timedBeats.forEach((b, bIdx) => {
+            Theme.withBeat(ctx, localT, b.startSec, b.endSec, (helpers) => {
+              renderBeatBody(ctx, b, helpers, t);
+            }, { noFadeOut: bIdx === timedBeats.length - 1 });
+          });
+        }
+      };
+    });
+
+    createVideo({
+      title: BLUEPRINT.title || 'Technical Architecture Explainer',
+      palette: BLUEPRINT.palette || 'byteByteGoTrue',
+      fps: BLUEPRINT.fps || 30,
+      persona: BLUEPRINT.persona || 'senior-sa',
+      showCaptions: false,
+      scenes: compiledScenes
+    });
+  </script>
+</body>
+</html>

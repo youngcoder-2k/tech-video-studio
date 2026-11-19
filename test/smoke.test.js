@@ -146,12 +146,12 @@ test('Antigravity plugin.json and SKILL.md adhere to strict customization schema
   assert.match(skillMd, /^---\nname:\s*tech-video-studio\ndescription:/);
 });
 
-test('VoiceStudio Senior SA engine polishes technical terms, defaults to Steffan -12% paused pacing, and exposes Senior SA personas', async () => {
+test('VoiceStudio Senior SA engine polishes technical terms, defaults to Steffan -5% light paused pacing, and exposes Senior SA personas', async () => {
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'], 'senior-sa persona exists');
   assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].neuralVoice, 'en-US-SteffanNeural');
-  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].rate, '-12%');
-  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].speed, 0.88);
-  assert.equal(VoiceStudio.resolveEdgeRate({}, VoiceStudio.SENIOR_SA_PERSONAS['senior-sa']), '-12%');
+  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].rate, '-5%');
+  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].speed, 0.95);
+  assert.equal(VoiceStudio.resolveEdgeRate({}, VoiceStudio.SENIOR_SA_PERSONAS['senior-sa']), '-5%');
   assert.equal(VoiceStudio.resolveEdgeRate({ speed: 0.88 }), '-12%');
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['staff-engineer'], 'staff-engineer persona exists');
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['tech-storyteller'], 'tech-storyteller persona exists');
@@ -212,4 +212,14 @@ test('Declarative Blueprint Compiler compiles JSON blueprint into ByteByteGo #23
   assert.match(html, /byteByteGoTrue/);
   assert.match(html, /Icons\.drawBadge/);
   assert.match(html, /Effects\.liveGaugeArc/);
+});
+
+test('rea-video Narrative-First Engine scaffolds 8-role ByteByteGo story arcs and audits content quality', () => {
+  const Nav = require('../src/core/narrative');
+  assert.ok(Nav.NARRATIVE_ROLES.hook && Nav.NARRATIVE_ROLES.turn && Nav.NARRATIVE_ROLES.proof && Nav.NARRATIVE_ROLES.payoff);
+  const bp = Nav.scaffoldNarrativeBlueprint('How Kubernetes Schedules Pods', 'deep-dive-3min');
+  const audit = Nav.auditBlueprintNarrative(bp);
+  assert.equal(audit.beatCount, 15);
+  assert.equal(audit.totalDurationSec, 180);
+  assert.ok(audit.score >= 85, `Expected scaffolded narrative score >= 85, got ${audit.score}`);
 });

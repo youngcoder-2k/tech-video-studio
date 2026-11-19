@@ -1,20 +1,50 @@
 ---
 name: tech-video-studio
-description: Autonomous pipeline and visual motion graphics engine (v2.0 ByteByteGo Edition) for producing 1080p60 YouTube technical and system design explainer videos. Activate whenever the user wants to create a technical explainer video, system design animation, architecture walkthrough, or ByteByteGo-style visual video.
+description: Autonomous narrative-first pipeline and visual motion graphics engine (v3.0 ByteByteGo + rea-video Edition) for producing 1080p YouTube technical and system design explainer videos. Activate whenever the user wants to create a technical explainer video, system design animation, architecture walkthrough, or ByteByteGo-style visual video.
 ---
 
-# Tech Video Studio (v2.0 ByteByteGo Edition) — AI Skill Guide
+# Tech Video Studio (v3.0 Narrative-First ByteByteGo + `rea-video` Edition) — AI Skill Guide
 
-Produce broadcast-grade **1920x1080 @ 60FPS** technical explainer videos with **95%+ visual parity to real ByteByteGo YouTube videos**:
-- **Authentic `#262626` Charcoal Canvas** with subtle two-layer organic wave geometry (`backdrop: 'waves' | 'speedlines' | 'blueprint'`)
-- **Translucent Tinted Glass Cards** (`Theme.drawGlassCard`) with solid top-corner pill badges (`teal`, `emerald`, `plum`, `olive`, `crimson`, `slate`)
-- **Progressive Vector Self-Drawing** (`Effects.strokeDraw`) & **Kinetic Typewriter Text** (`Effects.typeText`)
-- **2D Virtual Camera** (`Camera.zoomTo`, `Camera.reset`) for smooth overview-to-detail focus zooms
-- **14+ Signature ByteByteGo Archetypes** + **14 Hardware/Memory Primitives** + **Procedural 48kHz Stereo Motion SFX**
+Produce broadcast-grade **1920x1080** technical explainer videos calibrated to real ByteByteGo videos and **`JuneYaooo/rea-video`'s Narrative-First Content Theory**:
+- **Authentic `#232323` Charcoal Canvas** (`palette: 'byteByteGoTrue'`) with 88%–94% clean negative space
+- **5 Authentic ByteByteGo Visual Styles** (`comparison-cards`, `flat-step-flow`, `wireframe-fanout`, `dashed-group-stack`, `pill-chain`) + 28 kinetic archetypes & 30 animated SVG icons
+- **Narrative-First Content Architecture (`src/core/narrative.js`)** learned from `rea-video` (`hook -> context -> turn -> info -> proof -> payoff`)
+- **Crystal-Clear Steffan Senior SA Voice (`en-US-SteffanNeural`, `-5%` light pace, `+280ms` sentence pauses, `maxTempo <= 1.02x`)**
 
 ---
 
-## 1. The 8 Golden Visual & Audio Rules (Mandatory)
+## 1. Content & Narrative Theory (Learned from `JuneYaooo/rea-video`)
+
+Never write a flat textbook list of facts. Every beat MUST serve one explicit **Narrative Role** along the story arc:
+1. **`hook`** (*Grab Attention*): Open with a sharp speed paradox, surprising benchmark contrast, or production failure in the first 10 seconds.
+2. **`context`** (*Set the Scene*): Show the naive/traditional baseline so the viewer feels why the bottleneck exists.
+3. **`turn`** (*Architectural Twist*): Reveal the counter-intuitive design flip ("Instead of X, it does Y...").
+4. **`info`** (*Layered Mechanics*): Teach ONE clear mechanism per beat, building layer by layer without overcrowding.
+5. **`proof`** (*Concrete Evidence*): Prove the theory with live throughput gauges, benchmarks, or side-by-side comparison cards.
+6. **`payoff`** (*Golden Rules*): Close with a 2×2 Production Architect Scorecard (`scorecard`) so the viewer walks away with actionable rules.
+
+---
+
+## 2. One-Command Narrative-First Workflow (v3.0)
+
+```bash
+# Step 1: Scaffold a Narrative-First Blueprint (deep-dive-3min | speed-paradox-2min | quick-explainer-60s)
+node skills/tech-video-studio/scripts/tech-video-studio.js plan-story "How Docker Works" --arc deep-dive-3min -o ./docker.blueprint.json
+
+# Step 2: Fill in domain facts (16-22 words, 2 crisp sentences per beat) and audit Narrative + Visual Diversity
+node skills/tech-video-studio/scripts/tech-video-studio.js audit-story ./docker.blueprint.json
+
+# Step 3: One-command compile + Visual QA + Steffan Narration (-5%, +280ms sentence pauses) + 1080p MP4 render
+node skills/tech-video-studio/scripts/tech-video-studio.js build-video ./docker.blueprint.json -o ./docker_1080p.mp4 --voice senior-sa --fps 30 --qa
+
+# Step 4 (Optional): Reverse-engineer any ByteByteGo reference & score your remake parity
+node skills/tech-video-studio/scripts/tech-video-studio.js rea-learn ./bytebytego_ref.mp4 -o ./out/VIDEO.md
+node skills/tech-video-studio/scripts/tech-video-studio.js rea-compare ./bytebytego_ref.mp4 ./docker_1080p.mp4
+```
+
+---
+
+## 3. The 8 Golden Visual & Audio Rules (Mandatory)
 
 1. **Zero Watermarks**: Never draw `bytebytego.com` or third-party channel logos on the canvas.
 2. **No On-Screen English Subtitles (`showCaptions: false`)**: Use `captions` / `narration` purely to synthesize the Neural Senior SA voiceover audio track. Never burn long subtitle bars onto the bottom of the screen.

@@ -2,7 +2,7 @@
   "name": "tech-video-studio",
   "displayName": "Tech Video Studio",
   "description": "AI-first motion graphics library & multi-agent skill for producing ByteByteGo-caliber 1080p60 YouTube technical explainer videos with 28+ visual metaphors, mathematical layout symmetry, multimodal QA contact sheets, and deterministic 60FPS FFmpeg rendering.",
-  "version": "2.9.0",
+  "version": "3.0.0",
   "license": "MIT",
   "repository": "https://github.com/youngcoder-2k/tech-video-studio",
   "keywords": [

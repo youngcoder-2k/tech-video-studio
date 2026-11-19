@@ -32,13 +32,13 @@ const SENIOR_SA_PERSONAS = {
     id: 'senior-sa',
     name: 'Senior Solutions Architect',
     language: 'en',
-    speed: 0.88,
-    rate: '-12%',
+    speed: 0.95,
+    rate: '-5%',
     neuralVoice: 'en-US-SteffanNeural',
     description:
-      'A crisp, calm, authoritative Senior Solutions Architect and YouTube tech presenter explaining distributed systems and runtime internals. Clean studio condenser microphone, deliberate sentence pauses, easy-to-follow pacing.',
+      'A crisp, lightly paced, authoritative Senior Solutions Architect and YouTube tech presenter explaining distributed systems and runtime internals. Clean studio condenser microphone, natural sentence pauses, engaging conversational rhythm.',
     instruct:
-      'Speak calmly and clearly with deliberate pauses between sentences, like a Senior Solutions Architect walking an engineer through a ByteByteGo diagram.'
+      'Speak with a light, natural, easy-to-follow conversational rhythm and crisp pauses between sentences, like a Senior Solutions Architect walking an engineer through a ByteByteGo diagram.'
   },
   'staff-engineer': {
     id: 'staff-engineer',
@@ -666,7 +666,7 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
   const lang = opts.lang || persona.language || 'en';
   const polishedText = polishSeniorSaScript(text, lang);
   const ffmpeg = findFfmpegExecutable();
-  const sentencePauseSec = Number.isFinite(Number(opts.sentencePauseSec)) ? Number(opts.sentencePauseSec) : 0.45;
+  const sentencePauseSec = Number.isFinite(Number(opts.sentencePauseSec)) ? Number(opts.sentencePauseSec) : 0.28;
 
   const edgeCmd = findEdgeTtsCommand();
   if (edgeCmd) {
@@ -841,7 +841,7 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
   const status = await checkStatus(opts);
   const useVoiceStudio = status.running;
   const allowFallback = opts.allowFallback !== false;
-  const minPauseSec = Number.isFinite(Number(opts.minPauseSec)) ? Number(opts.minPauseSec) : 0.70;
+  const minPauseSec = Number.isFinite(Number(opts.minPauseSec)) ? Number(opts.minPauseSec) : 0.45;
 
   if (!useVoiceStudio && !allowFallback) {
     throw new Error(
