@@ -1,0 +1,496 @@
+{
+  "title": "Why Apache Kafka Is So Insanely Fast",
+  "palette": "byteByteGoTrue",
+  "fps": 30,
+  "persona": "senior-sa",
+  "scenes": [
+    {
+      "id": "scene-1-append-only-log",
+      "chapter": "01. The Kafka Speed Paradox & Append-Only Commit Log",
+      "backdrop": "dotMatrix",
+      "beats": [
+        {
+          "type": "versus-gauge",
+          "duration": 10,
+          "narration": "Traditional message queues struggle past twenty thousand messages per second. Yet Apache Kafka effortlessly handles over one million messages every second. Why?",
+          "left": {
+            "icon": "warningAlert",
+            "tag": "TRADITIONAL QUEUE ❌",
+            "title": "Per-Message State Locks",
+            "value": 20,
+            "unit": "K msg/s",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "rocketBoost",
+            "value": 50,
+            "label": "x FASTER",
+            "color": "#FACC15"
+          },
+          "right": {
+            "value": 1000,
+            "unit": "K+ msg/s",
+            "sub": "Apache Kafka Cluster ✔",
+            "valueRatio": 0.95,
+            "color": "#34D399"
+          },
+          "takeaway": "Apache Kafka Processes Over 1,000,000 Messages/Sec — 50x Faster Than Traditional Queues",
+          "tag": "1M+ MSG/SEC"
+        },
+        {
+          "type": "commit-log-stream",
+          "duration": 10,
+          "narration": "First, Kafka replaces complex message queues with a simple append-only log. Every new event appends straight to the end in O(1) time.",
+          "source": {
+            "icon": "kafkaLogo",
+            "tag": "KAFKA PRODUCER",
+            "title": "Event Stream",
+            "sub": "Immutable Records",
+            "color": "#FACC15"
+          },
+          "arrowLabel": "O(1) Tail Append",
+          "tapeTitle": "Kafka Partition Commit Log (Immutable Sequential Offsets)",
+          "cells": [
+            { "label": "Offset #0", "sub": "Immutable", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.18)", "span": 1 },
+            { "label": "Offset #1", "sub": "Immutable", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.18)", "span": 1 },
+            { "label": "Offset #2", "sub": "Immutable", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.18)", "span": 1 },
+            { "label": "Offset #3 ⚡", "sub": "APPEND HEAD", "color": "#FACC15", "bg": "rgba(250, 204, 21, 0.30)", "span": 1.3 },
+            { "label": "Next Slot", "sub": "O(1) Tail ->", "color": "#34D399", "bg": "rgba(52, 211, 153, 0.14)", "span": 1.2, "dashed": true }
+          ],
+          "takeaway": "Kafka Treats Every Partition as an Immutable Append-Only Log With O(1) Writes",
+          "tag": "APPEND-ONLY LOG"
+        },
+        {
+          "type": "versus-gauge",
+          "duration": 10,
+          "narration": "By never jumping around on disk to update or delete old records, Kafka turns slow random storage into a six-hundred-megabyte-per-second sequential highway.",
+          "left": {
+            "icon": "hardDiskPlatter",
+            "tag": "RANDOM DISK SEEK ❌",
+            "title": "In-Place Queue Deletes",
+            "value": 100,
+            "unit": "KB/s",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "lightningBolt",
+            "value": 6000,
+            "label": "x FASTER",
+            "color": "#FACC15"
+          },
+          "right": {
+            "value": 600,
+            "unit": "MB/s",
+            "sub": "Sequential Log Write ✔",
+            "valueRatio": 0.93,
+            "color": "#34D399"
+          },
+          "takeaway": "Sequential Log Appends Unlock 600+ MB/s Disk Throughput Without Random Seeks",
+          "tag": "SEQUENTIAL I/O"
+        }
+      ]
+    },
+    {
+      "id": "scene-2-partitions-and-smart-consumers",
+      "chapter": "02. Horizontal Partitions & Dumb Broker, Smart Consumer",
+      "backdrop": "blueprint",
+      "beats": [
+        {
+          "type": "partition-mesh",
+          "duration": 10,
+          "narration": "Second, Kafka splits every topic into independent partitions across multiple brokers. Adding more partitions scales write and read throughput linearly without bottlenecks.",
+          "partitions": [
+            { "name": "Topic: orders — Partition 0 (Broker 1)", "offsets": ["#10", "#11", "#12", "#13"], "consumer": "Consumer Worker 1", "throughput": "350K msg/s", "color": "#38BDF8" },
+            { "name": "Topic: orders — Partition 1 (Broker 2)", "offsets": ["#24", "#25", "#26", "#27"], "consumer": "Consumer Worker 2", "throughput": "350K msg/s", "color": "#34D399" },
+            { "name": "Topic: orders — Partition 2 (Broker 3)", "offsets": ["#88", "#89", "#90", "#91"], "consumer": "Consumer Worker 3", "throughput": "350K msg/s", "color": "#FACC15" }
+          ],
+          "takeaway": "Splitting Topics Into Partitions Scales Kafka Throughput Linearly Across Brokers",
+          "tag": "PARTITIONS"
+        },
+        {
+          "type": "icon-flow",
+          "duration": 10,
+          "narration": "Third, Kafka follows a dumb-broker, smart-consumer design. Brokers never track individual delivery states; each consumer simply remembers one integer offset number.",
+          "nodes": [
+            {
+              "icon": "kafkaLogo",
+              "tag": "STATELESS BROKER",
+              "title": "Zero Per-Message State",
+              "sub": "No ACK Tracking Maps",
+              "color": "#38BDF8"
+            },
+            {
+              "icon": "checkShield",
+              "tag": "SMART CONSUMER ✔",
+              "title": "Tracks 1 Integer Offset",
+              "sub": "Current Offset = #4,201",
+              "color": "#34D399"
+            }
+          ],
+          "arrowLabel": "Fetch From Offset #4,201 (Zero Broker Locks)",
+          "arrowColor": "#34D399",
+          "takeaway": "Stateless Brokers Avoid Per-Message Tracking Overhead by Delegating Offsets to Consumers",
+          "tag": "SMART CONSUMER"
+        },
+        {
+          "type": "icon-flow",
+          "duration": 10,
+          "narration": "Because reading never deletes data, analytics, billing, and search services can all read the exact same Kafka topic simultaneously without slowing anyone down.",
+          "nodes": [
+            {
+              "icon": "kafkaLogo",
+              "tag": "1 KAFKA TOPIC",
+              "title": "Immutable Event Stream",
+              "sub": "Retained For 7 Days",
+              "color": "#FACC15"
+            },
+            {
+              "icon": "cpuSilicon",
+              "tag": "GROUP A: BILLING",
+              "title": "Offset #9,900 (Live)",
+              "sub": "Independent Speed",
+              "color": "#38BDF8"
+            },
+            {
+              "icon": "magnifyingGlass",
+              "tag": "GROUP B: ANALYTICS",
+              "title": "Offset #4,100 (Replay)",
+              "sub": "Zero Lock Contention",
+              "color": "#34D399"
+            }
+          ],
+          "arrowLabels": ["Parallel Read Stream", "Independent Replay"],
+          "arrowColors": ["#38BDF8", "#34D399"],
+          "takeaway": "Multiple Consumer Groups Read the Same Kafka Topic at Their Own Pace With Zero Contention",
+          "tag": "MULTI-CONSUMER"
+        }
+      ]
+    },
+    {
+      "id": "scene-3-batching-and-compression",
+      "chapter": "03. Producer Smart Batching & End-to-End Compression",
+      "backdrop": "isometric",
+      "beats": [
+        {
+          "type": "batch-flow",
+          "duration": 10,
+          "narration": "Fourth, Kafka producers rarely send single messages. They accumulate thousands of records per partition in memory and flush them as one large batch.",
+          "batchTitle": "Kafka Producer RecordAccumulator (linger.ms = 5, 64KB)",
+          "tint": "teal",
+          "offsets": ["Event #1", "Event #2", "Event #3", "Event #4", "64KB BATCH ⚡"],
+          "arrowLabel": "1 Single Batch RPC (1,000x Fewer Requests)",
+          "target": {
+            "icon": "kafkaLogo",
+            "tag": "KAFKA BROKER ✔",
+            "title": "1 Contiguous Write",
+            "sub": "Amortized Network & Disk",
+            "color": "#34D399"
+          },
+          "takeaway": "Producer Record Batching Cuts Network Round-Trips by Up to 1,000x",
+          "tag": "BATCHING"
+        },
+        {
+          "type": "icon-flow",
+          "duration": 10,
+          "narration": "Before sending, the producer compresses the whole batch with LZ4 or Zstd. The Kafka broker stores those compressed bytes directly without decompressing them.",
+          "nodes": [
+            {
+              "icon": "boxArchive",
+              "tag": "1. PRODUCER LZ4",
+              "title": "Compress Once",
+              "sub": "LZ4 / Zstd Record Batch",
+              "color": "#C084FC"
+            },
+            {
+              "icon": "kafkaLogo",
+              "tag": "2. KAFKA BROKER",
+              "title": "Store Raw Compressed",
+              "sub": "Zero Broker CPU Work",
+              "color": "#FACC15"
+            },
+            {
+              "icon": "checkShield",
+              "tag": "3. CONSUMER",
+              "title": "Decompress On Read",
+              "sub": "End-to-End Efficiency",
+              "color": "#34D399"
+            }
+          ],
+          "arrowLabels": ["Compressed Batch", "Direct Fetch"],
+          "arrowColors": ["#C084FC", "#34D399"],
+          "takeaway": "End-to-End Batch Compression Keeps Data Compressed Across Network and Broker Disk",
+          "tag": "LZ4 / ZSTD"
+        },
+        {
+          "type": "versus-gauge",
+          "duration": 10,
+          "narration": "Compressing batches instead of single messages unlocks up to an eighty-percent reduction in network traffic and disk usage across the entire cluster.",
+          "left": {
+            "icon": "warningAlert",
+            "tag": "UNCOMPRESSED ❌",
+            "title": "Raw JSON Events",
+            "value": 100,
+            "unit": "MB Wire",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "boxArchive",
+            "value": 5,
+            "label": "x SMALLER",
+            "color": "#C084FC"
+          },
+          "right": {
+            "value": 80,
+            "unit": "% Saved",
+            "sub": "LZ4 Batch Compression ✔",
+            "valueRatio": 0.85,
+            "color": "#34D399"
+          },
+          "takeaway": "Batch Compression Slashes Kafka Network Bandwidth and Storage Footprint by 80%",
+          "tag": "80% SAVED"
+        }
+      ]
+    },
+    {
+      "id": "scene-4-zero-copy-and-hot-cache",
+      "chapter": "04. Zero-Copy Streaming & Hot Memory Reads",
+      "backdrop": "splitHorizontal",
+      "beats": [
+        {
+          "type": "icon-flow",
+          "duration": 10,
+          "narration": "Traditional brokers waste huge CPU cycles copying every message into application memory, parsing it, and copying it back out to each consumer.",
+          "nodes": [
+            {
+              "icon": "hardDiskPlatter",
+              "tag": "1. DISK STORAGE",
+              "title": "Read Message",
+              "sub": "Copy #1",
+              "color": "#94A3B8"
+            },
+            {
+              "icon": "cpuSilicon",
+              "tag": "2. BROKER APP RAM ❌",
+              "title": "Parse & Re-Serialize",
+              "sub": "Heavy CPU Overhead",
+              "color": "#EF4444",
+              "crossOut": true
+            },
+            {
+              "icon": "networkCardNic",
+              "tag": "3. CONSUMER SOCKET",
+              "title": "Send Over Wire",
+              "sub": "Copy #3 & #4",
+              "color": "#F87171"
+            }
+          ],
+          "arrowLabels": ["Copy To Broker App", "Copy Back To Wire"],
+          "arrowColors": ["#EF4444", "#EF4444"],
+          "takeaway": "Copying Every Message Through Application Memory Bottlenecks Traditional Brokers",
+          "tag": "CPU BOTTLENECK"
+        },
+        {
+          "type": "zero-copy-dma",
+          "duration": 10,
+          "narration": "Kafka uses zero-copy transfer to bypass its own application memory. Compressed record batches stream directly from broker cache straight onto the network wire.",
+          "bypassBanner": "▲ KAFKA APPLICATION MEMORY BYPASSED — ZERO REDUNDANT COPIES ✔",
+          "left": {
+            "icon": "ramChip",
+            "tag": "BROKER CACHE",
+            "title": "Hot Segment Bytes",
+            "sub": "Already Compressed",
+            "color": "#FACC15"
+          },
+          "arrowLabel": "Zero-Copy Direct Wire Transfer (0 Broker CPU Copies)",
+          "right": {
+            "icon": "networkCardNic",
+            "tag": "CONSUMER STREAM ✔",
+            "title": "10+ Gbps Wire Speed",
+            "sub": "Line-Rate Delivery",
+            "color": "#34D399"
+          },
+          "takeaway": "Zero-Copy Transfer Lets Kafka Brokers Stream Data at Full 10+ Gbps Network Speed",
+          "tag": "ZERO-COPY"
+        },
+        {
+          "type": "icon-flow",
+          "duration": 10,
+          "narration": "In real-time pipelines, consumers read data milliseconds after producers write it. Those hot Kafka segments sit right in RAM, delivering instant reads.",
+          "nodes": [
+            {
+              "icon": "lightningBolt",
+              "tag": "PRODUCER WRITE",
+              "title": "Fresh Event Batch",
+              "sub": "t = 0 ms",
+              "color": "#FACC15"
+            },
+            {
+              "icon": "ramChip",
+              "tag": "HOT MEMORY CACHE ✔",
+              "title": "Served From RAM",
+              "sub": "Zero Disk Reads Needed",
+              "color": "#34D399"
+            },
+            {
+              "icon": "rocketBoost",
+              "tag": "REAL-TIME CONSUMER",
+              "title": "Sub-Millisecond Read",
+              "sub": "t = 2 ms End-to-End",
+              "color": "#38BDF8"
+            }
+          ],
+          "arrowLabels": ["Writes Hot Cache", "Instant RAM Hit"],
+          "arrowColors": ["#FACC15", "#34D399"],
+          "takeaway": "Real-Time Kafka Consumers Almost Always Read Hot Segments Directly From Memory",
+          "tag": "RAM-SPEED READS"
+        }
+      ]
+    },
+    {
+      "id": "scene-5-pull-backpressure-and-isr",
+      "chapter": "05. Pull-Based Backpressure & Fast In-Sync Replication",
+      "backdrop": "spotlight",
+      "beats": [
+        {
+          "type": "icon-flow",
+          "duration": 10,
+          "narration": "Fifth, Kafka consumers pull data instead of being pushed to. Slow consumers never crash, while fast consumers pull huge batches at maximum speed.",
+          "nodes": [
+            {
+              "icon": "kafkaLogo",
+              "tag": "KAFKA PARTITION",
+              "title": "Buffered Event Stream",
+              "sub": "Absorbs Traffic Spikes",
+              "color": "#38BDF8"
+            },
+            {
+              "icon": "shieldGuard",
+              "tag": "PULL CONSUMER ✔",
+              "title": "Self-Paced Fetching",
+              "sub": "Natural Backpressure",
+              "color": "#34D399"
+            }
+          ],
+          "arrowLabel": "Consumer Pulls Optimal Batch Size (fetch.min.bytes)",
+          "arrowColor": "#34D399",
+          "takeaway": "Pull-Based Consumption Prevents Consumer Overload and Enables Large Batch Fetches",
+          "tag": "PULL MODEL"
+        },
+        {
+          "type": "quorum-triangle",
+          "duration": 10,
+          "narration": "For fault tolerance, follower brokers replicate sequentially from the partition leader. Once in-sync replicas receive the batch, Kafka marks it safely committed.",
+          "nodes": [
+            { "name": "Partition Leader", "role": "Broker 1 ★", "color": "#FACC15", "angle": -90 },
+            { "name": "ISR Follower A", "role": "Synced ✔", "color": "#34D399", "angle": 30 },
+            { "name": "ISR Follower B", "role": "Synced ✔", "color": "#38BDF8", "angle": 150 }
+          ],
+          "takeaway": "In-Sync Replicas Pull Batches Sequentially for High-Speed Multi-Broker Durability",
+          "tag": "ISR QUORUM"
+        },
+        {
+          "type": "icon-flow",
+          "duration": 10,
+          "narration": "Kafka also lets you tune acknowledgments per workload: acks equals one for ultra-fast telemetry, or acks equals all for zero-loss financial transactions.",
+          "nodes": [
+            {
+              "icon": "rocketBoost",
+              "tag": "ACKS = 1",
+              "title": "Leader ACK Only",
+              "sub": "Ultra-Fast Metrics & Logs",
+              "color": "#FACC15"
+            },
+            {
+              "icon": "shieldGuard",
+              "tag": "ACKS = ALL ✔",
+              "title": "Full ISR Quorum ACK",
+              "sub": "Zero-Loss Payments",
+              "color": "#34D399"
+            }
+          ],
+          "arrowLabel": "Configurable Speed vs Durability Per Topic",
+          "arrowColor": "#38BDF8",
+          "takeaway": "Per-Topic ACK Levels Let Teams Balance Ultra-Low Latency Against Zero Data Loss",
+          "tag": "TUNABLE ACKS"
+        }
+      ]
+    },
+    {
+      "id": "scene-6-cleanup-scaling-and-scorecard",
+      "chapter": "06. O(1) Segment Cleanup & Production Tuning Rules",
+      "backdrop": "waves",
+      "beats": [
+        {
+          "type": "commit-log-stream",
+          "duration": 10,
+          "narration": "Even cleanup is engineered for speed. When retention expires, Kafka deletes entire old segment files in one instant operation instead of individual messages.",
+          "source": {
+            "icon": "checkShield",
+            "tag": "RETENTION POLICY",
+            "title": "7-Day Expiry",
+            "sub": "Zero Row-Level Locks",
+            "color": "#34D399"
+          },
+          "arrowLabel": "Drop Whole Segment File",
+          "tapeTitle": "Log Segment Rotation — Instant O(1) File Cleanup",
+          "cells": [
+            { "label": "Seg 01 (Old)", "sub": "DROPPED ⚡", "color": "#EF4444", "bg": "rgba(239, 68, 68, 0.22)", "span": 1.2, "dashed": true },
+            { "label": "Seg 02", "sub": "Active Read", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.18)", "span": 1 },
+            { "label": "Seg 03", "sub": "Active Read", "color": "#38BDF8", "bg": "rgba(56, 189, 248, 0.18)", "span": 1 },
+            { "label": "Seg 04 ⚡", "sub": "Live Writes", "color": "#34D399", "bg": "rgba(52, 211, 153, 0.25)", "span": 1.3 }
+          ],
+          "takeaway": "Dropping Whole Expired Segment Files Eliminates Garbage-Collection Write Stalls",
+          "tag": "O(1) CLEANUP"
+        },
+        {
+          "type": "partition-mesh",
+          "duration": 10,
+          "narration": "Need more processing power? Simply add more instances to your consumer group. Kafka automatically rebalances partitions so every worker processes streams in parallel.",
+          "partitions": [
+            { "name": "Partition 0 (Active Stream)", "offsets": ["#501", "#502", "#503", "#504"], "consumer": "Pod #1 (Auto-Assigned)", "throughput": "Parallel 1/3", "color": "#38BDF8" },
+            { "name": "Partition 1 (Active Stream)", "offsets": ["#610", "#611", "#612", "#613"], "consumer": "Pod #2 (Auto-Assigned)", "throughput": "Parallel 2/3", "color": "#34D399" },
+            { "name": "Partition 2 (Active Stream)", "offsets": ["#720", "#721", "#722", "#723"], "consumer": "Pod #3 (Auto-Assigned)", "throughput": "Parallel 3/3", "color": "#FACC15" }
+          ],
+          "takeaway": "Kafka Consumer Groups Auto-Balance Partitions for Effortless Horizontal Scaling",
+          "tag": "AUTO-REBALANCE"
+        },
+        {
+          "type": "scorecard",
+          "duration": 10,
+          "narration": "To unlock Kafka's full speed in production: enable producer batching with LZ4 compression, choose enough partitions for parallel consumers, and keep messages compact.",
+          "items": [
+            {
+              "type": "dont",
+              "title": "Sending 1 Event Per Request",
+              "cmd": "❌ linger.ms=0 & compression=none",
+              "desc": "Floods Kafka brokers with tiny RPCs and wastes network I/O",
+              "color": "#F87171"
+            },
+            {
+              "type": "do",
+              "title": "Smart Batching + LZ4 Compression",
+              "cmd": "✔ linger.ms=5..10 & compression=lz4",
+              "desc": "Packs thousands of events into 80% smaller sequential writes",
+              "color": "#34D399"
+            },
+            {
+              "type": "dont",
+              "title": "Single-Partition Hot Topic",
+              "cmd": "❌ partitions=1 (Zero Parallelism)",
+              "desc": "Limits the entire topic to one broker and one consumer worker",
+              "color": "#F87171"
+            },
+            {
+              "type": "do",
+              "title": "Match Partitions to Consumers",
+              "cmd": "✔ partitions >= peak consumer pods",
+              "desc": "Unlocks linear parallel throughput across your consumer group",
+              "color": "#38BDF8"
+            }
+          ],
+          "takeaway": "Batch With LZ4, Scale With Partitions, and Let Kafka's Append-Only Log Fly"
+        }
+      ]
+    }
+  ]
+}
