@@ -425,10 +425,12 @@ async function cmdRender(positional, flags) {
           persona: personaKey,
           voice: flags['voice-id'],
           lang: flags.lang,
+          rate: flags.rate,
+          speed: flags.speed,
           allowFallback: !flags['strict-voicestudio']
         });
         activeAudioPath = tmpVoiceWav;
-        console.log(`   ✅ Synthesized ${navRes.clipCount} scene voiceovers via [${navRes.engine}] -> ${path.basename(tmpVoiceWav)}`);
+        console.log(`   ✅ Synthesized ${navRes.clipCount} scene voiceovers via [${navRes.engine}] (Avg pace: ${navRes.avgWpm} WPM, MaxTempo: ${navRes.maxTempoApplied}x) -> ${path.basename(tmpVoiceWav)}`);
       }
     }
 
@@ -659,11 +661,13 @@ async function cmdVoice(positional, flags) {
         persona: personaKey,
         voice: flags.voice,
         lang: flags.lang,
+        rate: flags.rate,
+        speed: flags.speed,
         allowFallback: !flags['strict-voicestudio']
       }
     );
 
-    console.log(`✅ Generated Senior SA Narration WAV (${res.clipCount} scenes, ${res.totalDurationSec}s) via [${res.engine}] -> ${outWav}`);
+    console.log(`✅ Generated Senior SA Narration WAV (${res.clipCount} clips, ${res.totalDurationSec}s, Avg pace: ${res.avgWpm} WPM, MaxTempo: ${res.maxTempoApplied}x) via [${res.engine}] -> ${outWav}`);
     return;
   }
 

@@ -1171,6 +1171,7 @@ function memoryHierarchyPyramid(ctx, cx, cy, opts = {}) {
 
     // Active pointer badge on left
     if (tier.active) {
+      const badgeLabel = tier.badge || opts.activeBadge || 'REDIS ZONE';
       const bx = cx - tw2 / 2 - 125;
       const by = ty + tierH / 2 - 16;
       ctx.beginPath();
@@ -1179,7 +1180,7 @@ function memoryHierarchyPyramid(ctx, cx, cy, opts = {}) {
       ctx.fill();
       ctx.fillStyle = '#052E16';
       ctx.font = `800 13px ${FONTS.mono}`;
-      ctx.fillText('REDIS ZONE', bx + 54, by + 21);
+      ctx.fillText(badgeLabel, bx + 54, by + 21);
     }
 
     ctx.restore();
@@ -1771,6 +1772,235 @@ function scorecardMatrix(ctx, x, y, w, h, opts = {}) {
   ctx.restore();
 }
 
+// 27. LINUX SENDFILE() ZERO-COPY DMA KERNEL PIPELINE (Style D: User vs Kernel Bypass)
+function zeroCopyDmaPipeline(ctx, x, y, w, h, opts = {}) {
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const timeSec = opts.timeSec || 0;
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  const divY = y + h * 0.34;
+
+  // Top Stratum: User Space (Bypassed!)
+  ctx.beginPath();
+  ctx.roundRect(x + 80, y, w - 160, divY - y - 24, 14);
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+  ctx.lineWidth = 1.8;
+  ctx.setLineDash([8, 6]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#94A3B8';
+  ctx.font = `700 18px ${FONTS.mono}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('USER SPACE (JVM Process Memory — Completely Bypassed)', x + w / 2, y + 44);
+
+  // Bypass Pill
+  ctx.beginPath();
+  ctx.roundRect(x + w / 2 - 280, y + 64, 560, 42, 21);
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+  ctx.fill();
+  ctx.strokeStyle = '#34D399';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#6EE7B7';
+  ctx.font = `800 16px ${FONTS.mono}`;
+  ctx.fillText('✔ ZERO CPU DATA COPIES INTO USER SPACE', x + w / 2, y + 91);
+
+  // Kernel Boundary Line
+  ctx.strokeStyle = '#FACC15';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([12, 8]);
+  ctx.beginPath();
+  ctx.moveTo(x, divY);
+  ctx.lineTo(x + w, divY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.roundRect(x + w / 2 - 260, divY - 18, 520, 36, 18);
+  ctx.fillStyle = '#0F172A';
+  ctx.fill();
+  ctx.strokeStyle = '#FACC15';
+  ctx.stroke();
+  ctx.fillStyle = '#FEF08A';
+  ctx.font = `800 14px ${FONTS.mono}`;
+  ctx.fillText('▲ USER SPACE   |   ▼ LINUX KERNEL & HARDWARE DMA', x + w / 2, divY + 5);
+
+  // Bottom Stratum: 3 Hardware / Kernel Stages connected by Direct DMA
+  const stages = [
+    {
+      title: '1. Disk Segment (.log)',
+      sub: 'Sequential Read Block',
+      badge: 'NVMe / Disk',
+      color: '#38BDF8',
+      bg: 'rgba(2, 132, 199, 0.24)'
+    },
+    {
+      title: '2. OS PageCache (RAM)',
+      sub: 'sendfile() Descriptor Only',
+      badge: 'Kernel Buffer',
+      color: '#FACC15',
+      bg: 'rgba(161, 98, 7, 0.26)'
+    },
+    {
+      title: '3. NIC TX Ring Buffer',
+      sub: '10+ Gbps Wire Streaming',
+      badge: 'Network Card',
+      color: '#34D399',
+      bg: 'rgba(6, 78, 59, 0.30)'
+    }
+  ];
+
+  const cardW = 360;
+  const cardH = 195;
+  const cardY = divY + 56;
+  const spacing = (w - cardW * 3) / 2;
+
+  stages.forEach((st, idx) => {
+    const cx = x + idx * (cardW + spacing);
+    ctx.beginPath();
+    ctx.roundRect(cx, cardY, cardW, cardH, 16);
+    ctx.fillStyle = st.bg;
+    ctx.fill();
+    ctx.strokeStyle = st.color;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+
+    // Badge
+    ctx.beginPath();
+    ctx.roundRect(cx + cardW / 2 - 76, cardY + 20, 152, 30, 15);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.fill();
+    ctx.strokeStyle = st.color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = st.color;
+    ctx.font = `700 13px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(st.badge, cx + cardW / 2, cardY + 40);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 22px ${FONTS.sans}`;
+    ctx.fillText(st.title, cx + cardW / 2, cardY + 102);
+
+    ctx.fillStyle = '#CBD5E1';
+    ctx.font = `600 15.5px ${FONTS.mono}`;
+    ctx.fillText(st.sub, cx + cardW / 2, cardY + 142);
+
+    if (idx < 2) {
+      const ax1 = cx + cardW + 10;
+      const ax2 = cx + cardW + spacing - 10;
+      const ay = cardY + cardH / 2;
+      Connectors.solidArrow(ctx, ax1, ay, ax2, ay, {
+        progress,
+        color: idx === 0 ? '#38BDF8' : '#34D399',
+        lineWidth: 3.2,
+        label: idx === 0 ? 'DMA Engine #1' : 'DMA Engine #2 (0 CPU)'
+      });
+
+      // Flowing DMA packet dot
+      const phase = (timeSec * 1.1 + idx * 0.4) % 1;
+      const px = ax1 + (ax2 - ax1) * phase;
+      ctx.save();
+      ctx.fillStyle = '#FACC15';
+      ctx.shadowColor = '#FACC15';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(px, ay, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  });
+
+  ctx.restore();
+}
+
+// 28. PARALLEL PARTITION STREAM & CONSUMER GROUP MESH (Style B: Fan-out Parallel Stream)
+function partitionConsumerMesh(ctx, x, y, w, h, opts = {}) {
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const timeSec = opts.timeSec || 0;
+  const partitions = opts.partitions || [
+    { name: 'Partition 0 (Broker 1)', offsets: ['#81', '#82', '#83', '#84'], consumer: 'Consumer A', throughput: '350K msg/s', color: '#38BDF8' },
+    { name: 'Partition 1 (Broker 2)', offsets: ['#44', '#45', '#46', '#47'], consumer: 'Consumer B', throughput: '350K msg/s', color: '#34D399' },
+    { name: 'Partition 2 (Broker 3)', offsets: ['#92', '#93', '#94', '#95'], consumer: 'Consumer C', throughput: '350K msg/s', color: '#FACC15' }
+  ];
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  const rowGap = 28;
+  const rowH = (h - rowGap * (partitions.length - 1)) / partitions.length;
+  const partW = 640;
+  const consW = 420;
+  const arrowSpan = w - partW - consW;
+
+  partitions.forEach((p, idx) => {
+    const ry = y + idx * (rowH + rowGap);
+
+    // Left Partition Log Box
+    pubSubTopicBox(ctx, x, ry, partW, rowH, {
+      title: p.name,
+      offsets: p.offsets,
+      activeSlot: p.offsets.length - 1,
+      tint: idx === 0 ? 'teal' : (idx === 1 ? 'emerald' : 'olive'),
+      progress
+    });
+
+    // Center Parallel Stream Arrow
+    const ax1 = x + partW + 16;
+    const ax2 = x + partW + arrowSpan - 16;
+    const ay = ry + rowH / 2;
+
+    Connectors.solidArrow(ctx, ax1, ay, ax2, ay, {
+      progress,
+      color: p.color,
+      lineWidth: 2.8,
+      label: p.throughput
+    });
+
+    // Animated stream pulse
+    const phase = (timeSec * 1.2 + idx * 0.33) % 1;
+    const px = ax1 + (ax2 - ax1) * phase;
+    ctx.save();
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(px, ay, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Right Dedicated Consumer Card
+    const cx = x + partW + arrowSpan;
+    ctx.beginPath();
+    ctx.roundRect(cx, ry, consW, rowH, 14);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.fill();
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 22px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(p.consumer, cx + consW / 2, ry + rowH * 0.44);
+
+    ctx.fillStyle = p.color;
+    ctx.font = `600 15.5px ${FONTS.mono}`;
+    ctx.fillText('1:1 Exclusive Partition Lock-Free Read', cx + consW / 2, ry + rowH * 0.76);
+  });
+
+  ctx.restore();
+}
+
 module.exports = {
   isometricServerStack,
   foldedFileBadge,
@@ -1797,5 +2027,7 @@ module.exports = {
   horizontalLaneRace,
   quorumTriangleMesh,
   hashSlotRingCluster,
-  scorecardMatrix
+  scorecardMatrix,
+  zeroCopyDmaPipeline,
+  partitionConsumerMesh
 };

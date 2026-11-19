@@ -29,7 +29,7 @@ test('Studio exposes Camera, Effects, Connectors (incl. curvedArrow & flowArrow)
   assert.equal(typeof Studio.Connectors.elbowArrow, 'function');
 });
 
-test('All 26 ByteByteGo high-retention & multi-style archetypes are merged into Studio.Illustrations', () => {
+test('All 28 ByteByteGo high-retention & multi-style archetypes are merged into Studio.Illustrations', () => {
   const expectedArchetypes = [
     'isometricServerStack',
     'foldedFileBadge',
@@ -56,7 +56,9 @@ test('All 26 ByteByteGo high-retention & multi-style archetypes are merged into 
     'horizontalLaneRace',
     'quorumTriangleMesh',
     'hashSlotRingCluster',
-    'scorecardMatrix'
+    'scorecardMatrix',
+    'zeroCopyDmaPipeline',
+    'partitionConsumerMesh'
   ];
   for (const fnName of expectedArchetypes) {
     assert.equal(typeof Studio.Illustrations[fnName], 'function', `Missing archetype: ${fnName}`);
@@ -139,14 +141,18 @@ test('Antigravity plugin.json and SKILL.md adhere to strict customization schema
   assert.match(skillMd, /^---\nname:\s*tech-video-studio\ndescription:/);
 });
 
-test('VoiceStudio Senior SA engine polishes technical terms and exposes 4 Senior SA personas', async () => {
+test('VoiceStudio Senior SA engine polishes technical terms, defaults to unhurried -10% pacing, and exposes Senior SA personas', async () => {
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'], 'senior-sa persona exists');
+  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].rate, '-10%');
+  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].speed, 0.90);
+  assert.equal(VoiceStudio.resolveEdgeRate({}, VoiceStudio.SENIOR_SA_PERSONAS['senior-sa']), '-10%');
+  assert.equal(VoiceStudio.resolveEdgeRate({ speed: 0.88 }), '-12%');
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['staff-engineer'], 'staff-engineer persona exists');
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['tech-storyteller'], 'tech-storyteller persona exists');
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['vi-senior-sa'], 'vi-senior-sa persona exists');
 
   const polishedEn = VoiceStudio.polishSeniorSaScript(
-    'Redis achieves < 100 μs latency at 100K+ QPS with O(1) hashes, O(log N) skiplists, epoll, and BGSAVE.',
+    'Redis & Kafka achieve < 100 μs latency at 100K+ QPS with O(1) hashes, O(log N) skiplists, epoll, sendfile(), PageCache, DMA, and BGSAVE.',
     'en'
   );
   assert.match(polishedEn, /under 100 microseconds/);
@@ -154,6 +160,9 @@ test('VoiceStudio Senior SA engine polishes technical terms and exposes 4 Senior
   assert.match(polishedEn, /O of 1/);
   assert.match(polishedEn, /O log N/);
   assert.match(polishedEn, /e-poll/);
+  assert.match(polishedEn, /send-file/);
+  assert.match(polishedEn, /page cache/);
+  assert.match(polishedEn, /D-M-A/);
   assert.match(polishedEn, /background save/);
 
   const polishedVi = VoiceStudio.polishSeniorSaScript(

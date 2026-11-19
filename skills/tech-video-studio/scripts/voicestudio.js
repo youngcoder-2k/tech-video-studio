@@ -32,73 +32,79 @@ const SENIOR_SA_PERSONAS = {
     id: 'senior-sa',
     name: 'Senior Solutions Architect',
     language: 'en',
-    speed: 1.0,
+    speed: 0.90,
+    rate: '-10%',
     neuralVoice: 'en-US-AndrewMultilingualNeural',
     description:
-      'A calm, authoritative, articulate Senior Solutions Architect in his late 30s explaining distributed systems and cloud architecture. Warm baritone voice, natural conversational pacing, clear studio condenser microphone, subtle emphasis on engineering trade-offs.',
+      'A calm, authoritative, articulate Senior Solutions Architect in his late 30s explaining distributed systems and cloud architecture. Warm baritone voice, unhurried conversational pacing, clear studio condenser microphone, subtle emphasis on engineering trade-offs.',
     instruct:
-      'Speak like an experienced Senior Solutions Architect walking a fellow engineer through a system design diagram. Calm, confident, conversational, natural breathing pauses, clear emphasis on architectural trade-offs and latency metrics.'
+      'Speak at a calm, unhurried, easy-to-follow pace like an experienced Senior Solutions Architect walking a fellow engineer through a system design diagram. Take natural breathing pauses between clauses and emphasize architectural trade-offs clearly.'
   },
   'staff-engineer': {
     id: 'staff-engineer',
     name: 'Principal Systems Engineer',
     language: 'en',
-    speed: 1.0,
+    speed: 0.90,
+    rate: '-10%',
     neuralVoice: 'en-US-ChristopherNeural',
     description:
       'A pragmatic Principal / Staff Systems Engineer explaining low-level kernel, database, and memory internals. Crisp mid-low voice, measured technical precision, zero hype, studio acoustic clarity.',
     instruct:
-      'Deliver with crisp technical precision and calm authority, like a Staff Engineer explaining kernel and database internals at a whiteboard.'
+      'Deliver with calm, measured technical precision and unhurried authority, like a Staff Engineer explaining kernel and database internals at a whiteboard.'
   },
   'tech-storyteller': {
     id: 'tech-storyteller',
     name: 'ByteByteGo System Design Host',
     language: 'en',
-    speed: 1.02,
+    speed: 0.92,
+    rate: '-8%',
     neuralVoice: 'en-US-GuyNeural',
     description:
-      'An engaging, high-retention technical YouTube explainer host. Articulate, warm, dynamic cadence, smooth transitions between architectural components, broadcast narrator quality.',
+      'An engaging, high-retention technical YouTube explainer host. Articulate, warm, relaxed cadence, smooth transitions between architectural components, broadcast narrator quality.',
     instruct:
-      'Engaging technical storyteller cadence. Keep the listener hooked while explaining complex architecture clearly and concisely.'
+      'Engaging yet relaxed technical storyteller cadence. Keep the listener hooked while explaining complex architecture clearly and unhurriedly.'
   },
   'approachable': {
     id: 'approachable',
     name: 'Approachable Systems Lead',
     language: 'en',
-    speed: 1.0,
+    speed: 0.90,
+    rate: '-10%',
     neuralVoice: 'en-US-BrianMultilingualNeural',
     description:
-      'A friendly, approachable Staff Engineer speaking casually to colleagues.',
+      'A friendly, approachable Staff Engineer speaking casually and clearly to colleagues.',
     instruct:
-      'Approachable and friendly technical explanation with authentic conversational warmth.'
+      'Approachable, unhurried, and friendly technical explanation with authentic conversational warmth.'
   },
   'vi-senior-sa': {
     id: 'vi-senior-sa',
     name: 'Senior Solutions Architect (Vietnamese)',
     language: 'vi',
-    speed: 1.0,
+    speed: 0.90,
+    rate: '-10%',
     neuralVoice: 'vi-VN-NamMinhNeural',
     description:
-      'Nam Kiến trúc sư giải pháp cấp cao (Senior Solutions Architect), giọng trầm ấm, điềm tĩnh, tự nhiên như con người đang phân tích kiến trúc hệ thống, phát âm rõ ràng, nhịp độ vừa phải, thu âm phòng thu chuyên nghiệp.',
+      'Nam Kiến trúc sư giải pháp cấp cao (Senior Solutions Architect), giọng trầm ấm, điềm tĩnh, tự nhiên như con người đang phân tích kiến trúc hệ thống, phát âm rõ ràng, nhịp độ chậm rãi dễ nghe, thu âm phòng thu chuyên nghiệp.',
     instruct:
-      'Thuyết minh tự nhiên, điềm tĩnh và sâu sắc như một Senior Solutions Architect đang giải thích kiến trúc hệ thống cho đội ngũ kỹ sư. Nhấn nhá rõ các nút thắt hiệu năng và trade-off.'
+      'Thuyết minh chậm rãi, điềm tĩnh và sâu sắc như một Senior Solutions Architect đang giải thích kiến trúc hệ thống cho đội ngũ kỹ sư. Nhấn nhá rõ các nút thắt hiệu năng và nghỉ nhịp tự nhiên.'
   },
   'vi-storyteller': {
     id: 'vi-storyteller',
     name: 'Người kể chuyện công nghệ (Tiếng Việt)',
     language: 'vi',
-    speed: 1.0,
+    speed: 0.92,
+    rate: '-8%',
     neuralVoice: 'vi-VN-HoaiMyNeural',
     description:
-      'Giọng nữ truyền cảm, tự nhiên, rõ ràng, phù hợp cho video chia sẻ kiến thức công nghệ.',
+      'Giọng nữ truyền cảm, tự nhiên, rõ ràng, nhịp độ vừa phải dễ nghe, phù hợp cho video chia sẻ kiến thức công nghệ.',
     instruct:
-      'Giọng đọc tự nhiên, cuốn hút, phát âm chuẩn xác thuật ngữ kỹ thuật.'
+      'Giọng đọc tự nhiên, chậm rãi dễ nghe, cuốn hút, phát âm chuẩn xác thuật ngữ kỹ thuật.'
   }
 };
 
 /**
  * Expands technical symbols and abbreviations so TTS engines pronounce them
- * naturally like a human Senior Solutions Architect.
+ * naturally and unhurriedly like a human Senior Solutions Architect.
  */
 function polishSeniorSaScript(rawText, lang = 'en') {
   if (!rawText) return '';
@@ -115,6 +121,8 @@ function polishSeniorSaScript(rawText, lang = 'en') {
       .replace(/\bO\(log\s*N\)/gi, 'O log N')
       .replace(/\bepoll_wait\(\)/g, 'e-poll wait')
       .replace(/\bepoll\b/gi, 'e-poll')
+      .replace(/\bsendfile\(\)/gi, 'send-file')
+      .replace(/\bmmap\(\)/gi, 'M-map')
       .replace(/\bB\+Tree\b/gi, 'B-plus tree')
       .replace(/\bSeq Scan\b/gi, 'quét tuần tự')
       .replace(/\bI\/O\b/gi, 'I-O')
@@ -122,6 +130,7 @@ function polishSeniorSaScript(rawText, lang = 'en') {
       .replace(/\bfork\(\)/g, 'hàm fork')
       .replace(/\bBGSAVE\b/g, 'background save')
       .replace(/\bCOW\b/g, 'copy on write')
+      .replace(/\s+—\s+/g, '... ')
       .replace(/\s+/g, ' ');
   }
 
@@ -131,6 +140,11 @@ function polishSeniorSaScript(rawText, lang = 'en') {
     .replace(/(\d+(?:\.\d+)?)\s*ms\b/gi, '$1 milliseconds')
     .replace(/(\d+)K\+\s*QPS\b/gi, 'over $1 thousand queries per second')
     .replace(/(\d+),000\+\s*QPS\b/gi, 'over $1 thousand queries per second')
+    .replace(/(\d+)M\+\s*(?:msgs\/s|msgs\/sec|messages\/sec)\b/gi, 'over $1 million messages per second')
+    .replace(/(\d+(?:\.\d+)?)\s*GB\/s\b/gi, '$1 gigabytes per second')
+    .replace(/(\d+(?:\.\d+)?)\s*MB\/s\b/gi, '$1 megabytes per second')
+    .replace(/(\d+(?:\.\d+)?)\s*KB\/s\b/gi, '$1 kilobytes per second')
+    .replace(/(\d+(?:\.\d+)?)\s*Gbps\b/gi, '$1 gigabits per second')
     .replace(/\bQPS\b/g, 'queries per second')
     .replace(/\bO\(1\)/g, 'O of 1')
     .replace(/\bO\(log\s*N\)/gi, 'O log N')
@@ -145,6 +159,23 @@ function polishSeniorSaScript(rawText, lang = 'en') {
     .replace(/\bp95\b/gi, 'P ninety-five')
     .replace(/\bepoll_wait\(\)/g, 'e-poll wait')
     .replace(/\bepoll\b/gi, 'e-poll')
+    .replace(/\bsendfile\(\)/gi, 'send-file')
+    .replace(/\bmmap\(\)/gi, 'M-map')
+    .replace(/\bmmap\b/gi, 'M-map')
+    .replace(/\bPageCache\b/gi, 'page cache')
+    .replace(/\bZero-Copy\b/gi, 'zero copy')
+    .replace(/\bDMA\b/g, 'D-M-A')
+    .replace(/\bNIC\b/g, 'network card')
+    .replace(/\bISR\b/g, 'I-S-R')
+    .replace(/\backs=all\b/gi, 'acks equals all')
+    .replace(/\backs=1\b/gi, 'acks equals one')
+    .replace(/\blinger\.ms\b/gi, 'linger milliseconds')
+    .replace(/\bbatch\.size\b/gi, 'batch size')
+    .replace(/\bmin\.insync\.replicas\b/gi, 'min in-sync replicas')
+    .replace(/\bpdflush\b/gi, 'P-D flush')
+    .replace(/\bCRC32\b/gi, 'C-R-C thirty-two')
+    .replace(/\bLZ4\b/gi, 'L-Z four')
+    .replace(/\bZstd\b/gi, 'Z-standard')
     .replace(/\bkqueue\b/gi, 'k-queue')
     .replace(/\bUNLINK\b/g, 'unlink')
     .replace(/\bOOM\b/g, 'O-O-M')
@@ -174,8 +205,23 @@ function polishSeniorSaScript(rawText, lang = 'en') {
     .replace(/\bMVCC\b/g, 'M-V-C-C')
     .replace(/\bWAL\b/g, 'write-ahead log')
     .replace(/;\s+/g, ', ')
-    .replace(/\s+—\s+/g, ', ')
+    .replace(/\s+—\s+/g, '... ')
     .replace(/\s+/g, ' ');
+}
+
+/**
+ * Resolves the Edge-TTS percentage rate string (e.g. "-10%") from options or persona defaults.
+ */
+function resolveEdgeRate(opts = {}, persona = SENIOR_SA_PERSONAS['senior-sa']) {
+  if (opts.rate && typeof opts.rate === 'string') {
+    const r = opts.rate.trim();
+    return r.endsWith('%') ? (r.startsWith('+') || r.startsWith('-') ? r : `+${r}`) : `${r}%`;
+  }
+  if (opts.speed !== undefined && Number.isFinite(Number(opts.speed))) {
+    const pct = Math.round((Number(opts.speed) - 1.0) * 100);
+    return `${pct >= 0 ? '+' : ''}${pct}%`;
+  }
+  return persona.rate || '-10%';
 }
 
 function getConnectionConfig(opts = {}) {
@@ -523,7 +569,7 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
       neuralVoice = lang === 'vi' ? 'vi-VN-NamMinhNeural' : 'en-US-AndrewMultilingualNeural';
     }
 
-    const rate = opts.rate || (lang === 'vi' ? '+0%' : '+0%');
+    const rate = resolveEdgeRate(opts, persona);
     const tmpMp3 = `${outWavPath}.edge.mp3`;
 
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -541,11 +587,12 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
         });
 
         if (fs.existsSync(tmpMp3) && fs.statSync(tmpMp3).size > 1000) {
-          // Single-pass transparent studio condenser EQ (zero multi-stage compressor/loudnorm pumping)
+          // Single-pass warm studio condenser EQ + gentle sibilance roll-off (easy on the ears, zero pumping)
           const filters = [
             'highpass=f=70',
-            'equalizer=f=135:t=q:w=1.1:g=1.2',
-            'equalizer=f=360:t=q:w=1.6:g=-1.6'
+            'equalizer=f=135:t=q:w=1.1:g=1.4',
+            'equalizer=f=360:t=q:w=1.6:g=-1.6',
+            'equalizer=f=6400:t=q:w=1.5:g=-1.2'
           ];
           execFileSync(ffmpeg, [
             '-y',
@@ -557,7 +604,7 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
             outWavPath
           ], { stdio: 'ignore' });
 
-          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice})`, voiceId: neuralVoice };
+          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice}, rate=${rate})`, voiceId: neuralVoice, rate };
         }
       } catch {
         // Retry on transient WebSocket hiccup
@@ -573,7 +620,7 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
   if (process.platform === 'darwin' && fs.existsSync('/usr/bin/say')) {
     const tmpAiff = `${outWavPath}.raw.aiff`;
     const macVoice = lang === 'vi' ? 'Linh' : (opts.macVoice || 'Samantha');
-    const rateWpm = lang === 'vi' ? '175' : '172';
+    const rateWpm = lang === 'vi' ? '158' : '155';
     try {
       execFileSync('/usr/bin/say', ['-v', macVoice, '-r', rateWpm, '-o', tmpAiff, polishedText], {
         stdio: 'ignore',
@@ -589,7 +636,7 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
         '-c:a', 'pcm_s16le',
         outWavPath
       ], { stdio: 'ignore' });
-      return { path: outWavPath, engine: `macos-say-mastered (${macVoice})`, voiceId: macVoice };
+      return { path: outWavPath, engine: `macos-say-mastered (${macVoice}, ${rateWpm}wpm)`, voiceId: macVoice };
     } finally {
       if (fs.existsSync(tmpAiff)) fs.unlinkSync(tmpAiff);
     }
@@ -622,7 +669,7 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
       neuralVoice = lang === 'vi' ? 'vi-VN-NamMinhNeural' : 'en-US-AndrewMultilingualNeural';
     }
 
-    const rate = opts.rate || (lang === 'vi' ? '+0%' : '+0%');
+    const rate = resolveEdgeRate(opts, persona);
     const tmpMp3 = `${outWavPath}.edge.mp3`;
 
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -639,8 +686,9 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
         if (fs.existsSync(tmpMp3) && fs.statSync(tmpMp3).size > 1000) {
           const filters = [
             'highpass=f=70',
-            'equalizer=f=135:t=q:w=1.1:g=1.2',
-            'equalizer=f=360:t=q:w=1.6:g=-1.6'
+            'equalizer=f=135:t=q:w=1.1:g=1.4',
+            'equalizer=f=360:t=q:w=1.6:g=-1.6',
+            'equalizer=f=6400:t=q:w=1.5:g=-1.2'
           ];
           await execFileAsync(ffmpeg, [
             '-y',
@@ -652,7 +700,7 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
             outWavPath
           ]);
 
-          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice})`, voiceId: neuralVoice };
+          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice}, rate=${rate})`, voiceId: neuralVoice, rate };
         }
       } catch {
         // Retry on transient WebSocket drop
@@ -669,18 +717,25 @@ async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
 
 /**
  * Fits a synthesized speech WAV clip into its target scene/beat duration window (`slotSeconds`)
- * without re-compressing or degrading the neural audio if it already fits.
+ * without rushing the speaker. Caps max tempo adjustment at 1.04x (4% max) so the voice
+ * always retains its calm, natural, easy-to-listen Senior SA cadence.
  */
-function fitAndMasterClip(inWavPath, outWavPath, slotSeconds) {
+function fitAndMasterClip(inWavPath, outWavPath, slotSeconds, opts = {}) {
   const ffmpeg = findFfmpegExecutable();
   const actualDur = getAudioDurationSec(inWavPath);
+  const maxTempo = Number.isFinite(Number(opts.maxTempo)) ? Number(opts.maxTempo) : 1.04;
 
-  if (!slotSeconds || actualDur <= slotSeconds * 1.01) {
+  if (!slotSeconds || actualDur <= slotSeconds * 1.02 || maxTempo <= 1.001) {
     fs.copyFileSync(inWavPath, outWavPath);
-    return actualDur;
+    return { durationSec: actualDur, rawDurationSec: actualDur, tempoApplied: 1.0 };
   }
 
-  const ratio = Math.min(1.22, Math.max(1.0, actualDur / slotSeconds));
+  const ratio = Math.min(maxTempo, Math.max(1.0, actualDur / slotSeconds));
+  if (ratio <= 1.01) {
+    fs.copyFileSync(inWavPath, outWavPath);
+    return { durationSec: actualDur, rawDurationSec: actualDur, tempoApplied: 1.0 };
+  }
+
   execFileSync(ffmpeg, [
     '-y',
     '-i', inWavPath,
@@ -691,22 +746,28 @@ function fitAndMasterClip(inWavPath, outWavPath, slotSeconds) {
     outWavPath
   ], { stdio: 'ignore' });
 
-  return getAudioDurationSec(outWavPath);
+  return {
+    durationSec: getAudioDurationSec(outWavPath),
+    rawDurationSec: actualDur,
+    tempoApplied: Number(ratio.toFixed(3))
+  };
 }
 
 /**
  * Synthesizes a full-length, scene- and beat-synchronized 48kHz stereo narration track
- * for a multi-scene video project.
+ * for a multi-scene video project with calm, unhurried Senior SA pacing and guaranteed
+ * inter-beat breathing pauses.
  *
  * @param {Array<{start:number, duration:number, text:string, leadIn?:number, persona?:string, lang?:string}>} segments
  * @param {number} totalDurationSec
  * @param {string} outWavPath
- * @param {object} opts - { url, persona, voice, lang, allowFallback }
+ * @param {object} opts - { url, persona, voice, lang, rate, speed, maxTempo, minPauseSec, allowFallback }
  */
 async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavPath, opts = {}) {
   const status = await checkStatus(opts);
   const useVoiceStudio = status.running;
   const allowFallback = opts.allowFallback !== false;
+  const minPauseSec = Number.isFinite(Number(opts.minPauseSec)) ? Number(opts.minPauseSec) : 0.45;
 
   if (!useVoiceStudio && !allowFallback) {
     throw new Error(
@@ -740,7 +801,9 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
         const segOpts = {
           ...opts,
           persona: seg.persona || opts.persona || 'senior-sa',
-          lang: seg.lang || opts.lang
+          lang: seg.lang || opts.lang,
+          rate: seg.rate || opts.rate,
+          speed: seg.speed !== undefined ? seg.speed : opts.speed
         };
 
         let synthInfo;
@@ -752,16 +815,50 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
         activeEngine = synthInfo.engine;
 
         const leadIn = seg.leadIn !== undefined ? seg.leadIn : 0.25;
-        const slotSeconds = Math.max(1.5, (seg.duration || 15) - leadIn - 0.2);
-        const finalDur = fitAndMasterClip(rawClip, fitClip, slotSeconds);
+        const requestedStartSec = (seg.start || 0) + leadIn;
+        const nextTask = validTasks[outIdx + 1];
+        const nextStartSec = nextTask
+          ? (nextTask.seg.start || 0) + (nextTask.seg.leadIn !== undefined ? nextTask.seg.leadIn : 0.15)
+          : totalDurationSec;
+
+        // True available window up to the next beat minus a comfortable breathing pause
+        const availableSlotSec = Math.max(
+          2.0,
+          Math.max(seg.duration || 14, nextStartSec - (seg.start || 0)) - leadIn - minPauseSec
+        );
+        const fitRes = fitAndMasterClip(rawClip, fitClip, availableSlotSec, opts);
+        const wordCount = text.split(/\s+/).filter(Boolean).length;
+        const wpm = fitRes.durationSec > 0 ? Math.round((wordCount / fitRes.durationSec) * 60) : 0;
 
         preparedClips[outIdx] = {
           path: fitClip,
-          startMs: Math.max(0, Math.round(((seg.start || 0) + leadIn) * 1000)),
-          durationSec: finalDur
+          requestedStartSec,
+          startMs: Math.max(0, Math.round(requestedStartSec * 1000)),
+          durationSec: fitRes.durationSec,
+          rawDurationSec: fitRes.rawDurationSec,
+          tempoApplied: fitRes.tempoApplied,
+          wordCount,
+          wpm
         };
       }));
     }
+
+    // Sequential non-overlapping pass: guarantee at least minPauseSec breathing silence between consecutive clips
+    let audioCursorSec = 0;
+    let totalWords = 0;
+    let totalSpeechSec = 0;
+    let maxTempoApplied = 1.0;
+
+    preparedClips.forEach((clip) => {
+      const safeStartSec = Math.max(clip.requestedStartSec, audioCursorSec);
+      clip.startMs = Math.max(0, Math.round(safeStartSec * 1000));
+      audioCursorSec = safeStartSec + clip.durationSec + minPauseSec;
+      totalWords += clip.wordCount;
+      totalSpeechSec += clip.durationSec;
+      if (clip.tempoApplied > maxTempoApplied) maxTempoApplied = clip.tempoApplied;
+    });
+
+    const avgWpm = totalSpeechSec > 0 ? Math.round((totalWords / totalSpeechSec) * 60) : 0;
 
     // Assemble all scene/beat clips onto a master 48kHz stereo timeline of length totalDurationSec
     const inputs = ['-f', 'lavfi', '-t', String(totalDurationSec), '-i', 'anullsrc=r=48000:cl=stereo'];
@@ -798,7 +895,11 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
       engine: activeEngine,
       voicestudioConnected: useVoiceStudio,
       clipCount: preparedClips.length,
-      totalDurationSec
+      totalDurationSec,
+      avgWpm,
+      totalWords,
+      totalSpeechSec: Number(totalSpeechSec.toFixed(1)),
+      maxTempoApplied
     };
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -809,10 +910,13 @@ module.exports = {
   DEFAULT_VOICESTUDIO_URL,
   SENIOR_SA_PERSONAS,
   polishSeniorSaScript,
+  resolveEdgeRate,
   getConnectionConfig,
   checkStatus,
   ensureSeniorSaProfile,
   synthesizeClipWithVoiceStudio,
   synthesizeClipLocalFallback,
+  synthesizeClipLocalFallbackAsync,
+  fitAndMasterClip,
   synthesizeSceneNarrationTrack
 };
