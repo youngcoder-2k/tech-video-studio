@@ -2,7 +2,7 @@
   "name": "tech-video-studio",
   "displayName": "Tech Video Studio",
   "description": "Produce high-retention 1080p60 YouTube technical & system design explainer videos with diverse visual metaphors, mathematical symmetry, multimodal QA, and deterministic FFmpeg rendering.",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "logo": "assets/logo.svg",
   "repository": "https://github.com/youngcoder-2k/tech-video-studio",
   "suggestedPrompts": [

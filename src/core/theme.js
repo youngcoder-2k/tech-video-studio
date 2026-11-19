@@ -553,6 +553,42 @@ function drawSpeakerWave(ctx, timeSec = 0, options = {}) {
   ctx.restore();
 }
 
+/**
+ * Sequential Beat Stage Manager — Ensures only ONE focal visual act is on screen at any moment!
+ * Smoothly glides & fades the active beat in at `startSec`, animates its `progress` (0 -> 1),
+ * and cleanly fades it out at `endSec` before the next beat enters.
+ */
+function withBeat(ctx, localT, startSec, endSec, drawFn, opts = {}) {
+  if (localT < startSec || localT > endSec) return;
+  const fadeIn = opts.fadeIn !== undefined ? opts.fadeIn : 0.45;
+  const fadeOut = opts.fadeOut !== undefined ? opts.fadeOut : 0.45;
+  const drawDur = opts.drawDuration !== undefined ? opts.drawDuration : 1.0;
+
+  const elapsed = localT - startSec;
+  const remaining = endSec - localT;
+
+  const rawIn = fadeIn > 0 ? Math.min(1, elapsed / fadeIn) : 1;
+  const rawOut = (opts.noFadeOut || fadeOut <= 0) ? 1 : Math.min(1, remaining / fadeOut);
+
+  // Smooth cubic ease out
+  const easeIn = 1 - ((1 - rawIn) ** 3);
+  const easeOut = 1 - ((1 - rawOut) ** 2);
+  const alpha = Math.max(0, Math.min(1, Math.min(easeIn, easeOut)));
+  if (alpha <= 0.01) return;
+
+  const rawProg = Math.min(1, elapsed / Math.max(0.1, drawDur));
+  const progress = 1 - ((1 - rawProg) ** 2.5);
+  const offsetY = (1 - easeIn) * (opts.slideY !== undefined ? opts.slideY : 18);
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  if (offsetY !== 0) {
+    ctx.translate(0, offsetY);
+  }
+  drawFn({ alpha, progress, beatT: elapsed });
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
   GLASS_TINTS,
@@ -564,5 +600,6 @@ module.exports = {
   drawTakeawayPill,
   drawSpotlightMask,
   drawCaptionBar,
-  drawSpeakerWave
+  drawSpeakerWave,
+  withBeat
 };

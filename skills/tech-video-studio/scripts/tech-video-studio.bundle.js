@@ -570,6 +570,42 @@ function drawSpeakerWave(ctx, timeSec = 0, options = {}) {
   ctx.restore();
 }
 
+/**
+ * Sequential Beat Stage Manager — Ensures only ONE focal visual act is on screen at any moment!
+ * Smoothly glides & fades the active beat in at `startSec`, animates its `progress` (0 -> 1),
+ * and cleanly fades it out at `endSec` before the next beat enters.
+ */
+function withBeat(ctx, localT, startSec, endSec, drawFn, opts = {}) {
+  if (localT < startSec || localT > endSec) return;
+  const fadeIn = opts.fadeIn !== undefined ? opts.fadeIn : 0.45;
+  const fadeOut = opts.fadeOut !== undefined ? opts.fadeOut : 0.45;
+  const drawDur = opts.drawDuration !== undefined ? opts.drawDuration : 1.0;
+
+  const elapsed = localT - startSec;
+  const remaining = endSec - localT;
+
+  const rawIn = fadeIn > 0 ? Math.min(1, elapsed / fadeIn) : 1;
+  const rawOut = (opts.noFadeOut || fadeOut <= 0) ? 1 : Math.min(1, remaining / fadeOut);
+
+  // Smooth cubic ease out
+  const easeIn = 1 - ((1 - rawIn) ** 3);
+  const easeOut = 1 - ((1 - rawOut) ** 2);
+  const alpha = Math.max(0, Math.min(1, Math.min(easeIn, easeOut)));
+  if (alpha <= 0.01) return;
+
+  const rawProg = Math.min(1, elapsed / Math.max(0.1, drawDur));
+  const progress = 1 - ((1 - rawProg) ** 2.5);
+  const offsetY = (1 - easeIn) * (opts.slideY !== undefined ? opts.slideY : 18);
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  if (offsetY !== 0) {
+    ctx.translate(0, offsetY);
+  }
+  drawFn({ alpha, progress, beatT: elapsed });
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
   GLASS_TINTS,
@@ -581,7 +617,8 @@ module.exports = {
   drawTakeawayPill,
   drawSpotlightMask,
   drawCaptionBar,
-  drawSpeakerWave
+  drawSpeakerWave,
+  withBeat
 };
 
   },
@@ -4331,21 +4368,12 @@ function createVideo(config) {
       });
     }
 
-    // Collect scene narration (explicit sc.narration or auto-joined from sc.captions)
-    let sceneNarrationText = '';
+    // Collect scene narration: if sc.captions has multiple timed beats, push each beat
+    // as its own time-aligned narration segment so voiceover locks to visual beat transitions
+    // with natural human breathing pauses between beats.
     let scenePersona = config.persona || 'senior-sa';
     let sceneLang = config.lang || 'en';
-    if (typeof sc.narration === 'string') {
-      sceneNarrationText = sc.narration;
-    } else if (sc.narration && typeof sc.narration === 'object') {
-      sceneNarrationText = sc.narration.text || '';
-      if (sc.narration.persona) scenePersona = sc.narration.persona;
-      if (sc.narration.lang) sceneLang = sc.narration.lang;
-    } else if (Array.isArray(sc.captions) && sc.captions.length > 0) {
-      sceneNarrationText = sc.captions.map((c) => c.text).filter(Boolean).join(' ');
-    }
-
-    if (sceneNarrationText.trim()) {
+    if (typeof sc.narration === 'string' && sc.narration.trim()) {
       narrationSegments.push({
         sceneIndex: idx,
         sceneId: sc.id || `scene-${idx + 1}`,
@@ -4353,9 +4381,45 @@ function createVideo(config) {
         start,
         end,
         duration,
+        leadIn: 0.25,
         persona: scenePersona,
         lang: sceneLang,
-        text: sceneNarrationText.trim()
+        text: sc.narration.trim()
+      });
+    } else if (sc.narration && typeof sc.narration === 'object' && sc.narration.text) {
+      if (sc.narration.persona) scenePersona = sc.narration.persona;
+      if (sc.narration.lang) sceneLang = sc.narration.lang;
+      narrationSegments.push({
+        sceneIndex: idx,
+        sceneId: sc.id || `scene-${idx + 1}`,
+        chapter: sc.chapter || `0${idx + 1}. Scene ${idx + 1}`,
+        start,
+        end,
+        duration,
+        leadIn: 0.25,
+        persona: scenePersona,
+        lang: sceneLang,
+        text: sc.narration.text.trim()
+      });
+    } else if (Array.isArray(sc.captions) && sc.captions.length > 0) {
+      sc.captions.forEach((cap, capIdx) => {
+        const capText = (cap.text || '').trim();
+        if (!capText) return;
+        const relStart = cap.start !== undefined ? cap.start : 0;
+        const relEnd = cap.end !== undefined ? cap.end : duration;
+        narrationSegments.push({
+          sceneIndex: idx,
+          beatIndex: capIdx,
+          sceneId: `${sc.id || `scene-${idx + 1}`}-beat-${capIdx + 1}`,
+          chapter: sc.chapter || `0${idx + 1}. Scene ${idx + 1}`,
+          start: start + relStart,
+          end: start + relEnd,
+          duration: Math.max(1.8, relEnd - relStart),
+          leadIn: capIdx === 0 ? 0.25 : 0.15,
+          persona: cap.persona || scenePersona,
+          lang: cap.lang || sceneLang,
+          text: capText
+        });
       });
     }
 
@@ -4739,7 +4803,7 @@ const Runner = require('./core/runner');
 const Illustrations = Object.assign({}, Primitives, Archetypes);
 
 const TechVideoStudio = {
-  version: '2.3.0',
+  version: '2.4.0',
   Theme,
   Camera,
   Effects,

@@ -85,21 +85,12 @@ function createVideo(config) {
       });
     }
 
-    // Collect scene narration (explicit sc.narration or auto-joined from sc.captions)
-    let sceneNarrationText = '';
+    // Collect scene narration: if sc.captions has multiple timed beats, push each beat
+    // as its own time-aligned narration segment so voiceover locks to visual beat transitions
+    // with natural human breathing pauses between beats.
     let scenePersona = config.persona || 'senior-sa';
     let sceneLang = config.lang || 'en';
-    if (typeof sc.narration === 'string') {
-      sceneNarrationText = sc.narration;
-    } else if (sc.narration && typeof sc.narration === 'object') {
-      sceneNarrationText = sc.narration.text || '';
-      if (sc.narration.persona) scenePersona = sc.narration.persona;
-      if (sc.narration.lang) sceneLang = sc.narration.lang;
-    } else if (Array.isArray(sc.captions) && sc.captions.length > 0) {
-      sceneNarrationText = sc.captions.map((c) => c.text).filter(Boolean).join(' ');
-    }
-
-    if (sceneNarrationText.trim()) {
+    if (typeof sc.narration === 'string' && sc.narration.trim()) {
       narrationSegments.push({
         sceneIndex: idx,
         sceneId: sc.id || `scene-${idx + 1}`,
@@ -107,9 +98,45 @@ function createVideo(config) {
         start,
         end,
         duration,
+        leadIn: 0.25,
         persona: scenePersona,
         lang: sceneLang,
-        text: sceneNarrationText.trim()
+        text: sc.narration.trim()
+      });
+    } else if (sc.narration && typeof sc.narration === 'object' && sc.narration.text) {
+      if (sc.narration.persona) scenePersona = sc.narration.persona;
+      if (sc.narration.lang) sceneLang = sc.narration.lang;
+      narrationSegments.push({
+        sceneIndex: idx,
+        sceneId: sc.id || `scene-${idx + 1}`,
+        chapter: sc.chapter || `0${idx + 1}. Scene ${idx + 1}`,
+        start,
+        end,
+        duration,
+        leadIn: 0.25,
+        persona: scenePersona,
+        lang: sceneLang,
+        text: sc.narration.text.trim()
+      });
+    } else if (Array.isArray(sc.captions) && sc.captions.length > 0) {
+      sc.captions.forEach((cap, capIdx) => {
+        const capText = (cap.text || '').trim();
+        if (!capText) return;
+        const relStart = cap.start !== undefined ? cap.start : 0;
+        const relEnd = cap.end !== undefined ? cap.end : duration;
+        narrationSegments.push({
+          sceneIndex: idx,
+          beatIndex: capIdx,
+          sceneId: `${sc.id || `scene-${idx + 1}`}-beat-${capIdx + 1}`,
+          chapter: sc.chapter || `0${idx + 1}. Scene ${idx + 1}`,
+          start: start + relStart,
+          end: start + relEnd,
+          duration: Math.max(1.8, relEnd - relStart),
+          leadIn: capIdx === 0 ? 0.25 : 0.15,
+          persona: cap.persona || scenePersona,
+          lang: cap.lang || sceneLang,
+          text: capText
+        });
       });
     }
 

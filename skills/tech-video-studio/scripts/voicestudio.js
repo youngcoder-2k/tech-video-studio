@@ -20,7 +20,10 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const { execFile, execFileSync } = require('child_process');
+const { promisify } = require('util');
+
+const execFileAsync = promisify(execFile);
 
 const DEFAULT_VOICESTUDIO_URL = 'http://localhost:3900';
 
@@ -164,6 +167,14 @@ function polishSeniorSaScript(rawText, lang = 'en') {
     .replace(/\bgRPC\b/g, 'g-R-P-C')
     .replace(/\bNVMe\b/g, 'N-V-M-e')
     .replace(/\bDRAM\b/g, 'D-RAM')
+    .replace(/\bCRC16\b/gi, 'C-R-C sixteen')
+    .replace(/\bLRU\b/g, 'L-R-U')
+    .replace(/\bLFU\b/g, 'L-F-U')
+    .replace(/\bTTL\b/g, 'T-T-L')
+    .replace(/\bMVCC\b/g, 'M-V-C-C')
+    .replace(/\bWAL\b/g, 'write-ahead log')
+    .replace(/;\s+/g, ', ')
+    .replace(/\s+—\s+/g, ', ')
     .replace(/\s+/g, ' ');
 }
 
@@ -512,48 +523,48 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
       neuralVoice = lang === 'vi' ? 'vi-VN-NamMinhNeural' : 'en-US-AndrewMultilingualNeural';
     }
 
-    const rate = opts.rate || (lang === 'vi' ? '+2%' : '+0%');
+    const rate = opts.rate || (lang === 'vi' ? '+0%' : '+0%');
     const tmpMp3 = `${outWavPath}.edge.mp3`;
 
-    try {
-      const fullArgs = [
-        ...edgeCmd.args,
-        '--voice', neuralVoice,
-        '--rate', rate,
-        '--text', polishedText,
-        '--write-media', tmpMp3
-      ];
-      execFileSync(edgeCmd.bin, fullArgs, {
-        stdio: 'ignore',
-        timeout: 60000
-      });
-
-      if (fs.existsSync(tmpMp3) && fs.statSync(tmpMp3).size > 1000) {
-        // Broadcast Studio EQ & Dynamics Mastering (Warmth + Clarity + Broadcast Loudness)
-        const filters = [
-          'highpass=f=80',
-          'equalizer=f=160:t=q:w=1.2:g=1.6',
-          'equalizer=f=3200:t=q:w=1.0:g=1.4',
-          'acompressor=threshold=-16dB:ratio=2.2:attack=20:release=150',
-          'loudnorm=I=-14:LRA=7:TP=-1.5'
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const fullArgs = [
+          ...edgeCmd.args,
+          `--voice=${neuralVoice}`,
+          `--rate=${rate}`,
+          `--text=${polishedText}`,
+          `--write-media=${tmpMp3}`
         ];
-        execFileSync(ffmpeg, [
-          '-y',
-          '-i', tmpMp3,
-          '-af', filters.join(','),
-          '-ar', '48000',
-          '-ac', '2',
-          '-c:a', 'pcm_s16le',
-          outWavPath
-        ], { stdio: 'ignore' });
+        execFileSync(edgeCmd.bin, fullArgs, {
+          stdio: 'ignore',
+          timeout: 60000
+        });
 
-        return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice})`, voiceId: neuralVoice };
-      }
-    } catch {
-      // Fall through to system voice if edge-tts had a transient issue
-    } finally {
-      if (fs.existsSync(tmpMp3)) {
-        try { fs.unlinkSync(tmpMp3); } catch {}
+        if (fs.existsSync(tmpMp3) && fs.statSync(tmpMp3).size > 1000) {
+          // Single-pass transparent studio condenser EQ (zero multi-stage compressor/loudnorm pumping)
+          const filters = [
+            'highpass=f=70',
+            'equalizer=f=135:t=q:w=1.1:g=1.2',
+            'equalizer=f=360:t=q:w=1.6:g=-1.6'
+          ];
+          execFileSync(ffmpeg, [
+            '-y',
+            '-i', tmpMp3,
+            '-af', filters.join(','),
+            '-ar', '48000',
+            '-ac', '2',
+            '-c:a', 'pcm_s16le',
+            outWavPath
+          ], { stdio: 'ignore' });
+
+          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice})`, voiceId: neuralVoice };
+        }
+      } catch {
+        // Retry on transient WebSocket hiccup
+      } finally {
+        if (fs.existsSync(tmpMp3)) {
+          try { fs.unlinkSync(tmpMp3); } catch {}
+        }
       }
     }
   }
@@ -572,7 +583,7 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
       execFileSync(ffmpeg, [
         '-y',
         '-i', tmpAiff,
-        '-af', 'highpass=f=75,equalizer=f=135:t=q:w=1.1:g=3.0,equalizer=f=3400:t=q:w=1.4:g=1.5,acompressor=threshold=-19dB:ratio=2.6:attack=12:release=160,loudnorm=I=-14:LRA=7:TP=-1.5',
+        '-af', 'highpass=f=75,equalizer=f=135:t=q:w=1.1:g=3.0,equalizer=f=3400:t=q:w=1.4:g=1.5,acompressor=threshold=-19dB:ratio=2.6:attack=12:release=160',
         '-ar', '48000',
         '-ac', '2',
         '-c:a', 'pcm_s16le',
@@ -590,30 +601,90 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
 }
 
 /**
- * Fits a synthesized speech WAV clip into its target scene duration window (`slotSeconds`)
- * and normalizes it to 48kHz stereo PCM WAV.
+ * Async version of synthesizeClipLocalFallback for parallel batch synthesis.
+ */
+async function synthesizeClipLocalFallbackAsync(text, outWavPath, opts = {}) {
+  const personaKey = opts.persona || 'senior-sa';
+  const persona = SENIOR_SA_PERSONAS[personaKey] || SENIOR_SA_PERSONAS['senior-sa'];
+  const lang = opts.lang || persona.language || 'en';
+  const polishedText = polishSeniorSaScript(text, lang);
+  const ffmpeg = findFfmpegExecutable();
+
+  const edgeCmd = findEdgeTtsCommand();
+  if (edgeCmd) {
+    let neuralVoice = opts.voice;
+    if (!neuralVoice || typeof neuralVoice !== 'string') {
+      neuralVoice = persona.neuralVoice;
+    } else if (SENIOR_SA_PERSONAS[neuralVoice] && SENIOR_SA_PERSONAS[neuralVoice].neuralVoice) {
+      neuralVoice = SENIOR_SA_PERSONAS[neuralVoice].neuralVoice;
+    }
+    if (!neuralVoice) {
+      neuralVoice = lang === 'vi' ? 'vi-VN-NamMinhNeural' : 'en-US-AndrewMultilingualNeural';
+    }
+
+    const rate = opts.rate || (lang === 'vi' ? '+0%' : '+0%');
+    const tmpMp3 = `${outWavPath}.edge.mp3`;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const fullArgs = [
+          ...edgeCmd.args,
+          `--voice=${neuralVoice}`,
+          `--rate=${rate}`,
+          `--text=${polishedText}`,
+          `--write-media=${tmpMp3}`
+        ];
+        await execFileAsync(edgeCmd.bin, fullArgs, { timeout: 60000 });
+
+        if (fs.existsSync(tmpMp3) && fs.statSync(tmpMp3).size > 1000) {
+          const filters = [
+            'highpass=f=70',
+            'equalizer=f=135:t=q:w=1.1:g=1.2',
+            'equalizer=f=360:t=q:w=1.6:g=-1.6'
+          ];
+          await execFileAsync(ffmpeg, [
+            '-y',
+            '-i', tmpMp3,
+            '-af', filters.join(','),
+            '-ar', '48000',
+            '-ac', '2',
+            '-c:a', 'pcm_s16le',
+            outWavPath
+          ]);
+
+          return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice})`, voiceId: neuralVoice };
+        }
+      } catch {
+        // Retry on transient WebSocket drop
+      } finally {
+        if (fs.existsSync(tmpMp3)) {
+          try { fs.unlinkSync(tmpMp3); } catch {}
+        }
+      }
+    }
+  }
+
+  return synthesizeClipLocalFallback(text, outWavPath, opts);
+}
+
+/**
+ * Fits a synthesized speech WAV clip into its target scene/beat duration window (`slotSeconds`)
+ * without re-compressing or degrading the neural audio if it already fits.
  */
 function fitAndMasterClip(inWavPath, outWavPath, slotSeconds) {
   const ffmpeg = findFfmpegExecutable();
   const actualDur = getAudioDurationSec(inWavPath);
-  const filters = [
-    'highpass=f=75',
-    'equalizer=f=130:t=q:w=1.2:g=2.2',
-    'acompressor=threshold=-18dB:ratio=2.5:attack=15:release=180'
-  ];
 
-  // If the speech clip is longer than the scene slot, speed it up smoothly (up to 1.28x max)
-  if (slotSeconds > 0 && actualDur > slotSeconds) {
-    const ratio = Math.min(1.28, Math.max(1.0, actualDur / slotSeconds));
-    if (ratio > 1.01) {
-      filters.push(`atempo=${ratio.toFixed(3)}`);
-    }
+  if (!slotSeconds || actualDur <= slotSeconds * 1.01) {
+    fs.copyFileSync(inWavPath, outWavPath);
+    return actualDur;
   }
 
+  const ratio = Math.min(1.22, Math.max(1.0, actualDur / slotSeconds));
   execFileSync(ffmpeg, [
     '-y',
     '-i', inWavPath,
-    '-af', filters.join(','),
+    '-af', `atempo=${ratio.toFixed(3)}`,
     '-ar', '48000',
     '-ac', '2',
     '-c:a', 'pcm_s16le',
@@ -624,10 +695,10 @@ function fitAndMasterClip(inWavPath, outWavPath, slotSeconds) {
 }
 
 /**
- * Synthesizes a full-length, scene-synchronized 48kHz stereo narration track
+ * Synthesizes a full-length, scene- and beat-synchronized 48kHz stereo narration track
  * for a multi-scene video project.
  *
- * @param {Array<{start:number, duration:number, text:string, persona?:string, lang?:string}>} segments
+ * @param {Array<{start:number, duration:number, text:string, leadIn?:number, persona?:string, lang?:string}>} segments
  * @param {number} totalDurationSec
  * @param {string} outWavPath
  * @param {object} opts - { url, persona, voice, lang, allowFallback }
@@ -646,47 +717,53 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'techvid-voicestudio-'));
   const ffmpeg = findFfmpegExecutable();
-  const preparedClips = [];
   let activeEngine = 'none';
 
   try {
-    for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i];
-      const text = (seg.text || '').trim();
-      if (!text) continue;
+    const validTasks = segments
+      .map((seg, i) => ({ seg, i, text: (seg.text || '').trim() }))
+      .filter((item) => item.text.length > 0);
 
-      const rawClip = path.join(tmpDir, `seg_${i}_raw.wav`);
-      const fitClip = path.join(tmpDir, `seg_${i}_fit.wav`);
-      const segOpts = {
-        ...opts,
-        persona: seg.persona || opts.persona || 'senior-sa',
-        lang: seg.lang || opts.lang
-      };
-
-      let synthInfo;
-      if (useVoiceStudio) {
-        synthInfo = await synthesizeClipWithVoiceStudio(text, rawClip, segOpts);
-      } else {
-        synthInfo = synthesizeClipLocalFallback(text, rawClip, segOpts);
-      }
-      activeEngine = synthInfo.engine;
-
-      const leadIn = 0.35;
-      const slotSeconds = Math.max(1.5, (seg.duration || 15) - leadIn - 0.35);
-      const finalDur = fitAndMasterClip(rawClip, fitClip, slotSeconds);
-
-      preparedClips.push({
-        path: fitClip,
-        startMs: Math.max(0, Math.round(((seg.start || 0) + leadIn) * 1000)),
-        durationSec: finalDur
-      });
-    }
-
-    if (preparedClips.length === 0) {
+    if (validTasks.length === 0) {
       throw new Error('No narration or caption segments found in video scenes.');
     }
 
-    // Assemble all scene clips onto a master 48kHz stereo timeline of length totalDurationSec
+    const preparedClips = new Array(validTasks.length);
+    const concurrency = 4;
+
+    for (let b = 0; b < validTasks.length; b += concurrency) {
+      const batch = validTasks.slice(b, b + concurrency);
+      await Promise.all(batch.map(async ({ seg, i, text }, batchOffset) => {
+        const outIdx = b + batchOffset;
+        const rawClip = path.join(tmpDir, `seg_${i}_raw.wav`);
+        const fitClip = path.join(tmpDir, `seg_${i}_fit.wav`);
+        const segOpts = {
+          ...opts,
+          persona: seg.persona || opts.persona || 'senior-sa',
+          lang: seg.lang || opts.lang
+        };
+
+        let synthInfo;
+        if (useVoiceStudio) {
+          synthInfo = await synthesizeClipWithVoiceStudio(text, rawClip, segOpts);
+        } else {
+          synthInfo = await synthesizeClipLocalFallbackAsync(text, rawClip, segOpts);
+        }
+        activeEngine = synthInfo.engine;
+
+        const leadIn = seg.leadIn !== undefined ? seg.leadIn : 0.25;
+        const slotSeconds = Math.max(1.5, (seg.duration || 15) - leadIn - 0.2);
+        const finalDur = fitAndMasterClip(rawClip, fitClip, slotSeconds);
+
+        preparedClips[outIdx] = {
+          path: fitClip,
+          startMs: Math.max(0, Math.round(((seg.start || 0) + leadIn) * 1000)),
+          durationSec: finalDur
+        };
+      }));
+    }
+
+    // Assemble all scene/beat clips onto a master 48kHz stereo timeline of length totalDurationSec
     const inputs = ['-f', 'lavfi', '-t', String(totalDurationSec), '-i', 'anullsrc=r=48000:cl=stereo'];
     const delayFilters = [];
     const mixLabels = ['[0:a]'];
@@ -699,9 +776,10 @@ async function synthesizeSceneNarrationTrack(segments, totalDurationSec, outWavP
       mixLabels.push(lbl);
     });
 
+    // Transparent studio gain + brickwall peak protection (no single-pass loudnorm pumping!)
     const filterComplex = [
       ...delayFilters,
-      `${mixLabels.join('')}amix=inputs=${mixLabels.length}:duration=first:dropout_transition=0:normalize=0,loudnorm=I=-14:TP=-1.5:LRA=11[outa]`
+      `${mixLabels.join('')}amix=inputs=${mixLabels.length}:duration=first:dropout_transition=0:normalize=0,volume=1.18,alimiter=limit=0.95:level=false[outa]`
     ].join(';');
 
     execFileSync(ffmpeg, [
