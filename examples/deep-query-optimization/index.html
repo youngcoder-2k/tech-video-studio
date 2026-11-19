@@ -38,9 +38,8 @@
             { time: 8.0, type: 'whoosh' }
           ],
           captions: [
-            { start: 0.4, end: 5.5, text: 'Without an index, querying ten million records triggers a brutal sequential scan across every disk block.' },
-            { start: 6.0, end: 11.5, text: 'A B-plus tree index organizes keys into a balanced hierarchy, slashing disk lookups to just three page reads.' },
-            { start: 12.0, end: 14.8, text: 'This transforms an expensive O of N disk seek into an instantaneous O log N operation.' }
+            { start: 0.5, end: 6.0, text: 'Without an index, querying ten million records forces a brutal sequential scan across every disk block.' },
+            { start: 6.5, end: 13.8, text: 'A B-plus tree index slashes disk lookups to just three page reads, turning an O of N seek into an instantaneous O log N traversal.' }
           ],
           initialState: () => ({
             heapCard: 0,
@@ -200,9 +199,8 @@
             { time: 7.5, type: 'whoosh' }
           ],
           captions: [
-            { start: 0.4, end: 5.5, text: 'A composite index on tenant ID, status, and date sorts records strictly in lexicographical order.' },
-            { start: 6.0, end: 10.5, text: 'Querying on status alone skips the leftmost column, forcing the optimizer to fall back to a full scan.' },
-            { start: 11.0, end: 14.8, text: 'Always structure composite indexes with the highest selectivity leading column to lock into target ranges.' }
+            { start: 0.5, end: 5.8, text: 'A composite index on tenant ID, status, and date sorts records strictly in lexicographical order.' },
+            { start: 6.3, end: 13.8, text: 'Querying status alone skips the leading prefix, forcing a full scan. Always align multi-column indexes with your highest selectivity filters.' }
           ],
           initialState: () => ({
             topIndex: 0,
@@ -395,9 +393,8 @@
             { time: 7.5, type: 'whoosh' }
           ],
           captions: [
-            { start: 0.4, end: 5.5, text: 'Even with an index, fetching non-indexed columns incurs costly random I-O lookups in the table heap.' },
-            { start: 6.0, end: 10.8, text: 'A covering index with an include clause embeds payload columns directly into the leaf nodes.' },
-            { start: 11.2, end: 14.8, text: 'The engine executes an index-only scan, returning query results directly without touching table pages.' }
+            { start: 0.5, end: 6.0, text: 'Even with an index, fetching non-indexed columns incurs expensive random I-O lookups in the table heap.' },
+            { start: 6.5, end: 13.8, text: 'A covering index embeds payload columns inside the leaf nodes, eliminating table reads entirely through an index-only scan.' }
           ],
           initialState: () => ({
             stdIndex: 0,
@@ -553,9 +550,8 @@
             { time: 7.5, type: 'whoosh' }
           ],
           captions: [
-            { start: 0.4, end: 5.5, text: 'For massive multi-gigabyte tables, partitioning by date or region divides the physical data into shards.' },
-            { start: 6.0, end: 10.5, text: 'The optimizer uses declarative partition pruning to discard irrelevant years before disk reads begin.' },
-            { start: 11.0, end: 14.8, text: 'Pairing pruning with join filter pushdown ensures only relevant partitions enter the hash join engine.' }
+            { start: 0.5, end: 5.5, text: 'For massive tables, partitioning by date divides physical storage into independent shards.' },
+            { start: 6.0, end: 13.8, text: 'The optimizer uses declarative partition pruning and filter pushdown to discard irrelevant years at planning, accelerating queries up to forty-eight times.' }
           ],
           initialState: () => ({
             queryCard: 0,

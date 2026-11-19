@@ -30,6 +30,7 @@ const SENIOR_SA_PERSONAS = {
     name: 'Senior Solutions Architect',
     language: 'en',
     speed: 1.0,
+    neuralVoice: 'en-US-AndrewMultilingualNeural',
     description:
       'A calm, authoritative, articulate Senior Solutions Architect in his late 30s explaining distributed systems and cloud architecture. Warm baritone voice, natural conversational pacing, clear studio condenser microphone, subtle emphasis on engineering trade-offs.',
     instruct:
@@ -39,7 +40,8 @@ const SENIOR_SA_PERSONAS = {
     id: 'staff-engineer',
     name: 'Principal Systems Engineer',
     language: 'en',
-    speed: 1.02,
+    speed: 1.0,
+    neuralVoice: 'en-US-ChristopherNeural',
     description:
       'A pragmatic Principal / Staff Systems Engineer explaining low-level kernel, database, and memory internals. Crisp mid-low voice, measured technical precision, zero hype, studio acoustic clarity.',
     instruct:
@@ -49,21 +51,45 @@ const SENIOR_SA_PERSONAS = {
     id: 'tech-storyteller',
     name: 'ByteByteGo System Design Host',
     language: 'en',
-    speed: 1.03,
+    speed: 1.02,
+    neuralVoice: 'en-US-GuyNeural',
     description:
       'An engaging, high-retention technical YouTube explainer host. Articulate, warm, dynamic cadence, smooth transitions between architectural components, broadcast narrator quality.',
     instruct:
       'Engaging technical storyteller cadence. Keep the listener hooked while explaining complex architecture clearly and concisely.'
+  },
+  'approachable': {
+    id: 'approachable',
+    name: 'Approachable Systems Lead',
+    language: 'en',
+    speed: 1.0,
+    neuralVoice: 'en-US-BrianMultilingualNeural',
+    description:
+      'A friendly, approachable Staff Engineer speaking casually to colleagues.',
+    instruct:
+      'Approachable and friendly technical explanation with authentic conversational warmth.'
   },
   'vi-senior-sa': {
     id: 'vi-senior-sa',
     name: 'Senior Solutions Architect (Vietnamese)',
     language: 'vi',
     speed: 1.0,
+    neuralVoice: 'vi-VN-NamMinhNeural',
     description:
       'Nam Kiến trúc sư giải pháp cấp cao (Senior Solutions Architect), giọng trầm ấm, điềm tĩnh, tự nhiên như con người đang phân tích kiến trúc hệ thống, phát âm rõ ràng, nhịp độ vừa phải, thu âm phòng thu chuyên nghiệp.',
     instruct:
       'Thuyết minh tự nhiên, điềm tĩnh và sâu sắc như một Senior Solutions Architect đang giải thích kiến trúc hệ thống cho đội ngũ kỹ sư. Nhấn nhá rõ các nút thắt hiệu năng và trade-off.'
+  },
+  'vi-storyteller': {
+    id: 'vi-storyteller',
+    name: 'Người kể chuyện công nghệ (Tiếng Việt)',
+    language: 'vi',
+    speed: 1.0,
+    neuralVoice: 'vi-VN-HoaiMyNeural',
+    description:
+      'Giọng nữ truyền cảm, tự nhiên, rõ ràng, phù hợp cho video chia sẻ kiến thức công nghệ.',
+    instruct:
+      'Giọng đọc tự nhiên, cuốn hút, phát âm chuẩn xác thuật ngữ kỹ thuật.'
   }
 };
 
@@ -164,6 +190,25 @@ function findFfmpegExecutable() {
 function findFfprobeExecutable() {
   const candidates = ['/opt/homebrew/bin/ffprobe', '/usr/local/bin/ffprobe', '/usr/bin/ffprobe'];
   return candidates.find((p) => fs.existsSync(p)) || 'ffprobe';
+}
+
+function findEdgeTtsCommand() {
+  if (process.env.EDGE_TTS_BIN && fs.existsSync(process.env.EDGE_TTS_BIN)) {
+    return { bin: process.env.EDGE_TTS_BIN, args: [] };
+  }
+  const candidates = ['/opt/homebrew/bin/edge-tts', '/usr/local/bin/edge-tts', '/usr/bin/edge-tts'];
+  const found = candidates.find((p) => fs.existsSync(p));
+  if (found) return { bin: found, args: [] };
+
+  // Fallback: check python3 -m edge_tts
+  const pythonCandidates = ['/opt/homebrew/bin/python3', '/usr/local/bin/python3', '/usr/bin/python3'];
+  const py = pythonCandidates.find((p) => fs.existsSync(p)) || 'python3';
+  try {
+    execFileSync(py, ['-m', 'edge_tts', '--version'], { stdio: 'ignore' });
+    return { bin: py, args: ['-m', 'edge_tts'] };
+  } catch {
+    return null;
+  }
 }
 
 function getAudioDurationSec(filePath) {
@@ -447,6 +492,66 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
   const polishedText = polishSeniorSaScript(text, lang);
   const ffmpeg = findFfmpegExecutable();
 
+  // 1. PRIMARY LOCAL ENGINE: Neural Edge-TTS (Human-grade neural speech synthesis)
+  const edgeCmd = findEdgeTtsCommand();
+  if (edgeCmd) {
+    let neuralVoice = opts.voice;
+    if (!neuralVoice || typeof neuralVoice !== 'string') {
+      neuralVoice = persona.neuralVoice;
+    } else if (SENIOR_SA_PERSONAS[neuralVoice] && SENIOR_SA_PERSONAS[neuralVoice].neuralVoice) {
+      neuralVoice = SENIOR_SA_PERSONAS[neuralVoice].neuralVoice;
+    }
+    if (!neuralVoice) {
+      neuralVoice = lang === 'vi' ? 'vi-VN-NamMinhNeural' : 'en-US-AndrewMultilingualNeural';
+    }
+
+    const rate = opts.rate || (lang === 'vi' ? '+2%' : '+0%');
+    const tmpMp3 = `${outWavPath}.edge.mp3`;
+
+    try {
+      const fullArgs = [
+        ...edgeCmd.args,
+        '--voice', neuralVoice,
+        '--rate', rate,
+        '--text', polishedText,
+        '--write-media', tmpMp3
+      ];
+      execFileSync(edgeCmd.bin, fullArgs, {
+        stdio: 'ignore',
+        timeout: 60000
+      });
+
+      if (fs.existsSync(tmpMp3) && fs.statSync(tmpMp3).size > 1000) {
+        // Broadcast Studio EQ & Dynamics Mastering (Warmth + Clarity + Broadcast Loudness)
+        const filters = [
+          'highpass=f=80',
+          'equalizer=f=160:t=q:w=1.2:g=1.6',
+          'equalizer=f=3200:t=q:w=1.0:g=1.4',
+          'acompressor=threshold=-16dB:ratio=2.2:attack=20:release=150',
+          'loudnorm=I=-14:LRA=7:TP=-1.5'
+        ];
+        execFileSync(ffmpeg, [
+          '-y',
+          '-i', tmpMp3,
+          '-af', filters.join(','),
+          '-ar', '48000',
+          '-ac', '2',
+          '-c:a', 'pcm_s16le',
+          outWavPath
+        ], { stdio: 'ignore' });
+
+        return { path: outWavPath, engine: `neural-edge-tts (${neuralVoice})`, voiceId: neuralVoice };
+      }
+    } catch {
+      // Fall through to system voice if edge-tts had a transient issue
+    } finally {
+      if (fs.existsSync(tmpMp3)) {
+        try { fs.unlinkSync(tmpMp3); } catch {}
+      }
+    }
+  }
+
+  // 2. SECONDARY LOCAL FALLBACK: macOS System TTS
   if (process.platform === 'darwin' && fs.existsSync('/usr/bin/say')) {
     const tmpAiff = `${outWavPath}.raw.aiff`;
     const macVoice = lang === 'vi' ? 'Linh' : (opts.macVoice || 'Samantha');
@@ -460,7 +565,7 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
       execFileSync(ffmpeg, [
         '-y',
         '-i', tmpAiff,
-        '-af', 'highpass=f=75,equalizer=f=135:t=q:w=1.1:g=3.0,equalizer=f=3400:t=q:w=1.4:g=1.5,acompressor=threshold=-19dB:ratio=2.6:attack=12:release=160',
+        '-af', 'highpass=f=75,equalizer=f=135:t=q:w=1.1:g=3.0,equalizer=f=3400:t=q:w=1.4:g=1.5,acompressor=threshold=-19dB:ratio=2.6:attack=12:release=160,loudnorm=I=-14:LRA=7:TP=-1.5',
         '-ar', '48000',
         '-ac', '2',
         '-c:a', 'pcm_s16le',
@@ -473,7 +578,7 @@ function synthesizeClipLocalFallback(text, outWavPath, opts = {}) {
   }
 
   throw new Error(
-    'VoiceStudio backend is not running at http://localhost:3900 and no local system TTS fallback was found.'
+    'No neural TTS engine (edge-tts) or local system TTS was available to synthesize speech.'
   );
 }
 
