@@ -345,6 +345,408 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
         return;
       }
 
+      // STYLE 1 (Real ByteByteGo linux_20s.png): Solid Flat Vibrant Rounded Step Blocks + Crisp White Arrows
+      if (type === 'flat-step-flow') {
+        const steps = Array.isArray(beat.steps) && beat.steps.length ? beat.steps : [
+          { title: 'Step 1', sub: 'Input', fill: '#00B894', textColor: '#FFFFFF', icon: 'lightningBolt' },
+          { title: 'Step 2', sub: 'Process', fill: '#22D3EE', textColor: '#0F172A', icon: 'cpuSilicon' }
+        ];
+        const vertical = beat.direction === 'vertical' || steps.length <= 2;
+        const count = Math.min(4, steps.length);
+
+        if (vertical) {
+          const boxW = 300;
+          const boxH = 210;
+          const gap = 140;
+          const totalH = count * boxH + (count - 1) * gap;
+          const startY = Math.max(195, (920 - totalH) / 2);
+
+          steps.slice(0, count).forEach((st, idx) => {
+            const p = stagger(idx, 0.55, 0.65);
+            if (p <= 0.01) return;
+            const y = startY + idx * (boxH + gap);
+            const pop = p < 0.75 ? (p / 0.75) * 1.05 : 1.05 - ((p - 0.75) / 0.25) * 0.05;
+
+            ctx.save();
+            ctx.globalAlpha *= p;
+            ctx.translate(960, y + boxH / 2);
+            ctx.scale(pop, pop);
+            ctx.beginPath();
+            ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 28);
+            ctx.fillStyle = st.fill || (idx % 2 === 0 ? '#00B894' : '#22D3EE');
+            ctx.fill();
+
+            ctx.fillStyle = st.textColor || (idx % 2 === 0 ? '#FFFFFF' : '#0F172A');
+            ctx.font = \`800 28px \${Theme.FONTS.sans}\`;
+            ctx.textAlign = 'center';
+            ctx.fillText(st.title || '', 0, st.icon ? -44 : -4);
+
+            if (st.icon) {
+              Icons.draw(ctx, st.icon, 0, 18, 72, { timeSec: t, pulseRing: false });
+            }
+            if (st.sub) {
+              ctx.font = \`700 18px \${Theme.FONTS.mono}\`;
+              ctx.fillText(st.sub, 0, st.icon ? 82 : 34);
+            }
+            ctx.restore();
+
+            if (idx < count - 1) {
+              const pa = stagger(idx + 1, 0.55, 0.55);
+              Connectors.solidArrow(ctx, 960, y + boxH + 6, 960, y + boxH + gap - 10, {
+                progress: pa,
+                color: '#FFFFFF',
+                lineWidth: 3.2,
+                label: st.arrowLabel || '',
+                timeSec: t
+              });
+            }
+          });
+        } else {
+          const boxW = 310;
+          const boxH = 220;
+          const gap = 150;
+          const totalW = count * boxW + (count - 1) * gap;
+          const startX = (1920 - totalW) / 2;
+          const y = 370;
+
+          steps.slice(0, count).forEach((st, idx) => {
+            const p = stagger(idx, 0.5, 0.65);
+            if (p <= 0.01) return;
+            const x = startX + idx * (boxW + gap);
+            const pop = p < 0.75 ? (p / 0.75) * 1.05 : 1.05 - ((p - 0.75) / 0.25) * 0.05;
+
+            ctx.save();
+            ctx.globalAlpha *= p;
+            ctx.translate(x + boxW / 2, y + boxH / 2);
+            ctx.scale(pop, pop);
+            ctx.beginPath();
+            ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 26);
+            ctx.fillStyle = st.fill || ['#00B894', '#22D3EE', '#F59E0B', '#A78BFA'][idx % 4];
+            ctx.fill();
+
+            ctx.fillStyle = st.textColor || (idx === 1 || idx === 2 ? '#0F172A' : '#FFFFFF');
+            ctx.font = \`800 26px \${Theme.FONTS.sans}\`;
+            ctx.textAlign = 'center';
+            ctx.fillText(st.title || '', 0, st.icon ? -48 : -6);
+
+            if (st.icon) {
+              Icons.draw(ctx, st.icon, 0, 14, 70, { timeSec: t, pulseRing: false });
+            }
+            if (st.sub) {
+              ctx.font = \`700 17px \${Theme.FONTS.mono}\`;
+              ctx.fillText(st.sub, 0, st.icon ? 82 : 34);
+            }
+            ctx.restore();
+
+            if (idx < count - 1) {
+              const pa = stagger(idx + 1, 0.5, 0.55);
+              Connectors.solidArrow(ctx, x + boxW + 8, y + boxH / 2, x + boxW + gap - 10, y + boxH / 2, {
+                progress: pa,
+                color: '#FFFFFF',
+                lineWidth: 3.2,
+                label: st.arrowLabel || '',
+                timeSec: t
+              });
+            }
+          });
+        }
+
+        const pBanner = stagger(count, 0.5, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'BYTEBYTEGO', border: '#00B894', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 2 (Real ByteByteGo http_25s.png): Self-Drawing Wireframe Fan-Out + 3 Crisp White Diagonal Arrows
+      if (type === 'wireframe-fanout') {
+        const pSrc = stagger(0, 0.35, 0.75);
+        const src = beat.source || { badge: 'TOPIC', title: 'Kafka Topic', color: '#10B981' };
+        const targets = Array.isArray(beat.targets) && beat.targets.length ? beat.targets : [
+          { badge: 'BILLING', title: 'Group A (Live)', color: '#22D3EE' },
+          { badge: 'SEARCH', title: 'Group B (Index)', color: '#10B981' },
+          { badge: 'ML', title: 'Group C (Replay)', color: '#FACC15' }
+        ];
+
+        Illustrations.foldedFileBadge(ctx, 560, 480, src.badge || 'TOPIC', {
+          ribbonBg: src.color || '#10B981',
+          width: 145,
+          height: 170,
+          caption: src.title || '',
+          progress: pSrc
+        });
+
+        const ys = [275, 480, 685];
+        targets.slice(0, 3).forEach((tg, idx) => {
+          const pArr = stagger(idx + 1, 0.5, 0.65);
+          const pDst = stagger(idx + 1, 0.6, 0.7);
+          Connectors.solidArrow(ctx, 680, 445 + idx * 35, 1170, ys[idx], {
+            progress: pArr,
+            color: '#FFFFFF',
+            lineWidth: 3,
+            label: tg.arrowLabel || '',
+            timeSec: t
+          });
+          Illustrations.foldedFileBadge(ctx, 1300, ys[idx], tg.badge || \`C\${idx + 1}\`, {
+            ribbonBg: tg.color || '#22D3EE',
+            width: 118,
+            height: 138,
+            caption: tg.title || '',
+            progress: pDst
+          });
+        });
+
+        const pBanner = stagger(4, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#22D3EE', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 3 (Real ByteByteGo bbg_card_style.png): Dashed-Border Group Container + Stacked Event Pills -> Wireframe DB
+      if (type === 'dashed-group-stack') {
+        const pBox = stagger(0, 0.3, 0.65);
+        const pStack = stagger(1, 0.4, 0.7);
+        const pArrow = stagger(2, 0.45, 0.65);
+        const pDb = stagger(3, 0.5, 0.7);
+
+        if (pBox > 0.02) {
+          ctx.save();
+          ctx.globalAlpha *= pBox;
+          // Outer dashed teal group box
+          ctx.beginPath();
+          ctx.roundRect(380, 200, 1160, 610, 24);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+          ctx.fill();
+          ctx.strokeStyle = '#38BDF8';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([12, 8]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Solid teal header pill
+          ctx.beginPath();
+          ctx.roundRect(740, 224, 440, 56, 16);
+          ctx.fillStyle = beat.headerBg || '#1E7A8C';
+          ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = \`800 28px \${Theme.FONTS.sans}\`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.header || 'Record Batching', 960, 261);
+
+          // Olive subtitle pill
+          if (beat.subtitle) {
+            ctx.beginPath();
+            ctx.roundRect(660, 296, 600, 44, 14);
+            ctx.fillStyle = '#7A6A28';
+            ctx.fill();
+            ctx.strokeStyle = '#FACC15';
+            ctx.lineWidth = 1.6;
+            ctx.setLineDash([7, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = \`700 20px \${Theme.FONTS.sans}\`;
+            ctx.fillText(beat.subtitle, 960, 325);
+          }
+
+          // Inner plum dashed frame
+          ctx.beginPath();
+          ctx.roundRect(440, 362, 1040, 412, 20);
+          ctx.fillStyle = 'rgba(88, 52, 82, 0.42)';
+          ctx.fill();
+          ctx.strokeStyle = '#C084FC';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([10, 7]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+
+        // Left Amber Batch Column with Bright Flat Crimson/Amber Event Pills
+        if (pStack > 0.02) {
+          const items = beat.stackItems || ['event 1', 'event 2', 'event 3', 'event 4'];
+          ctx.save();
+          ctx.globalAlpha *= pStack;
+          ctx.beginPath();
+          ctx.roundRect(490, 392, 310, 352, 16);
+          ctx.fillStyle = '#8C7428';
+          ctx.fill();
+          ctx.strokeStyle = '#FACC15';
+          ctx.lineWidth = 2.4;
+          ctx.stroke();
+
+          items.slice(0, 4).forEach((lbl, idx) => {
+            const pi = stagger(idx, 0.28, 0.45);
+            if (pi <= 0.01) return;
+            ctx.save();
+            ctx.globalAlpha *= pi;
+            ctx.beginPath();
+            ctx.roundRect(516, 412 + idx * 70, 258, 54, 10);
+            ctx.fillStyle = beat.pillColor || '#EF4444';
+            ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = \`700 22px \${Theme.FONTS.sans}\`;
+            ctx.textAlign = 'center';
+            ctx.fillText(lbl, 645, 447 + idx * 70);
+            ctx.restore();
+          });
+
+          ctx.fillStyle = '#FEF08A';
+          ctx.font = \`700 20px \${Theme.FONTS.sans}\`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.stackTitle || '64KB Batch', 645, 722);
+          ctx.restore();
+        }
+
+        // Dashed Pure White Arrow -> Wireframe Cylinder Storage
+        Connectors.dashedArrow(ctx, 810, 568, 1170, 568, {
+          progress: pArrow,
+          color: '#FFFFFF',
+          lineWidth: 3.4,
+          label: beat.arrowLabel || '1 single RPC',
+          timeSec: t
+        });
+
+        Illustrations.wireframeCylinderDb(ctx, 1310, 555, {
+          width: 175,
+          height: 155,
+          color: '#38BDF8',
+          label: beat.dbLabel || 'Kafka Log',
+          progress: pDb
+        });
+
+        const pBanner = stagger(4, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'BATCHING', border: '#FACC15', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 4 (Real ByteByteGo linux_40s.png): Clean Two-Column Matte Olive-Header / Dark-Teal Comparison Cards
+      if (type === 'comparison-cards') {
+        const left = beat.left || { title: 'Traditional', bullets: ['Slower random I/O', 'Per-message locks'] };
+        const right = beat.right || { title: 'Apache Kafka', bullets: ['600+ MB/s sequential log', 'Zero broker locks'] };
+        const pLeft = stagger(0, 0.4, 0.7);
+        const pRight = stagger(1, 0.55, 0.7);
+        const pBanner = stagger(2, 0.65, 0.6);
+
+        const drawPanel = (x, panel, p, headerFill, bodyFill) => {
+          if (p <= 0.01) return;
+          ctx.save();
+          ctx.globalAlpha *= p;
+          const w = 680;
+          const h = 470;
+          const y = 265;
+
+          // Body
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, h, 22);
+          ctx.fillStyle = bodyFill;
+          ctx.fill();
+
+          // Matte Header Strip
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, 68, [22, 22, 0, 0]);
+          ctx.fillStyle = headerFill;
+          ctx.fill();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = \`800 28px \${Theme.FONTS.sans}\`;
+          ctx.textAlign = 'center';
+          ctx.fillText(panel.title || '', x + w / 2, y + 44);
+
+          // Crisp White Bullet Points
+          ctx.textAlign = 'left';
+          ctx.font = \`600 25px \${Theme.FONTS.sans}\`;
+          (panel.bullets || []).slice(0, 5).forEach((line, idx) => {
+            const pb = stagger(idx + 1, 0.35, 0.5);
+            if (pb <= 0.01) return;
+            ctx.save();
+            ctx.globalAlpha *= pb;
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillText(\`-  \${line}\`, x + 42, y + 132 + idx * 72);
+            ctx.restore();
+          });
+          ctx.restore();
+        };
+
+        drawPanel(250, left, pLeft, left.headerBg || '#6E7A3B', left.bodyBg || '#213D37');
+        drawPanel(990, right, pRight, right.headerBg || '#0F766E', right.bodyBg || '#19373D');
+
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'COMPARISON', border: '#34D399', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 5 (Real ByteByteGo http_10s.png): Horizontal Gold-Outline Pill Chain + Pure White Arrows
+      if (type === 'pill-chain') {
+        const pills = Array.isArray(beat.pills) && beat.pills.length ? beat.pills : ['Producer', 'LZ4 Batch', 'Partition Log', 'Consumer'];
+        const count = Math.min(4, pills.length);
+        const pillW = 260;
+        const pillH = 82;
+        const gap = 115;
+        const totalW = count * pillW + (count - 1) * gap;
+        const startX = (1920 - totalW) / 2;
+        const cy = 500;
+
+        if (beat.heroMetric) {
+          const ph = stagger(0, 0.25, 0.65);
+          ctx.save();
+          ctx.globalAlpha *= ph;
+          ctx.fillStyle = '#FACC15';
+          ctx.font = \`900 54px \${Theme.FONTS.mono}\`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.heroMetric, 960, 320);
+          if (beat.heroSub) {
+            ctx.fillStyle = '#CBD5E1';
+            ctx.font = \`600 22px \${Theme.FONTS.sans}\`;
+            ctx.fillText(beat.heroSub, 960, 368);
+          }
+          ctx.restore();
+        }
+
+        pills.slice(0, count).forEach((lbl, idx) => {
+          const p = stagger(idx, 0.42, 0.6);
+          if (p <= 0.01) return;
+          const x = startX + idx * (pillW + gap);
+          const isHighlight = idx === count - 1;
+
+          ctx.save();
+          ctx.globalAlpha *= p;
+          ctx.beginPath();
+          ctx.roundRect(x, cy - pillH / 2, pillW, pillH, 26);
+          ctx.fillStyle = isHighlight ? 'rgba(16, 185, 129, 0.22)' : 'rgba(20, 24, 30, 0.92)';
+          ctx.fill();
+          ctx.strokeStyle = isHighlight ? '#34D399' : '#FACC15';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = \`800 26px \${Theme.FONTS.sans}\`;
+          ctx.textAlign = 'center';
+          ctx.fillText(lbl, x + pillW / 2, cy + 9);
+          ctx.restore();
+
+          if (idx < count - 1) {
+            const pa = stagger(idx + 1, 0.42, 0.5);
+            Connectors.solidArrow(ctx, x + pillW + 4, cy, x + pillW + gap - 6, cy, {
+              progress: pa,
+              color: '#FFFFFF',
+              lineWidth: 3.2,
+              timeSec: t
+            });
+          }
+        });
+
+        const pBanner = stagger(count, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#FACC15', alpha: pBanner });
+        }
+        return;
+      }
+
       // Default: 'icon-flow' (2 or 3 large animated icon medallions connected by glowing comet streams)
       const nodes = Array.isArray(beat.nodes) && beat.nodes.length ? beat.nodes : [
         { icon: 'cpuSilicon', tag: 'SOURCE', title: 'Input Stage', color: '#38BDF8' },

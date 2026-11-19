@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Why Apache Kafka Is So Insanely Fast</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #232323; width: 1920px; height: 1080px; overflow: hidden; }
+    #canvas { display: block; width: 1920px; height: 1080px; }
+  </style>
+  <script src="./tech-video-studio.bundle.js"></script>
+</head>
+<body>
+  <canvas id="canvas" width="1920" height="1080"></canvas>
+  <script>
+    const { Theme, Effects, Connectors, Icons, Illustrations, createVideo } = window.TechVideoStudio;
+    const BLUEPRINT = {
+  "title": "Why Apache Kafka Is So Insanely Fast",
+  "palette": "byteByteGoTrue",
+  "fps": 30,
+  "persona": "senior-sa",
+  "scenes": [
+    {
+      "id": "scene-1-append-only-log",
+      "chapter": "01. The Kafka Speed Paradox & Append-Only Commit Log",
+      "backdrop": "waves",
+      "beats": [
+        {
+          "type": "comparison-cards",
+          "duration": 10,
+          "narration": "Traditional message queues struggle past twenty thousand messages per second. Yet Apache Kafka effortlessly handles over one million messages every second. Why?",
+          "left": {
+            "title": "Traditional Message Queue",
+            "headerBg": "#7A5230",
+            "bodyBg": "#2B2420",
+            "bullets": [
+              "Tracks ACK state per message",
+              "Random disk deletes & locks",
+              "Struggles past 20K msg/sec",
+              "Slows down as queue grows"
+            ]
+          },
+          "right": {
+            "title": "Apache Kafka",
+            "headerBg": "#0F766E",
+            "bodyBg": "#1A3634",
+            "bullets": [
+              "Immutable append-only log",
+              "Zero per-message broker locks",
+              "1,000,000+ msg/sec throughput",
+              "O(1) speed at petabyte scale"
+            ]
+          },
+          "takeaway": "Apache Kafka Processes Over 1,000,000 Messages/Sec — 50x Faster Than Traditional Queues",
+          "tag": "50x FASTER"
+        },
+        {
+          "type": "commit-log-stream",
+          "duration": 10,
+          "narration": "First, Kafka replaces complex message queues with a simple append-only log. Every new event appends straight to the end in O(1) time.",
+          "source": {
+            "icon": "kafkaLogo",
+            "tag": "KAFKA PRODUCER",
+            "title": "Event Stream",
+            "sub": "Immutable Records",
+            "color": "#FACC15"
+          },
+          "arrowLabel": "O(1) Tail Append",
+          "tapeTitle": "Kafka Partition Commit Log (Immutable Sequential Offsets)",
+          "cells": [
+            {
+              "label": "Offset #0",
+              "sub": "Immutable",
+              "color": "#38BDF8",
+              "bg": "rgba(56, 189, 248, 0.18)",
+              "span": 1
+            },
+            {
+              "label": "Offset #1",
+              "sub": "Immutable",
+              "color": "#38BDF8",
+              "bg": "rgba(56, 189, 248, 0.18)",
+              "span": 1
+            },
+            {
+              "label": "Offset #2",
+              "sub": "Immutable",
+              "color": "#38BDF8",
+              "bg": "rgba(56, 189, 248, 0.18)",
+              "span": 1
+            },
+            {
+              "label": "Offset #3 ⚡",
+              "sub": "APPEND HEAD",
+              "color": "#FACC15",
+              "bg": "rgba(250, 204, 21, 0.30)",
+              "span": 1.3
+            },
+            {
+              "label": "Next Slot",
+              "sub": "O(1) Tail ->",
+              "color": "#34D399",
+              "bg": "rgba(52, 211, 153, 0.14)",
+              "span": 1.2,
+              "dashed": true
+            }
+          ],
+          "takeaway": "Kafka Treats Every Partition as an Immutable Append-Only Log With O(1) Writes",
+          "tag": "APPEND-ONLY LOG"
+        },
+        {
+          "type": "versus-gauge",
+          "duration": 10,
+          "narration": "By never jumping around on disk to update or delete old records, Kafka turns slow random storage into a six-hundred-megabyte-per-second sequential highway.",
+          "left": {
+            "icon": "hardDiskPlatter",
+            "tag": "RANDOM DISK SEEK ❌",
+            "title": "In-Place Queue Deletes",
+            "value": 100,
+            "unit": "KB/s",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "lightningBolt",
+            "value": 6000,
+            "label": "x FASTER",
+            "color": "#FACC15"
+          },
+          "right": {
+            "value": 600,
+            "unit": "MB/s",
+            "sub": "Sequential Log Write ✔",
+            "valueRatio": 0.93,
+            "color": "#34D399"
+          },
+          "takeaway": "Sequential Log Appends Unlock 600+ MB/s Disk Throughput Without Random Seeks",
+          "tag": "SEQUENTIAL I/O"
+        }
+      ]
+    },
+    {
+      "id": "scene-2-partitions-and-smart-consumers",
+      "chapter": "02. Horizontal Partitions & Dumb Broker, Smart Consumer",
+      "backdrop": "blueprint",
+      "beats": [
+        {
+          "type": "partition-mesh",
+          "duration": 10,
+          "narration": "Second, Kafka splits every topic into independent partitions across multiple brokers. Adding more partitions scales write and read throughput linearly without bottlenecks.",
+          "partitions": [
+            {
+              "name": "Topic: orders — Partition 0 (Broker 1)",
+              "offsets": [
+                "#10",
+                "#11",
+                "#12",
+                "#13"
+              ],
+              "consumer": "Consumer Worker 1",
+              "throughput": "350K msg/s",
+              "color": "#38BDF8"
+            },
+            {
+              "name": "Topic: orders — Partition 1 (Broker 2)",
+              "offsets": [
+                "#24",
+                "#25",
+                "#26",
+                "#27"
+              ],
+              "consumer": "Consumer Worker 2",
+              "throughput": "350K msg/s",
+              "color": "#34D399"
+            },
+            {
+              "name": "Topic: orders — Partition 2 (Broker 3)",
+              "offsets": [
+                "#88",
+                "#89",
+                "#90",
+                "#91"
+              ],
+              "consumer": "Consumer Worker 3",
+              "throughput": "350K msg/s",
+              "color": "#FACC15"
+            }
+          ],
+          "takeaway": "Splitting Topics Into Partitions Scales Kafka Throughput Linearly Across Brokers",
+          "tag": "PARTITIONS"
+        },
+        {
+          "type": "flat-step-flow",
+          "duration": 10,
+          "direction": "vertical",
+          "narration": "Third, Kafka follows a dumb-broker, smart-consumer design. Brokers never track individual delivery states; each consumer simply remembers one integer offset number.",
+          "steps": [
+            {
+              "title": "Dumb Broker",
+              "sub": "Zero Per-Message State",
+              "fill": "#00B894",
+              "textColor": "#FFFFFF",
+              "icon": "kafkaLogo",
+              "arrowLabel": "Stateless Fetch"
+            },
+            {
+              "title": "Smart Consumer",
+              "sub": "Tracks Offset = #4,201",
+              "fill": "#22D3EE",
+              "textColor": "#0F172A"
+            }
+          ],
+          "takeaway": "Stateless Brokers Avoid Per-Message Tracking Overhead by Delegating Offsets to Consumers",
+          "tag": "SMART CONSUMER"
+        },
+        {
+          "type": "wireframe-fanout",
+          "duration": 10,
+          "narration": "Because reading never deletes data, analytics, billing, and search services can all read the exact same Kafka topic simultaneously without slowing anyone down.",
+          "source": {
+            "badge": "TOPIC",
+            "title": "orders-events (7d)",
+            "color": "#10B981"
+          },
+          "targets": [
+            {
+              "badge": "BILLING",
+              "title": "Group A (Live)",
+              "color": "#22D3EE",
+              "arrowLabel": "Offset #9,900"
+            },
+            {
+              "badge": "SEARCH",
+              "title": "Group B (Index)",
+              "color": "#10B981",
+              "arrowLabel": "Offset #9,840"
+            },
+            {
+              "badge": "ANALYTICS",
+              "title": "Group C (Replay)",
+              "color": "#FACC15",
+              "arrowLabel": "Offset #4,100"
+            }
+          ],
+          "takeaway": "Multiple Consumer Groups Read the Same Kafka Topic at Their Own Pace With Zero Contention",
+          "tag": "MULTI-CONSUMER"
+        }
+      ]
+    },
+    {
+      "id": "scene-3-batching-and-compression",
+      "chapter": "03. Producer Smart Batching & End-to-End Compression",
+      "backdrop": "waves",
+      "beats": [
+        {
+          "type": "dashed-group-stack",
+          "duration": 10,
+          "narration": "Fourth, Kafka producers rarely send single messages. They accumulate thousands of records per partition in memory and flush them as one large batch.",
+          "header": "Producer Record Batching",
+          "subtitle": "All events flushed in 1 single RPC (linger.ms = 5)",
+          "stackTitle": "64KB Batch",
+          "stackItems": [
+            "event 1",
+            "event 2",
+            "event 3",
+            "event 4"
+          ],
+          "pillColor": "#EF4444",
+          "arrowLabel": "1 single batch RPC",
+          "dbLabel": "Kafka Log",
+          "takeaway": "Producer Record Batching Cuts Network Round-Trips by Up to 1,000x",
+          "tag": "BATCHING"
+        },
+        {
+          "type": "pill-chain",
+          "duration": 10,
+          "narration": "Before sending, the producer compresses the whole batch with LZ4 or Zstd. The Kafka broker stores those compressed bytes directly without decompressing them.",
+          "heroMetric": "COMPRESS ONCE • ZERO BROKER CPU",
+          "heroSub": "End-to-End LZ4 / Zstd Batch Pipeline",
+          "pills": [
+            "Producer (LZ4)",
+            "Wire Frame",
+            "Broker Disk",
+            "Consumer"
+          ],
+          "takeaway": "End-to-End Batch Compression Keeps Data Compressed Across Network and Broker Disk",
+          "tag": "LZ4 / ZSTD"
+        },
+        {
+          "type": "versus-gauge",
+          "duration": 10,
+          "narration": "Compressing batches instead of single messages unlocks up to an eighty-percent reduction in network traffic and disk usage across the entire cluster.",
+          "left": {
+            "icon": "warningAlert",
+            "tag": "UNCOMPRESSED ❌",
+            "title": "Raw JSON Events",
+            "value": 100,
+            "unit": "MB Wire",
+            "color": "#EF4444"
+          },
+          "center": {
+            "icon": "boxArchive",
+            "value": 5,
+            "label": "x SMALLER",
+            "color": "#C084FC"
+          },
+          "right": {
+            "value": 80,
+            "unit": "% Saved",
+            "sub": "LZ4 Batch Compression ✔",
+            "valueRatio": 0.85,
+            "color": "#34D399"
+          },
+          "takeaway": "Batch Compression Slashes Kafka Network Bandwidth and Storage Footprint by 80%",
+          "tag": "80% SAVED"
+        }
+      ]
+    },
+    {
+      "id": "scene-4-zero-copy-and-hot-cache",
+      "chapter": "04. Zero-Copy Streaming & Hot Memory Reads",
+      "backdrop": "splitHorizontal",
+      "beats": [
+        {
+          "type": "flat-step-flow",
+          "duration": 10,
+          "direction": "horizontal",
+          "narration": "Traditional brokers waste huge CPU cycles copying every message into application memory, parsing it, and copying it back out to each consumer.",
+          "steps": [
+            {
+              "title": "1. Disk Read",
+              "sub": "Copy #1",
+              "fill": "#475569",
+              "textColor": "#FFFFFF",
+              "icon": "hardDiskPlatter"
+            },
+            {
+              "title": "2. App Heap ❌",
+              "sub": "Parse & Copy",
+              "fill": "#EF4444",
+              "textColor": "#FFFFFF",
+              "icon": "cpuSilicon"
+            },
+            {
+              "title": "3. Net Socket",
+              "sub": "Copy #3 & #4",
+              "fill": "#F59E0B",
+              "textColor": "#0F172A",
+              "icon": "networkCardNic"
+            }
+          ],
+          "takeaway": "Copying Every Message Through Application Memory Bottlenecks Traditional Brokers",
+          "tag": "CPU BOTTLENECK"
+        },
+        {
+          "type": "zero-copy-dma",
+          "duration": 10,
+          "narration": "Kafka uses zero-copy transfer to bypass its own application memory. Compressed record batches stream directly from broker cache straight onto the network wire.",
+          "bypassBanner": "▲ KAFKA APPLICATION MEMORY BYPASSED — ZERO REDUNDANT COPIES ✔",
+          "left": {
+            "icon": "ramChip",
+            "tag": "BROKER CACHE",
+            "title": "Hot Segment Bytes",
+            "sub": "Already Compressed",
+            "color": "#FACC15"
+          },
+          "arrowLabel": "Zero-Copy Direct Wire Transfer (0 Broker CPU Copies)",
+          "right": {
+            "icon": "networkCardNic",
+            "tag": "CONSUMER STREAM ✔",
+            "title": "10+ Gbps Wire Speed",
+            "sub": "Line-Rate Delivery",
+            "color": "#34D399"
+          },
+          "takeaway": "Zero-Copy Transfer Lets Kafka Brokers Stream Data at Full 10+ Gbps Network Speed",
+          "tag": "ZERO-COPY"
+        },
+        {
+          "type": "pill-chain",
+          "duration": 10,
+          "narration": "In real-time pipelines, consumers read data milliseconds after producers write it. Those hot Kafka segments sit right in RAM, delivering instant reads.",
+          "heroMetric": "2 ms END-TO-END LATENCY",
+          "heroSub": "Hot Kafka Segments Served Directly From RAM",
+          "pills": [
+            "Producer (0ms)",
+            "Hot RAM Cache",
+            "Zero Disk Read",
+            "Consumer (2ms)"
+          ],
+          "takeaway": "Real-Time Kafka Consumers Almost Always Read Hot Segments Directly From Memory",
+          "tag": "RAM-SPEED READS"
+        }
+      ]
+    },
+    {
+      "id": "scene-5-pull-backpressure-and-isr",
+      "chapter": "05. Pull-Based Backpressure & Fast In-Sync Replication",
+      "backdrop": "spotlight",
+      "beats": [
+        {
+          "type": "flat-step-flow",
+          "duration": 10,
+          "direction": "horizontal",
+          "narration": "Fifth, Kafka consumers pull data instead of being pushed to. Slow consumers never crash, while fast consumers pull huge batches at maximum speed.",
+          "steps": [
+            {
+              "title": "Kafka Topic",
+              "sub": "Absorbs Spikes",
+              "fill": "#22D3EE",
+              "textColor": "#0F172A",
+              "icon": "kafkaLogo",
+              "arrowLabel": "Pull Batch"
+            },
+            {
+              "title": "Pull Consumer",
+              "sub": "Self-Paced ✔",
+              "fill": "#00B894",
+              "textColor": "#FFFFFF",
+              "icon": "shieldGuard"
+            }
+          ],
+          "takeaway": "Pull-Based Consumption Prevents Consumer Overload and Enables Large Batch Fetches",
+          "tag": "PULL MODEL"
+        },
+        {
+          "type": "quorum-triangle",
+          "duration": 10,
+          "narration": "For fault tolerance, follower brokers replicate sequentially from the partition leader. Once in-sync replicas receive the batch, Kafka marks it safely committed.",
+          "nodes": [
+            {
+              "name": "Partition Leader",
+              "role": "Broker 1 ★",
+              "color": "#FACC15",
+              "angle": -90
+            },
+            {
+              "name": "ISR Follower A",
+              "role": "Synced ✔",
+              "color": "#34D399",
+              "angle": 30
+            },
+            {
+              "name": "ISR Follower B",
+              "role": "Synced ✔",
+              "color": "#38BDF8",
+              "angle": 150
+            }
+          ],
+          "takeaway": "In-Sync Replicas Pull Batches Sequentially for High-Speed Multi-Broker Durability",
+          "tag": "ISR QUORUM"
+        },
+        {
+          "type": "comparison-cards",
+          "duration": 10,
+          "narration": "Kafka also lets you tune acknowledgments per workload: acks equals one for ultra-fast telemetry, or acks equals all for zero-loss financial transactions.",
+          "left": {
+            "title": "acks = 1 (Ultra-Fast)",
+            "headerBg": "#6E7A3B",
+            "bodyBg": "#213D37",
+            "bullets": [
+              "Leader writes & ACKs immediately",
+              "Lowest possible write latency",
+              "Ideal for metrics & clickstreams",
+              "Highest raw ingestion speed"
+            ]
+          },
+          "right": {
+            "title": "acks = all (Zero Data Loss)",
+            "headerBg": "#0F766E",
+            "bodyBg": "#19373D",
+            "bullets": [
+              "Waits for full ISR replica quorum",
+              "Survives sudden broker crashes",
+              "Ideal for payments & orders",
+              "Still runs at memory speed"
+            ]
+          },
+          "takeaway": "Per-Topic ACK Levels Let Teams Balance Ultra-Low Latency Against Zero Data Loss",
+          "tag": "TUNABLE ACKS"
+        }
+      ]
+    },
+    {
+      "id": "scene-6-cleanup-scaling-and-scorecard",
+      "chapter": "06. O(1) Segment Cleanup & Production Tuning Rules",
+      "backdrop": "waves",
+      "beats": [
+        {
+          "type": "commit-log-stream",
+          "duration": 10,
+          "narration": "Even cleanup is engineered for speed. When retention expires, Kafka deletes entire old segment files in one instant operation instead of individual messages.",
+          "source": {
+            "icon": "checkShield",
+            "tag": "RETENTION POLICY",
+            "title": "7-Day Expiry",
+            "sub": "Zero Row-Level Locks",
+            "color": "#34D399"
+          },
+          "arrowLabel": "Drop Whole Segment File",
+          "tapeTitle": "Log Segment Rotation — Instant O(1) File Cleanup",
+          "cells": [
+            {
+              "label": "Seg 01 (Old)",
+              "sub": "DROPPED ⚡",
+              "color": "#EF4444",
+              "bg": "rgba(239, 68, 68, 0.22)",
+              "span": 1.2,
+              "dashed": true
+            },
+            {
+              "label": "Seg 02",
+              "sub": "Active Read",
+              "color": "#38BDF8",
+              "bg": "rgba(56, 189, 248, 0.18)",
+              "span": 1
+            },
+            {
+              "label": "Seg 03",
+              "sub": "Active Read",
+              "color": "#38BDF8",
+              "bg": "rgba(56, 189, 248, 0.18)",
+              "span": 1
+            },
+            {
+              "label": "Seg 04 ⚡",
+              "sub": "Live Writes",
+              "color": "#34D399",
+              "bg": "rgba(52, 211, 153, 0.25)",
+              "span": 1.3
+            }
+          ],
+          "takeaway": "Dropping Whole Expired Segment Files Eliminates Garbage-Collection Write Stalls",
+          "tag": "O(1) CLEANUP"
+        },
+        {
+          "type": "partition-mesh",
+          "duration": 10,
+          "narration": "Need more processing power? Simply add more instances to your consumer group. Kafka automatically rebalances partitions so every worker processes streams in parallel.",
+          "partitions": [
+            {
+              "name": "Partition 0 (Active Stream)",
+              "offsets": [
+                "#501",
+                "#502",
+                "#503",
+                "#504"
+              ],
+              "consumer": "Pod #1 (Auto-Assigned)",
+              "throughput": "Parallel 1/3",
+              "color": "#38BDF8"
+            },
+            {
+              "name": "Partition 1 (Active Stream)",
+              "offsets": [
+                "#610",
+                "#611",
+                "#612",
+                "#613"
+              ],
+              "consumer": "Pod #2 (Auto-Assigned)",
+              "throughput": "Parallel 2/3",
+              "color": "#34D399"
+            },
+            {
+              "name": "Partition 2 (Active Stream)",
+              "offsets": [
+                "#720",
+                "#721",
+                "#722",
+                "#723"
+              ],
+              "consumer": "Pod #3 (Auto-Assigned)",
+              "throughput": "Parallel 3/3",
+              "color": "#FACC15"
+            }
+          ],
+          "takeaway": "Kafka Consumer Groups Auto-Balance Partitions for Effortless Horizontal Scaling",
+          "tag": "AUTO-REBALANCE"
+        },
+        {
+          "type": "scorecard",
+          "duration": 10,
+          "narration": "To unlock Kafka's full speed in production: enable producer batching with LZ4 compression, choose enough partitions for parallel consumers, and keep messages compact.",
+          "items": [
+            {
+              "type": "dont",
+              "title": "Sending 1 Event Per Request",
+              "cmd": "❌ linger.ms=0 & compression=none",
+              "desc": "Floods Kafka brokers with tiny RPCs and wastes network I/O",
+              "color": "#F87171"
+            },
+            {
+              "type": "do",
+              "title": "Smart Batching + LZ4 Compression",
+              "cmd": "✔ linger.ms=5..10 & compression=lz4",
+              "desc": "Packs thousands of events into 80% smaller sequential writes",
+              "color": "#34D399"
+            },
+            {
+              "type": "dont",
+              "title": "Single-Partition Hot Topic",
+              "cmd": "❌ partitions=1 (Zero Parallelism)",
+              "desc": "Limits the entire topic to one broker and one consumer worker",
+              "color": "#F87171"
+            },
+            {
+              "type": "do",
+              "title": "Match Partitions to Consumers",
+              "cmd": "✔ partitions >= peak consumer pods",
+              "desc": "Unlocks linear parallel throughput across your consumer group",
+              "color": "#38BDF8"
+            }
+          ],
+          "takeaway": "Batch With LZ4, Scale With Partitions, and Let Kafka's Append-Only Log Fly"
+        }
+      ]
+    }
+  ]
+};
+
+    function renderBeatBody(ctx, beat, helpers, t) {
+      const { stagger, countUp } = helpers;
+      const type = beat.type || 'icon-flow';
+
+      if (type === 'versus-gauge') {
+        const p1 = stagger(0, 0.45, 0.7);
+        const p2 = stagger(1, 0.5, 0.7);
+        const p3 = stagger(2, 0.55, 0.75);
+        const p4 = stagger(3, 0.6, 0.6);
+
+        const L = beat.left || {};
+        Icons.drawBadge(ctx, L.icon || 'hardDiskPlatter', 460, 435, 130, {
+          color: L.color || '#EF4444',
+          tag: L.tag || 'BOTTLENECK ❌',
+          title: L.title || 'Slow Path',
+          sub: L.value !== undefined ? `${countUp(L.value, 1.5, 0.2)} ${L.unit || ''}`.trim() : (L.sub || ''),
+          progress: p1,
+          timeSec: t
+        });
+
+        const C = beat.center || {};
+        if (p2 > 0.05) {
+          ctx.save();
+          ctx.globalAlpha *= p2;
+          Effects.sonarPulse(ctx, 960, 430, t, { color: C.color || '#FACC15', minRadius: 35, maxRadius: 115 });
+          Icons.draw(ctx, C.icon || 'rocketBoost', 960, 410, 96, { glowColor: C.color || '#FACC15', timeSec: t });
+          ctx.fillStyle = '#FEF08A';
+          ctx.font = `900 30px ${Theme.FONTS.mono}`;
+          ctx.textAlign = 'center';
+          const cText = C.value !== undefined ? `${countUp(C.value, 1.8, 0.5)}${C.label || 'x FASTER'}` : (C.label || 'VS');
+          ctx.fillText(cText, 960, 515);
+          ctx.restore();
+        }
+
+        const R = beat.right || {};
+        if (p3 > 0.05) {
+          ctx.save();
+          ctx.globalAlpha *= p3;
+          Effects.sonarPulse(ctx, 1460, 425, t, { color: R.color || '#34D399', minRadius: 55, maxRadius: 150 });
+          Effects.liveGaugeArc(ctx, 1460, 430, 118, p3, {
+            color: R.color || '#34D399',
+            valueRatio: R.valueRatio !== undefined ? R.valueRatio : 0.92,
+            label: R.value !== undefined ? `${countUp(R.value, 1.8, 0.7)} ${R.unit || ''}`.trim() : (R.label || 'FAST'),
+            sub: R.sub || 'Optimized Path ✔'
+          });
+          ctx.restore();
+        }
+
+        if (beat.takeaway && p4 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, {
+            variant: beat.takeawayVariant || 'banner',
+            tag: beat.tag || 'KEY INSIGHT',
+            border: R.color || '#34D399',
+            alpha: p4
+          });
+        }
+        return;
+      }
+
+      if (type === 'commit-log-stream') {
+        const p1 = stagger(0, 0.4, 0.65);
+        const p2 = stagger(1, 0.5, 0.75);
+        const p3 = stagger(2, 0.65, 0.6);
+        const src = beat.source || {};
+
+        Icons.drawBadge(ctx, src.icon || 'lightningBolt', 350, 470, 115, {
+          color: src.color || '#FACC15',
+          tag: src.tag || 'EVENT STREAM',
+          title: src.title || 'Incoming Events',
+          sub: src.sub || 'O(1) Append',
+          progress: p1,
+          timeSec: t
+        });
+
+        if (p2 > 0.2) {
+          Connectors.flowArrow(ctx, 460, 470, 660, 470, t, {
+            color: src.color || '#FACC15',
+            lineWidth: 3,
+            label: beat.arrowLabel || 'O(1) Append',
+            orbs: 3
+          });
+          Effects.dataStreamParticles(ctx, 470, 470, 650, 470, t, { color: src.color || '#FACC15', count: 3, speed: 1.4 });
+        }
+
+        Illustrations.byteArrayTape(ctx, 680, 415, 1020, 110, {
+          title: beat.tapeTitle || 'Immutable Commit Log',
+          progress: p2,
+          cells: beat.cells
+        });
+
+        if (beat.takeaway && p3 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, {
+            variant: 'banner',
+            tag: beat.tag || 'COMMIT LOG',
+            border: '#FACC15',
+            alpha: p3
+          });
+        }
+        return;
+      }
+
+      if (type === 'zero-copy-dma') {
+        const p1 = stagger(0, 0.35, 0.65);
+        const p2 = stagger(1, 0.5, 0.7);
+        const p3 = stagger(2, 0.65, 0.6);
+
+        if (p1 > 0.1) {
+          ctx.save();
+          ctx.globalAlpha *= p1 * 0.78;
+          ctx.beginPath();
+          ctx.roundRect(560, 195, 800, 64, 32);
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.fill();
+          ctx.strokeStyle = '#34D399';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 6]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#6EE7B7';
+          ctx.font = `800 18px ${Theme.FONTS.mono}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.bypassBanner || '▲ USER-SPACE BYPASSED — ZERO CPU DATA COPIES ✔', 960, 234);
+          ctx.restore();
+        }
+
+        const L = beat.left || {};
+        const R = beat.right || {};
+        Icons.drawBadge(ctx, L.icon || 'ramChip', 480, 500, 135, {
+          color: L.color || '#FACC15',
+          tag: L.tag || 'KERNEL PAGECACHE',
+          title: L.title || 'OS RAM Buffer',
+          sub: L.sub || 'sendfile() Syscall',
+          progress: p1,
+          timeSec: t
+        });
+
+        if (p2 > 0.05) {
+          Connectors.flowArrow(ctx, 645, 500, 1275, 500, t, {
+            progress: p2,
+            color: '#34D399',
+            lineWidth: 4,
+            label: beat.arrowLabel || 'Direct Memory Access (DMA — 0 CPU)',
+            orbs: 4,
+            speed: 1.6
+          });
+          Effects.dataStreamParticles(ctx, 660, 500, 1260, 500, t, { color: '#34D399', count: 5, speed: 1.5 });
+        }
+
+        Icons.drawBadge(ctx, R.icon || 'networkCardNic', 1440, 500, 135, {
+          color: R.color || '#34D399',
+          tag: R.tag || 'NIC TX BUFFER ✔',
+          title: R.title || '10+ Gbps Wire Speed',
+          sub: R.sub || 'Direct Hardware Transfer',
+          progress: p2,
+          timeSec: t
+        });
+
+        if (beat.takeaway && p3 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, {
+            variant: 'banner',
+            tag: beat.tag || 'ZERO-COPY DMA',
+            border: '#34D399',
+            alpha: p3
+          });
+        }
+        return;
+      }
+
+      if (type === 'batch-flow') {
+        const p1 = stagger(0, 0.4, 0.65);
+        const p2 = stagger(1, 0.5, 0.7);
+        const p3 = stagger(2, 0.6, 0.6);
+
+        Illustrations.pubSubTopicBox(ctx, 220, 400, 620, 150, {
+          title: beat.batchTitle || 'RecordAccumulator (64KB Batch)',
+          tint: beat.tint || 'teal',
+          offsets: beat.offsets || ['Msg #1', 'Msg #2', 'Msg #3', 'Msg #4', 'READY ⚡'],
+          activeSlot: (beat.offsets ? beat.offsets.length - 1 : 4),
+          progress: p1
+        });
+
+        if (p2 > 0.05) {
+          Connectors.flowArrow(ctx, 860, 475, 1240, 475, t, {
+            progress: p2,
+            color: '#34D399',
+            lineWidth: 3.6,
+            label: beat.arrowLabel || '1 Single Batch RPC',
+            orbs: 3
+          });
+          Effects.dataStreamParticles(ctx, 870, 475, 1230, 475, t, { color: '#38BDF8', count: 3, speed: 1.3 });
+        }
+
+        const dst = beat.target || {};
+        Icons.drawBadge(ctx, dst.icon || 'kafkaLogo', 1430, 475, 135, {
+          color: dst.color || '#34D399',
+          tag: dst.tag || 'BROKER ✔',
+          title: dst.title || '1M+ Events/sec',
+          sub: dst.sub || 'Single Sequential Append',
+          progress: p2,
+          timeSec: t
+        });
+
+        if (beat.takeaway && p3 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, {
+            variant: 'banner',
+            tag: beat.tag || 'BATCHING',
+            border: '#38BDF8',
+            alpha: p3
+          });
+        }
+        return;
+      }
+
+      if (type === 'partition-mesh') {
+        const p1 = stagger(0, 0.35, 0.8);
+        const p2 = stagger(1, 0.65, 0.6);
+        Illustrations.partitionConsumerMesh(ctx, 220, 225, 1480, 530, {
+          progress: p1,
+          timeSec: t,
+          partitions: beat.partitions
+        });
+        if (beat.takeaway && p2 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#38BDF8', alpha: p2 });
+        }
+        return;
+      }
+
+      if (type === 'quorum-triangle') {
+        const p1 = stagger(0, 0.35, 0.75);
+        const p2 = stagger(1, 0.65, 0.6);
+        Effects.sonarPulse(ctx, 960, 465, t, { color: '#FACC15', minRadius: 45, maxRadius: 195 });
+        Illustrations.quorumTriangleMesh(ctx, 960, 470, {
+          radius: 215,
+          progress: p1,
+          timeSec: t,
+          nodes: beat.nodes
+        });
+        if (beat.takeaway && p2 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#34D399', alpha: p2 });
+        }
+        return;
+      }
+
+      if (type === 'scorecard') {
+        const p1 = stagger(0, 0.35, 0.85);
+        const p2 = stagger(1, 0.65, 0.6);
+        Illustrations.scorecardMatrix(ctx, 360, 230, 1200, 580, {
+          progress: p1,
+          items: beat.items
+        });
+        if (beat.takeaway && p2 > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'terminal', alpha: p2 });
+        }
+        return;
+      }
+
+      // STYLE 1 (Real ByteByteGo linux_20s.png): Solid Flat Vibrant Rounded Step Blocks + Crisp White Arrows
+      if (type === 'flat-step-flow') {
+        const steps = Array.isArray(beat.steps) && beat.steps.length ? beat.steps : [
+          { title: 'Step 1', sub: 'Input', fill: '#00B894', textColor: '#FFFFFF', icon: 'lightningBolt' },
+          { title: 'Step 2', sub: 'Process', fill: '#22D3EE', textColor: '#0F172A', icon: 'cpuSilicon' }
+        ];
+        const vertical = beat.direction === 'vertical' || steps.length <= 2;
+        const count = Math.min(4, steps.length);
+
+        if (vertical) {
+          const boxW = 300;
+          const boxH = 210;
+          const gap = 140;
+          const totalH = count * boxH + (count - 1) * gap;
+          const startY = Math.max(195, (920 - totalH) / 2);
+
+          steps.slice(0, count).forEach((st, idx) => {
+            const p = stagger(idx, 0.55, 0.65);
+            if (p <= 0.01) return;
+            const y = startY + idx * (boxH + gap);
+            const pop = p < 0.75 ? (p / 0.75) * 1.05 : 1.05 - ((p - 0.75) / 0.25) * 0.05;
+
+            ctx.save();
+            ctx.globalAlpha *= p;
+            ctx.translate(960, y + boxH / 2);
+            ctx.scale(pop, pop);
+            ctx.beginPath();
+            ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 28);
+            ctx.fillStyle = st.fill || (idx % 2 === 0 ? '#00B894' : '#22D3EE');
+            ctx.fill();
+
+            ctx.fillStyle = st.textColor || (idx % 2 === 0 ? '#FFFFFF' : '#0F172A');
+            ctx.font = `800 28px ${Theme.FONTS.sans}`;
+            ctx.textAlign = 'center';
+            ctx.fillText(st.title || '', 0, st.icon ? -44 : -4);
+
+            if (st.icon) {
+              Icons.draw(ctx, st.icon, 0, 18, 72, { timeSec: t, pulseRing: false });
+            }
+            if (st.sub) {
+              ctx.font = `700 18px ${Theme.FONTS.mono}`;
+              ctx.fillText(st.sub, 0, st.icon ? 82 : 34);
+            }
+            ctx.restore();
+
+            if (idx < count - 1) {
+              const pa = stagger(idx + 1, 0.55, 0.55);
+              Connectors.solidArrow(ctx, 960, y + boxH + 6, 960, y + boxH + gap - 10, {
+                progress: pa,
+                color: '#FFFFFF',
+                lineWidth: 3.2,
+                label: st.arrowLabel || '',
+                timeSec: t
+              });
+            }
+          });
+        } else {
+          const boxW = 310;
+          const boxH = 220;
+          const gap = 150;
+          const totalW = count * boxW + (count - 1) * gap;
+          const startX = (1920 - totalW) / 2;
+          const y = 370;
+
+          steps.slice(0, count).forEach((st, idx) => {
+            const p = stagger(idx, 0.5, 0.65);
+            if (p <= 0.01) return;
+            const x = startX + idx * (boxW + gap);
+            const pop = p < 0.75 ? (p / 0.75) * 1.05 : 1.05 - ((p - 0.75) / 0.25) * 0.05;
+
+            ctx.save();
+            ctx.globalAlpha *= p;
+            ctx.translate(x + boxW / 2, y + boxH / 2);
+            ctx.scale(pop, pop);
+            ctx.beginPath();
+            ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 26);
+            ctx.fillStyle = st.fill || ['#00B894', '#22D3EE', '#F59E0B', '#A78BFA'][idx % 4];
+            ctx.fill();
+
+            ctx.fillStyle = st.textColor || (idx === 1 || idx === 2 ? '#0F172A' : '#FFFFFF');
+            ctx.font = `800 26px ${Theme.FONTS.sans}`;
+            ctx.textAlign = 'center';
+            ctx.fillText(st.title || '', 0, st.icon ? -48 : -6);
+
+            if (st.icon) {
+              Icons.draw(ctx, st.icon, 0, 14, 70, { timeSec: t, pulseRing: false });
+            }
+            if (st.sub) {
+              ctx.font = `700 17px ${Theme.FONTS.mono}`;
+              ctx.fillText(st.sub, 0, st.icon ? 82 : 34);
+            }
+            ctx.restore();
+
+            if (idx < count - 1) {
+              const pa = stagger(idx + 1, 0.5, 0.55);
+              Connectors.solidArrow(ctx, x + boxW + 8, y + boxH / 2, x + boxW + gap - 10, y + boxH / 2, {
+                progress: pa,
+                color: '#FFFFFF',
+                lineWidth: 3.2,
+                label: st.arrowLabel || '',
+                timeSec: t
+              });
+            }
+          });
+        }
+
+        const pBanner = stagger(count, 0.5, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'BYTEBYTEGO', border: '#00B894', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 2 (Real ByteByteGo http_25s.png): Self-Drawing Wireframe Fan-Out + 3 Crisp White Diagonal Arrows
+      if (type === 'wireframe-fanout') {
+        const pSrc = stagger(0, 0.35, 0.75);
+        const src = beat.source || { badge: 'TOPIC', title: 'Kafka Topic', color: '#10B981' };
+        const targets = Array.isArray(beat.targets) && beat.targets.length ? beat.targets : [
+          { badge: 'BILLING', title: 'Group A (Live)', color: '#22D3EE' },
+          { badge: 'SEARCH', title: 'Group B (Index)', color: '#10B981' },
+          { badge: 'ML', title: 'Group C (Replay)', color: '#FACC15' }
+        ];
+
+        Illustrations.foldedFileBadge(ctx, 560, 480, src.badge || 'TOPIC', {
+          ribbonBg: src.color || '#10B981',
+          width: 145,
+          height: 170,
+          caption: src.title || '',
+          progress: pSrc
+        });
+
+        const ys = [275, 480, 685];
+        targets.slice(0, 3).forEach((tg, idx) => {
+          const pArr = stagger(idx + 1, 0.5, 0.65);
+          const pDst = stagger(idx + 1, 0.6, 0.7);
+          Connectors.solidArrow(ctx, 680, 445 + idx * 35, 1170, ys[idx], {
+            progress: pArr,
+            color: '#FFFFFF',
+            lineWidth: 3,
+            label: tg.arrowLabel || '',
+            timeSec: t
+          });
+          Illustrations.foldedFileBadge(ctx, 1300, ys[idx], tg.badge || `C${idx + 1}`, {
+            ribbonBg: tg.color || '#22D3EE',
+            width: 118,
+            height: 138,
+            caption: tg.title || '',
+            progress: pDst
+          });
+        });
+
+        const pBanner = stagger(4, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#22D3EE', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 3 (Real ByteByteGo bbg_card_style.png): Dashed-Border Group Container + Stacked Event Pills -> Wireframe DB
+      if (type === 'dashed-group-stack') {
+        const pBox = stagger(0, 0.3, 0.65);
+        const pStack = stagger(1, 0.4, 0.7);
+        const pArrow = stagger(2, 0.45, 0.65);
+        const pDb = stagger(3, 0.5, 0.7);
+
+        if (pBox > 0.02) {
+          ctx.save();
+          ctx.globalAlpha *= pBox;
+          // Outer dashed teal group box
+          ctx.beginPath();
+          ctx.roundRect(380, 200, 1160, 610, 24);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+          ctx.fill();
+          ctx.strokeStyle = '#38BDF8';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([12, 8]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Solid teal header pill
+          ctx.beginPath();
+          ctx.roundRect(740, 224, 440, 56, 16);
+          ctx.fillStyle = beat.headerBg || '#1E7A8C';
+          ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `800 28px ${Theme.FONTS.sans}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.header || 'Record Batching', 960, 261);
+
+          // Olive subtitle pill
+          if (beat.subtitle) {
+            ctx.beginPath();
+            ctx.roundRect(660, 296, 600, 44, 14);
+            ctx.fillStyle = '#7A6A28';
+            ctx.fill();
+            ctx.strokeStyle = '#FACC15';
+            ctx.lineWidth = 1.6;
+            ctx.setLineDash([7, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `700 20px ${Theme.FONTS.sans}`;
+            ctx.fillText(beat.subtitle, 960, 325);
+          }
+
+          // Inner plum dashed frame
+          ctx.beginPath();
+          ctx.roundRect(440, 362, 1040, 412, 20);
+          ctx.fillStyle = 'rgba(88, 52, 82, 0.42)';
+          ctx.fill();
+          ctx.strokeStyle = '#C084FC';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([10, 7]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
+
+        // Left Amber Batch Column with Bright Flat Crimson/Amber Event Pills
+        if (pStack > 0.02) {
+          const items = beat.stackItems || ['event 1', 'event 2', 'event 3', 'event 4'];
+          ctx.save();
+          ctx.globalAlpha *= pStack;
+          ctx.beginPath();
+          ctx.roundRect(490, 392, 310, 352, 16);
+          ctx.fillStyle = '#8C7428';
+          ctx.fill();
+          ctx.strokeStyle = '#FACC15';
+          ctx.lineWidth = 2.4;
+          ctx.stroke();
+
+          items.slice(0, 4).forEach((lbl, idx) => {
+            const pi = stagger(idx, 0.28, 0.45);
+            if (pi <= 0.01) return;
+            ctx.save();
+            ctx.globalAlpha *= pi;
+            ctx.beginPath();
+            ctx.roundRect(516, 412 + idx * 70, 258, 54, 10);
+            ctx.fillStyle = beat.pillColor || '#EF4444';
+            ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `700 22px ${Theme.FONTS.sans}`;
+            ctx.textAlign = 'center';
+            ctx.fillText(lbl, 645, 447 + idx * 70);
+            ctx.restore();
+          });
+
+          ctx.fillStyle = '#FEF08A';
+          ctx.font = `700 20px ${Theme.FONTS.sans}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.stackTitle || '64KB Batch', 645, 722);
+          ctx.restore();
+        }
+
+        // Dashed Pure White Arrow -> Wireframe Cylinder Storage
+        Connectors.dashedArrow(ctx, 810, 568, 1170, 568, {
+          progress: pArrow,
+          color: '#FFFFFF',
+          lineWidth: 3.4,
+          label: beat.arrowLabel || '1 single RPC',
+          timeSec: t
+        });
+
+        Illustrations.wireframeCylinderDb(ctx, 1310, 555, {
+          width: 175,
+          height: 155,
+          color: '#38BDF8',
+          label: beat.dbLabel || 'Kafka Log',
+          progress: pDb
+        });
+
+        const pBanner = stagger(4, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'BATCHING', border: '#FACC15', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 4 (Real ByteByteGo linux_40s.png): Clean Two-Column Matte Olive-Header / Dark-Teal Comparison Cards
+      if (type === 'comparison-cards') {
+        const left = beat.left || { title: 'Traditional', bullets: ['Slower random I/O', 'Per-message locks'] };
+        const right = beat.right || { title: 'Apache Kafka', bullets: ['600+ MB/s sequential log', 'Zero broker locks'] };
+        const pLeft = stagger(0, 0.4, 0.7);
+        const pRight = stagger(1, 0.55, 0.7);
+        const pBanner = stagger(2, 0.65, 0.6);
+
+        const drawPanel = (x, panel, p, headerFill, bodyFill) => {
+          if (p <= 0.01) return;
+          ctx.save();
+          ctx.globalAlpha *= p;
+          const w = 680;
+          const h = 470;
+          const y = 265;
+
+          // Body
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, h, 22);
+          ctx.fillStyle = bodyFill;
+          ctx.fill();
+
+          // Matte Header Strip
+          ctx.beginPath();
+          ctx.roundRect(x, y, w, 68, [22, 22, 0, 0]);
+          ctx.fillStyle = headerFill;
+          ctx.fill();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `800 28px ${Theme.FONTS.sans}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(panel.title || '', x + w / 2, y + 44);
+
+          // Crisp White Bullet Points
+          ctx.textAlign = 'left';
+          ctx.font = `600 25px ${Theme.FONTS.sans}`;
+          (panel.bullets || []).slice(0, 5).forEach((line, idx) => {
+            const pb = stagger(idx + 1, 0.35, 0.5);
+            if (pb <= 0.01) return;
+            ctx.save();
+            ctx.globalAlpha *= pb;
+            ctx.fillStyle = '#F8FAFC';
+            ctx.fillText(`-  ${line}`, x + 42, y + 132 + idx * 72);
+            ctx.restore();
+          });
+          ctx.restore();
+        };
+
+        drawPanel(250, left, pLeft, left.headerBg || '#6E7A3B', left.bodyBg || '#213D37');
+        drawPanel(990, right, pRight, right.headerBg || '#0F766E', right.bodyBg || '#19373D');
+
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'COMPARISON', border: '#34D399', alpha: pBanner });
+        }
+        return;
+      }
+
+      // STYLE 5 (Real ByteByteGo http_10s.png): Horizontal Gold-Outline Pill Chain + Pure White Arrows
+      if (type === 'pill-chain') {
+        const pills = Array.isArray(beat.pills) && beat.pills.length ? beat.pills : ['Producer', 'LZ4 Batch', 'Partition Log', 'Consumer'];
+        const count = Math.min(4, pills.length);
+        const pillW = 260;
+        const pillH = 82;
+        const gap = 115;
+        const totalW = count * pillW + (count - 1) * gap;
+        const startX = (1920 - totalW) / 2;
+        const cy = 500;
+
+        if (beat.heroMetric) {
+          const ph = stagger(0, 0.25, 0.65);
+          ctx.save();
+          ctx.globalAlpha *= ph;
+          ctx.fillStyle = '#FACC15';
+          ctx.font = `900 54px ${Theme.FONTS.mono}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(beat.heroMetric, 960, 320);
+          if (beat.heroSub) {
+            ctx.fillStyle = '#CBD5E1';
+            ctx.font = `600 22px ${Theme.FONTS.sans}`;
+            ctx.fillText(beat.heroSub, 960, 368);
+          }
+          ctx.restore();
+        }
+
+        pills.slice(0, count).forEach((lbl, idx) => {
+          const p = stagger(idx, 0.42, 0.6);
+          if (p <= 0.01) return;
+          const x = startX + idx * (pillW + gap);
+          const isHighlight = idx === count - 1;
+
+          ctx.save();
+          ctx.globalAlpha *= p;
+          ctx.beginPath();
+          ctx.roundRect(x, cy - pillH / 2, pillW, pillH, 26);
+          ctx.fillStyle = isHighlight ? 'rgba(16, 185, 129, 0.22)' : 'rgba(20, 24, 30, 0.92)';
+          ctx.fill();
+          ctx.strokeStyle = isHighlight ? '#34D399' : '#FACC15';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `800 26px ${Theme.FONTS.sans}`;
+          ctx.textAlign = 'center';
+          ctx.fillText(lbl, x + pillW / 2, cy + 9);
+          ctx.restore();
+
+          if (idx < count - 1) {
+            const pa = stagger(idx + 1, 0.42, 0.5);
+            Connectors.solidArrow(ctx, x + pillW + 4, cy, x + pillW + gap - 6, cy, {
+              progress: pa,
+              color: '#FFFFFF',
+              lineWidth: 3.2,
+              timeSec: t
+            });
+          }
+        });
+
+        const pBanner = stagger(count, 0.45, 0.6);
+        if (beat.takeaway && pBanner > 0.05) {
+          Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#FACC15', alpha: pBanner });
+        }
+        return;
+      }
+
+      // Default: 'icon-flow' (2 or 3 large animated icon medallions connected by glowing comet streams)
+      const nodes = Array.isArray(beat.nodes) && beat.nodes.length ? beat.nodes : [
+        { icon: 'cpuSilicon', tag: 'SOURCE', title: 'Input Stage', color: '#38BDF8' },
+        { icon: 'checkShield', tag: 'TARGET', title: 'Output Stage', color: '#34D399' }
+      ];
+      const count = Math.min(3, nodes.length);
+      const xs = count === 2 ? [500, 1420] : [380, 960, 1540];
+      const size = count === 2 ? 132 : 120;
+
+      nodes.slice(0, count).forEach((node, idx) => {
+        const pn = stagger(idx, 0.42, 0.65);
+        Icons.drawBadge(ctx, node.icon || 'cpuSilicon', xs[idx], 455, size, {
+          color: node.color || '#38BDF8',
+          tag: node.tag,
+          title: node.title,
+          sub: node.sub,
+          progress: pn,
+          timeSec: t
+        });
+        if (node.crossOut && pn > 0.7) {
+          Effects.crossOutFailure(ctx, xs[idx], 455, (pn - 0.7) / 0.3, { size: 92 });
+        }
+        if (idx < count - 1) {
+          const pa = stagger(idx + 1, 0.45, 0.65);
+          const lbl = Array.isArray(beat.arrowLabels) ? beat.arrowLabels[idx] : (beat.arrowLabel || '');
+          const col = Array.isArray(beat.arrowColors) ? beat.arrowColors[idx] : (beat.arrowColor || node.color || '#34D399');
+          Connectors.flowArrow(ctx, xs[idx] + size + 16, 455, xs[idx + 1] - size - 16, 455, t, {
+            progress: pa,
+            color: col,
+            lineWidth: 3.2,
+            label: lbl,
+            orbs: 3
+          });
+        }
+      });
+
+      const pBanner = stagger(count, 0.5, 0.6);
+      if (beat.takeaway && pBanner > 0.05) {
+        Theme.drawTakeawayPill(ctx, beat.takeaway, {
+          variant: beat.takeawayVariant || 'banner',
+          tag: beat.tag || 'KEY INSIGHT',
+          border: beat.border || '#34D399',
+          alpha: pBanner
+        });
+      }
+    }
+
+    const compiledScenes = (BLUEPRINT.scenes || []).map((sc, scIdx) => {
+      const beats = Array.isArray(sc.beats) ? sc.beats : [];
+      let cursor = 0;
+      const timedBeats = beats.map((b) => {
+        const dur = b.duration || 10;
+        const entry = { ...b, startSec: cursor, endSec: cursor + dur };
+        cursor += dur;
+        return entry;
+      });
+      const totalSceneDur = cursor || sc.duration || 20;
+
+      return {
+        id: sc.id || `scene-${scIdx + 1}`,
+        chapter: sc.chapter || `0${scIdx + 1}. Section ${scIdx + 1}`,
+        duration: totalSceneDur,
+        qaTime: Math.min(totalSceneDur - 1, 4.5),
+        backdrop: sc.backdrop || 'dotMatrix',
+        transition: sc.transition || 'fade',
+        sfx: [],
+        captions: timedBeats
+          .filter((b) => b.narration && b.narration.trim())
+          .map((b) => ({
+            start: Number((b.startSec + 0.1).toFixed(2)),
+            end: Number((b.endSec - 0.15).toFixed(2)),
+            text: b.narration.trim()
+          })),
+        render(ctx, { localT, t }) {
+          timedBeats.forEach((b, bIdx) => {
+            Theme.withBeat(ctx, localT, b.startSec, b.endSec, (helpers) => {
+              renderBeatBody(ctx, b, helpers, t);
+            }, { noFadeOut: bIdx === timedBeats.length - 1 });
+          });
+        }
+      };
+    });
+
+    createVideo({
+      title: BLUEPRINT.title || 'Technical Architecture Explainer',
+      palette: BLUEPRINT.palette || 'byteByteGoTrue',
+      fps: BLUEPRINT.fps || 30,
+      persona: BLUEPRINT.persona || 'senior-sa',
+      showCaptions: false,
+      scenes: compiledScenes
+    });
+  </script>
+</body>
+</html>
