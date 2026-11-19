@@ -15,7 +15,7 @@ const Runner = require('./core/runner');
 const Illustrations = Object.assign({}, Primitives, Archetypes);
 
 const TechVideoStudio = {
-  version: '2.2.0',
+  version: '2.3.0',
   Theme,
   Camera,
   Effects,

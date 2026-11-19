@@ -147,15 +147,61 @@ function drawBackground(ctx, width = 1920, height = 1080, paletteName = 'byteCha
       ctx.stroke();
     }
   } else if (backdrop === 'blueprint') {
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.045)';
     ctx.lineWidth = 1;
-    const step = 60;
+    const step = 48;
     for (let x = 0; x < width; x += step) {
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
     }
     for (let y = 0; y < height; y += step) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
     }
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.09)';
+    for (let x = 0; x < width; x += step * 4) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+    }
+    for (let y = 0; y < height; y += step * 4) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+    }
+  } else if (backdrop === 'dotMatrix') {
+    const grad = ctx.createRadialGradient(width * 0.5, height * 0.5, 80, width * 0.5, height * 0.5, 920);
+    grad.addColorStop(0, 'rgba(56, 189, 248, 0.06)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    const step = 36;
+    for (let x = 36; x < width; x += step) {
+      for (let y = 110; y < height - 40; y += step) {
+        ctx.fillRect(x, y, 2, 2);
+      }
+    }
+  } else if (backdrop === 'isometric') {
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.045)';
+    ctx.lineWidth = 1;
+    const step = 64;
+    for (let x = -height; x < width + height; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + height * 1.4, height);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x, height);
+      ctx.lineTo(x + height * 1.4, 0);
+      ctx.stroke();
+    }
+  } else if (backdrop === 'spotlight') {
+    const grad = ctx.createRadialGradient(width * 0.5, height * 0.52, 40, width * 0.5, height * 0.52, 760);
+    grad.addColorStop(0, 'rgba(250, 204, 21, 0.075)');
+    grad.addColorStop(0.5, 'rgba(16, 185, 129, 0.035)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+  } else if (backdrop === 'splitHorizontal') {
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+    ctx.fillRect(0, height * 0.52, width, height * 0.48);
   }
 
   ctx.restore();
@@ -289,19 +335,88 @@ function drawGlassCard(ctx, x, y, w, h, opts = {}) {
 }
 
 /**
- * Concise Bottom Takeaway Pill (Recommended <= 8 words).
+ * Concise Bottom Takeaway Callout — Supports multiple visual styles:
+ * variant: 'pill' (default) | 'banner' | 'terminal' | 'badge'
  */
 function drawTakeawayPill(ctx, text, options = {}) {
   const canvasWidth = options.canvasWidth || 1920;
-  const y = options.y || 865;
-  const bg = options.bg || 'rgba(2, 132, 199, 0.28)';
-  const border = options.border || '#38BDF8';
+  const y = options.y || 925;
+  const variant = options.variant || 'pill';
   const alpha = options.alpha !== undefined ? options.alpha : 1;
 
   if (alpha <= 0.01) return;
 
   ctx.save();
   ctx.globalAlpha *= alpha;
+
+  if (variant === 'banner') {
+    const accent = options.border || '#10B981';
+    const tag = options.tag || 'KEY INSIGHT';
+    ctx.font = `600 18px ${FONTS.sans}`;
+    const textW = ctx.measureText(text).width;
+    const tagW = 148;
+    const w = Math.max(640, Math.min(canvasWidth - 200, textW + tagW + 76));
+    const h = 52;
+    const x = (canvasWidth - w) / 2;
+
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 10);
+    ctx.fillStyle = options.bg || 'rgba(15, 23, 42, 0.88)';
+    ctx.fill();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    // Left accent bar + tag box
+    ctx.beginPath();
+    ctx.roundRect(x, y, tagW, h, [10, 0, 0, 10]);
+    ctx.fillStyle = accent;
+    ctx.fill();
+
+    ctx.fillStyle = '#090D16';
+    ctx.font = `700 14px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(tag, x + tagW / 2, y + h / 2 + 5);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `600 18px ${FONTS.sans}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(text, x + tagW + 24, y + h / 2 + 6);
+    ctx.restore();
+    return;
+  }
+
+  if (variant === 'terminal') {
+    const accent = options.border || '#FACC15';
+    const prefix = options.tag || '⚡ ARCHITECT RULE //';
+    ctx.font = `600 17px ${FONTS.mono}`;
+    const fullText = `${prefix}  ${text}`;
+    const measured = ctx.measureText(fullText).width;
+    const w = Math.max(620, Math.min(canvasWidth - 180, measured + 68));
+    const h = 50;
+    const x = (canvasWidth - w) / 2;
+
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 8);
+    ctx.fillStyle = 'rgba(12, 16, 23, 0.92)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Left glowing stripe
+    ctx.fillStyle = accent;
+    ctx.fillRect(x, y + 6, 5, h - 12);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FEF08A';
+    ctx.fillText(fullText, x + w / 2, y + h / 2 + 6);
+    ctx.restore();
+    return;
+  }
+
+  const bg = options.bg || 'rgba(2, 132, 199, 0.28)';
+  const border = options.border || '#38BDF8';
   ctx.font = `600 19px ${FONTS.sans}`;
   const measured = ctx.measureText(text).width;
   const w = Math.max(500, Math.min(canvasWidth - 240, measured + 88));

@@ -14,14 +14,22 @@ Produce broadcast-grade **1920x1080 @ 60FPS** technical explainer videos with **
 
 ---
 
-## 1. The 6 Golden Visual Rules (Mandatory)
+## 1. The 8 Golden Visual & Audio Rules (Mandatory)
 
 1. **Zero Watermarks**: Never draw `bytebytego.com` or third-party channel logos on the canvas.
-2. **Ultra-Concise Micro-Labels**: Maximum **2–4 words per diagram label**. Never write paragraphs inside diagrams.
-3. **Never Repeat Generic Boxes**: Every component must have a distinct silhouette (`wireframeBrowser`, `isometricServerStack`, `foldedFileBadge`, `lineArtUser`, `consistentHashRing`, `bTreeHierarchy`, `siliconCpuDie`, etc.).
-4. **Translucent Tinted Glass Grouping**: Group logical subsystems inside `Theme.drawGlassCard(ctx, x, y, w, h, { tint: 'teal', badge: 'Client Side' })` instead of opaque flat boxes.
-5. **Generous Negative Space (`>= 35%`)**: Keep at least 35% of the `#262626` canvas open so the viewer's eye locks immediately onto the active flow.
-6. **Mandatory Visual QA (`qa_contact_sheet.jpg`)**: Always run the `qa` command and inspect the 2x2 contact sheet + negative-space telemetry before rendering the final MP4.
+2. **No On-Screen English Subtitles (`showCaptions: false`)**: Use `captions` / `narration` purely to synthesize the Neural Senior SA voiceover audio track. Never burn long subtitle bars onto the bottom of the screen.
+3. **Zero Static / Whoosh Transition Noise**: Never emit harsh white-noise `whoosh` or `draw` SFX during scene transitions. Keep the audio track clean for the neural voiceover (`--no-sfx`).
+4. **Multi-Style Scene Diversity (Never Repeat Same Layout)**: Every scene in a video MUST rotate across distinct ByteByteGo composition paradigms and backdrops (`dotMatrix`, `spotlight`, `isometric`, `splitHorizontal`, `blueprint`, `waves`) — never repeat 2-3 identical `drawGlassCard` columns across every scene!
+   - *Style A*: 3D Hardware Latency Pyramid (`memoryHierarchyPyramid`) + Contiguous Byte-Array Memory Strip (`byteArrayTape`)
+   - *Style B*: 360° Radial Hub-and-Spoke Reactor Ring (`radialHubAndSpoke`)
+   - *Style C*: Horizontal Top-vs-Bottom "VS" Execution Race (`horizontalLaneRace`) + Multi-Level Tree (`bTreeHierarchy`)
+   - *Style D*: Horizontal User-Space / Kernel-Space Strata Divider (`backdrop: 'splitHorizontal'`)
+   - *Style E*: Triangular Quorum Consensus Mesh (`quorumTriangleMesh`) + 360° Sharding Ring (`hashSlotRingCluster`)
+   - *Style F*: 2x2 Architectural Do's & Don'ts Scorecard Matrix (`scorecardMatrix`)
+5. **Ultra-Concise Micro-Labels**: Maximum **2–4 words per diagram node label**. Never write long paragraphs inside diagrams.
+6. **Distinct Component Silhouettes**: Use specialized visual primitives (`wireframeBrowser`, `isometricServerStack`, `foldedFileBadge`, `lineArtUser`, `consistentHashRing`, `bTreeHierarchy`, `siliconCpuDie`, etc.).
+7. **Generous Negative Space (`>= 35%`)**: Keep at least 35% of the `#262626` canvas open so the viewer's eye locks immediately onto the active flow.
+8. **Mandatory Visual QA (`qa_contact_sheet.jpg`)**: Always run the `qa` command and inspect the contact sheet + negative-space telemetry before rendering the final MP4.
 
 ---
 

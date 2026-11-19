@@ -68,34 +68,9 @@ function mixCue(left, right, startSample, type, gain = 0.22) {
       left[startSample + i] += s;
       right[startSample + i] += s;
     }
-  } else if (type === 'whoosh') {
-    const dur = Math.floor(0.42 * SAMPLE_RATE);
-    let lpL = 0;
-    let lpR = 0;
-    for (let i = 0; i < dur && startSample + i < maxLen; i++) {
-      const u = i / dur;
-      const env = Math.sin(Math.PI * u) ** 1.8;
-      const alpha = 0.04 + 0.14 * Math.sin(Math.PI * u);
-      const nL = (Math.random() * 2 - 1);
-      const nR = (Math.random() * 2 - 1);
-      lpL += alpha * (nL - lpL);
-      lpR += alpha * (nR - lpR);
-      const pan = 0.35 + 0.3 * u;
-      left[startSample + i] += lpL * env * gain * (1 - pan * 0.4);
-      right[startSample + i] += lpR * env * (0.6 + pan * 0.4);
-    }
-  } else if (type === 'draw') {
-    const dur = Math.floor(0.28 * SAMPLE_RATE);
-    let state = 0;
-    for (let i = 0; i < dur && startSample + i < maxLen; i++) {
-      const u = i / dur;
-      const env = Math.sin(Math.PI * u);
-      state += 0.08 * ((Math.random() * 2 - 1) - state);
-      const tone = Math.sin(2 * Math.PI * (520 + 180 * u) * (i / SAMPLE_RATE)) * 0.35;
-      const s = (state * 0.5 + tone) * env * (gain * 0.45);
-      left[startSample + i] += s;
-      right[startSample + i] += s;
-    }
+  } else if (type === 'whoosh' || type === 'draw') {
+    // Intentionally silent: avoid any harsh white-noise / static "whoosh" sweeps during transitions
+    return;
   } else if (type === 'success') {
     const dur = Math.floor(0.45 * SAMPLE_RATE);
     for (let i = 0; i < dur && startSample + i < maxLen; i++) {

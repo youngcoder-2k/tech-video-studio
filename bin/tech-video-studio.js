@@ -446,7 +446,7 @@ async function cmdRender(positional, flags) {
         audioArgs.push(
           '-i', activeAudioPath,
           '-i', tmpSfxWav,
-          '-filter_complex', '[1:a]loudnorm=I=-14:TP=-1.5:LRA=11[voice];[2:a]volume=0.48[sfx];[voice][sfx]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]',
+          '-filter_complex', '[1:a]loudnorm=I=-14:TP=-1.5:LRA=11[voice];[2:a]volume=0.18[sfx];[voice][sfx]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]',
           '-map', '0:v',
           '-map', '[aout]',
           '-c:a', 'aac',

@@ -27,6 +27,7 @@ function createVideo(config) {
   const palette = config.palette || 'byteCharcoal';
   const title = config.title || 'Technical Architecture';
   const showProgressBar = config.showProgressBar !== undefined ? config.showProgressBar : true;
+  const showCaptions = config.showCaptions === true;
 
   const canvas = typeof config.canvas === 'string'
     ? document.querySelector(config.canvas)
@@ -64,15 +65,13 @@ function createVideo(config) {
     const qaTime = sc.qaTime !== undefined ? start + sc.qaTime : Number((start + duration * 0.65).toFixed(2));
     const transition = sc.transition || 'fade';
 
-    if (idx > 0) {
-      allSfxCues.push({ time: start, type: 'whoosh', volume: 0.14 });
-    }
     if (Array.isArray(sc.sfx)) {
       sc.sfx.forEach((cue) => {
+        if (cue.type === 'whoosh' || cue.type === 'draw') return;
         allSfxCues.push({
           time: Number((start + (cue.time || 0)).toFixed(3)),
           type: cue.type || 'pop',
-          volume: cue.volume
+          volume: cue.volume !== undefined ? cue.volume : 0.08
         });
       });
     }
@@ -203,9 +202,11 @@ function createVideo(config) {
         progress: showProgressBar ? (clamped / totalDuration) : 0
       });
 
-      const activeCap = allCaptions.find((c) => clamped >= c.start && clamped <= c.end);
-      if (activeCap && activeCap.text) {
-        Theme.drawCaptionBar(ctx, activeCap.text, { canvasWidth: width });
+      if (showCaptions) {
+        const activeCap = allCaptions.find((c) => clamped >= c.start && clamped <= c.end);
+        if (activeCap && activeCap.text) {
+          Theme.drawCaptionBar(ctx, activeCap.text, { canvasWidth: width });
+        }
       }
 
       ctx.restore();

@@ -727,7 +727,8 @@ function bTreeHierarchy(ctx, cx, topY, opts = {}) {
   if (progress <= 0.01) return;
 
   function drawKeyNode(nx, ny, keys, active) {
-    const cellW = 54;
+    const maxChars = Math.max(2, ...keys.map((k) => String(k).length));
+    const cellW = Math.max(56, maxChars * 10 + 22);
     const w = keys.length * cellW;
     const h = 44;
     const x = nx - w / 2;
@@ -748,7 +749,7 @@ function bTreeHierarchy(ctx, cx, topY, opts = {}) {
         ctx.stroke();
       }
       ctx.fillStyle = active ? '#FEF08A' : '#FFFFFF';
-      ctx.font = `700 16px ${FONTS.mono}`;
+      ctx.font = `700 15px ${FONTS.mono}`;
       ctx.textAlign = 'center';
       ctx.fillText(k, x + idx * cellW + cellW / 2, ny + 28);
     });
@@ -761,7 +762,9 @@ function bTreeHierarchy(ctx, cx, topY, opts = {}) {
   drawKeyNode(cx, topY, rootKeys, true);
 
   const childY = topY + 130;
-  const spacing = opts.spacing || 210;
+  const maxChildChars = Math.max(2, ...children.flatMap((c) => c.keys.map((k) => String(k).length)));
+  const estChildW = Math.max(112, (children[0] ? children[0].keys.length : 2) * Math.max(56, maxChildChars * 10 + 22));
+  const spacing = opts.spacing || Math.max(210, estChildW + 32);
   const startX = cx - ((children.length - 1) * spacing) / 2;
 
   children.forEach((ch, i) => {
@@ -1105,6 +1108,669 @@ function rateLimiterBucket(ctx, cx, cy, opts = {}) {
   ctx.restore();
 }
 
+// 20. 3D MEMORY HIERARCHY & LATENCY PYRAMID (Style A: Hardware Cutaway)
+function memoryHierarchyPyramid(ctx, cx, cy, opts = {}) {
+  const w = opts.width || 520;
+  const h = opts.height || 440;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const tiers = opts.tiers || [
+    { name: 'CPU L1/L2 Cache', latency: '1 ns', color: '#FACC15', fill: 'rgba(250, 204, 21, 0.22)', active: false, bar: 0.08 },
+    { name: 'DRAM (Redis In-Memory)', latency: '100 ns ⚡', color: '#34D399', fill: 'rgba(16, 185, 129, 0.35)', active: true, bar: 0.18 },
+    { name: 'NVMe Flash SSD', latency: '10,000 ns (100x Slower)', color: '#38BDF8', fill: 'rgba(56, 189, 248, 0.16)', active: false, bar: 0.65 },
+    { name: 'Magnetic Disk / Network', latency: '1,000,000 ns (10,000x)', color: '#F87171', fill: 'rgba(248, 113, 113, 0.18)', active: false, bar: 1.0 }
+  ];
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  const topY = cy - h / 2;
+  const tierGap = 12;
+  const tierH = (h - (tiers.length - 1) * tierGap) / tiers.length;
+
+  tiers.forEach((tier, i) => {
+    const localP = Math.max(0, Math.min(1, (progress - i * 0.12) / 0.6));
+    if (localP <= 0.01) return;
+
+    const ty = topY + i * (tierH + tierGap);
+    const topRatio = 0.36 + (i / tiers.length) * 0.64;
+    const botRatio = 0.36 + ((i + 0.88) / tiers.length) * 0.64;
+    const tw1 = w * topRatio;
+    const tw2 = w * botRatio;
+
+    ctx.save();
+    ctx.globalAlpha *= localP;
+
+    // Trapezoid body
+    ctx.beginPath();
+    ctx.moveTo(cx - tw1 / 2, ty);
+    ctx.lineTo(cx + tw1 / 2, ty);
+    ctx.lineTo(cx + tw2 / 2, ty + tierH);
+    ctx.lineTo(cx - tw2 / 2, ty + tierH);
+    ctx.closePath();
+    ctx.fillStyle = tier.fill;
+    ctx.fill();
+
+    ctx.strokeStyle = tier.color;
+    ctx.lineWidth = tier.active ? 3 : 1.8;
+    if (tier.active) {
+      ctx.shadowColor = tier.color;
+      ctx.shadowBlur = 16;
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Tier title & latency
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 ${tier.active ? 18 : 16}px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(tier.name, cx, ty + tierH * 0.44);
+
+    ctx.fillStyle = tier.color;
+    ctx.font = `700 15px ${FONTS.mono}`;
+    ctx.fillText(tier.latency, cx, ty + tierH * 0.78);
+
+    // Active pointer badge on left
+    if (tier.active) {
+      const bx = cx - tw2 / 2 - 125;
+      const by = ty + tierH / 2 - 16;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, 108, 32, 16);
+      ctx.fillStyle = '#10B981';
+      ctx.fill();
+      ctx.fillStyle = '#052E16';
+      ctx.font = `800 13px ${FONTS.mono}`;
+      ctx.fillText('REDIS ZONE', bx + 54, by + 21);
+    }
+
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+// 21. CONTIGUOUS MEMORY BYTE-ARRAY TAPE & STRUCT LAYOUT (Style A: Memory Strip)
+function byteArrayTape(ctx, x, y, w, h, opts = {}) {
+  const title = opts.title || 'SDS Memory Layout (Contiguous Byte Array)';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const cells = opts.cells || [
+    { label: 'len = 5', sub: '4 Bytes', color: '#FACC15', bg: 'rgba(250, 204, 21, 0.20)', span: 1.3 },
+    { label: 'alloc = 16', sub: '4 Bytes', color: '#34D399', bg: 'rgba(52, 211, 153, 0.20)', span: 1.3 },
+    { label: 'flags', sub: '1B', color: '#C084FC', bg: 'rgba(192, 132, 252, 0.20)', span: 0.9 },
+    { label: "'R'", sub: '0x52', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.22)', span: 0.7 },
+    { label: "'E'", sub: '0x45', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.22)', span: 0.7 },
+    { label: "'D'", sub: '0x44', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.22)', span: 0.7 },
+    { label: "'I'", sub: '0x49', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.22)', span: 0.7 },
+    { label: "'S'", sub: '0x53', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.22)', span: 0.7 },
+    { label: "'\\0'", sub: '1B', color: '#94A3B8', bg: 'rgba(148, 163, 184, 0.18)', span: 0.7 },
+    { label: 'free (11B)', sub: 'Pre-allocated', color: '#4ADE80', bg: 'rgba(74, 222, 128, 0.12)', span: 1.6, dashed: true }
+  ];
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  if (title) {
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 20px ${FONTS.sans}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(title, x, y - 42);
+  }
+
+  const totalSpan = cells.reduce((acc, c) => acc + (c.span || 1), 0);
+  let curX = x;
+  const tapeH = Math.min(86, h);
+
+  // Draw top brackets if provided
+  if (opts.brackets) {
+    opts.brackets.forEach((b) => {
+      const bx1 = x + w * b.startRatio;
+      const bx2 = x + w * b.endRatio;
+      const by = y - 12;
+      ctx.strokeStyle = b.color || '#94A3B8';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(bx1 + 4, by + 6);
+      ctx.lineTo(bx1 + 4, by - 4);
+      ctx.lineTo(bx2 - 4, by - 4);
+      ctx.lineTo(bx2 - 4, by + 6);
+      ctx.stroke();
+
+      ctx.fillStyle = b.color || '#E2E8F0';
+      ctx.font = `600 13px ${FONTS.mono}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(b.label, (bx1 + bx2) / 2, by - 10);
+    });
+  }
+
+  cells.forEach((c, idx) => {
+    const cw = (w * (c.span || 1)) / totalSpan;
+    const cellP = Math.max(0, Math.min(1, (progress * 1.3) - idx * 0.05));
+    if (cellP <= 0.01) {
+      curX += cw;
+      return;
+    }
+
+    ctx.save();
+    ctx.globalAlpha *= cellP;
+    ctx.beginPath();
+    ctx.roundRect(curX + 2, y, cw - 4, tapeH, 6);
+    ctx.fillStyle = c.bg || 'rgba(30, 41, 59, 0.85)';
+    ctx.fill();
+
+    ctx.strokeStyle = c.color || '#38BDF8';
+    ctx.lineWidth = 1.8;
+    if (c.dashed) ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 15px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(c.label, curX + cw / 2, y + tapeH * 0.45);
+
+    if (c.sub) {
+      ctx.fillStyle = c.color || '#94A3B8';
+      ctx.font = `500 12px ${FONTS.mono}`;
+      ctx.fillText(c.sub, curX + cw / 2, y + tapeH * 0.78);
+    }
+    ctx.restore();
+    curX += cw;
+  });
+
+  ctx.restore();
+}
+
+// 22. RADIAL HUB-AND-SPOKE REACTOR TOPOLOGY (Style B: Radial Canvas)
+function radialHubAndSpoke(ctx, cx, cy, opts = {}) {
+  const rx = opts.rx || 430;
+  const ry = opts.ry || 255;
+  const hubRadius = opts.hubRadius || 98;
+  const hubTitle = opts.hubTitle || 'epoll_wait()';
+  const hubSub = opts.hubSub || 'O(1) Kernel Reactor';
+  const hubColor = opts.hubColor || '#FACC15';
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const timeSec = opts.timeSec || 0;
+  const nodes = opts.nodes || [
+    { label: 'Client #1', cmd: 'SET user:1', angle: -145, color: '#38BDF8' },
+    { label: 'Client #2', cmd: 'GET cart:9', angle: -180, color: '#34D399' },
+    { label: 'Client #3', cmd: 'INCR hits', angle: 145, color: '#C084FC' },
+    { label: 'Client #4', cmd: 'HSET prof', angle: -35, color: '#F472B6' },
+    { label: 'Client #5', cmd: 'ZADD rank', angle: 0, color: '#FBBF24' },
+    { label: 'Client #6', cmd: 'LPUSH job', angle: 35, color: '#60A5FA' }
+  ];
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  // Outer subtle orbital guide ellipse
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  // Draw radial spokes and satellite nodes
+  nodes.forEach((n, idx) => {
+    const rad = (n.angle * Math.PI) / 180;
+    const nx = cx + Math.cos(rad) * rx;
+    const ny = cy + Math.sin(rad) * ry;
+    const hx = cx + Math.cos(rad) * (hubRadius + 12);
+    const hy = cy + Math.sin(rad) * (hubRadius + 12);
+
+    // Spoke line
+    ctx.save();
+    ctx.strokeStyle = n.color;
+    ctx.globalAlpha *= 0.45;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath();
+    ctx.moveTo(nx, ny);
+    ctx.lineTo(hx, hy);
+    ctx.stroke();
+    ctx.restore();
+
+    // Animated packet traveling inward along spoke
+    const packetPhase = ((timeSec * 0.85 + idx * 0.21) % 1);
+    const px = nx + (hx - nx) * packetPhase;
+    const py = ny + (hy - ny) * packetPhase;
+    ctx.save();
+    ctx.fillStyle = n.color;
+    ctx.shadowColor = n.color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(px, py, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Satellite node pill card
+    const nw = 178;
+    const nh = 68;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(nx - nw / 2, ny - nh / 2, nw, nh, 12);
+    ctx.fillStyle = 'rgba(17, 24, 39, 0.92)';
+    ctx.fill();
+    ctx.strokeStyle = n.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 15px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(n.label, nx, ny - 6);
+
+    ctx.fillStyle = n.color;
+    ctx.font = `600 13.5px ${FONTS.mono}`;
+    ctx.fillText(n.cmd, nx, ny + 18);
+    ctx.restore();
+  });
+
+  // Central Glowing Reactor Core
+  ctx.save();
+  const grad = ctx.createRadialGradient(cx, cy, 12, cx, cy, hubRadius + 24);
+  grad.addColorStop(0, 'rgba(250, 204, 21, 0.28)');
+  grad.addColorStop(1, 'rgba(250, 204, 21, 0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, hubRadius + 24, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, hubRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#141B2D';
+  ctx.fill();
+  ctx.strokeStyle = hubColor;
+  ctx.lineWidth = 3.2;
+  ctx.stroke();
+
+  // Rotating inner dashed ring
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(timeSec * 0.6);
+  ctx.strokeStyle = '#38BDF8';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([12, 8]);
+  ctx.beginPath();
+  ctx.arc(0, 0, hubRadius - 14, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `800 20px ${FONTS.mono}`;
+  ctx.textAlign = 'center';
+  ctx.fillText(hubTitle, cx, cy - 4);
+
+  ctx.fillStyle = hubColor;
+  ctx.font = `600 13.5px ${FONTS.sans}`;
+  ctx.fillText(hubSub, cx, cy + 20);
+  ctx.restore();
+
+  ctx.restore();
+}
+
+// 23. HORIZONTAL "VS" EXECUTION RACE & TIMELINE LANES (Style C: Top-vs-Bottom Split Battle)
+function horizontalLaneRace(ctx, x, y, w, h, opts = {}) {
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const topLane = opts.topLane || {
+    tag: 'STOP-THE-WORLD RESIZE (Traditional Hash Table)',
+    desc: 'Blocks all client requests while copying 100M keys at once',
+    latency: '4,200 ms FREEZE ❌',
+    color: '#EF4444',
+    bg: 'rgba(127, 29, 29, 0.22)'
+  };
+  const bottomLane = opts.bottomLane || {
+    tag: 'PROGRESSIVE REHASHING (Redis dict.c)',
+    desc: 'Migrates 1 bucket per query incrementally: ht[0] -> ht[1]',
+    latency: '0.08 ms (ZERO FREEZE) ✔',
+    color: '#10B981',
+    bg: 'rgba(6, 78, 59, 0.24)'
+  };
+
+  if (progress <= 0.01) return;
+
+  const laneH = (h - 44) / 2;
+  const botY = y + laneH + 44;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  // Top Lane
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, laneH, 14);
+  ctx.fillStyle = topLane.bg;
+  ctx.fill();
+  ctx.strokeStyle = topLane.color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Top Header Strip
+  ctx.fillStyle = topLane.color;
+  ctx.font = `800 16px ${FONTS.mono}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(topLane.tag, x + 24, y + 32);
+
+  ctx.fillStyle = '#CBD5E1';
+  ctx.font = `500 14.5px ${FONTS.sans}`;
+  ctx.fillText(topLane.desc, x + 24, y + 56);
+
+  // Latency Badge Right
+  ctx.beginPath();
+  ctx.roundRect(x + w - 260, y + 16, 236, 38, 19);
+  ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+  ctx.fill();
+  ctx.strokeStyle = topLane.color;
+  ctx.stroke();
+  ctx.fillStyle = '#FCA5A5';
+  ctx.font = `700 15px ${FONTS.mono}`;
+  ctx.textAlign = 'center';
+  ctx.fillText(topLane.latency, x + w - 142, y + 40);
+
+  // Bottom Lane
+  ctx.beginPath();
+  ctx.roundRect(x, botY, w, laneH, 14);
+  ctx.fillStyle = bottomLane.bg;
+  ctx.fill();
+  ctx.strokeStyle = bottomLane.color;
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#34D399';
+  ctx.font = `800 16px ${FONTS.mono}`;
+  ctx.textAlign = 'left';
+  ctx.fillText(bottomLane.tag, x + 24, botY + 32);
+
+  ctx.fillStyle = '#CBD5E1';
+  ctx.font = `500 14.5px ${FONTS.sans}`;
+  ctx.fillText(bottomLane.desc, x + 24, botY + 56);
+
+  ctx.beginPath();
+  ctx.roundRect(x + w - 260, botY + 16, 236, 38, 19);
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+  ctx.fill();
+  ctx.strokeStyle = '#34D399';
+  ctx.stroke();
+  ctx.fillStyle = '#A7F3D0';
+  ctx.font = `700 15px ${FONTS.mono}`;
+  ctx.textAlign = 'center';
+  ctx.fillText(bottomLane.latency, x + w - 142, botY + 40);
+
+  // Center Glowing VS Emblem
+  const vsY = y + laneH + 22;
+  const vsX = x + w / 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 40, vsY);
+  ctx.lineTo(x + w - 40, vsY);
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([8, 6]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.arc(vsX, vsY, 24, 0, Math.PI * 2);
+  ctx.fillStyle = '#FACC15';
+  ctx.fill();
+  ctx.fillStyle = '#0F172A';
+  ctx.font = `900 16px ${FONTS.sans}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('VS', vsX, vsY + 6);
+
+  ctx.restore();
+}
+
+// 24. TRIANGULAR QUORUM CONSENSUS MESH (Style E: Sentinel / Raft Mesh)
+function quorumTriangleMesh(ctx, cx, cy, opts = {}) {
+  const radius = opts.radius || 145;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const timeSec = opts.timeSec || 0;
+  const nodes = opts.nodes || [
+    { name: 'Sentinel 1', role: 'Leader ★', color: '#FACC15', angle: -90 },
+    { name: 'Sentinel 2', role: 'Voter ✔', color: '#38BDF8', angle: 30 },
+    { name: 'Sentinel 3', role: 'Voter ✔', color: '#38BDF8', angle: 150 }
+  ];
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  const pts = nodes.map((n) => {
+    const rad = (n.angle * Math.PI) / 180;
+    return {
+      ...n,
+      x: cx + Math.cos(rad) * radius,
+      y: cy + Math.sin(rad) * radius * 0.85
+    };
+  });
+
+  // Mesh heartbeat edges
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    ctx.save();
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.5)';
+    ctx.lineWidth = 2.2;
+    ctx.setLineDash([7, 5]);
+    ctx.lineDashOffset = -timeSec * 32;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Center Quorum Pill
+  ctx.beginPath();
+  ctx.roundRect(cx - 82, cy - 20, 164, 40, 20);
+  ctx.fillStyle = 'rgba(250, 204, 21, 0.18)';
+  ctx.fill();
+  ctx.strokeStyle = '#FACC15';
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  ctx.fillStyle = '#FEF08A';
+  ctx.font = `700 13.5px ${FONTS.mono}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('QUORUM (2/3) ✔', cx, cy + 5);
+
+  // Sentinel vertices
+  pts.forEach((p) => {
+    const bw = 156;
+    const bh = 58;
+    ctx.beginPath();
+    ctx.roundRect(p.x - bw / 2, p.y - bh / 2, bw, bh, 12);
+    ctx.fillStyle = '#111827';
+    ctx.fill();
+    ctx.strokeStyle = p.color;
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 15px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(p.name, p.x, p.y - 4);
+
+    ctx.fillStyle = p.color;
+    ctx.font = `600 12.5px ${FONTS.mono}`;
+    ctx.fillText(p.role, p.x, p.y + 16);
+  });
+
+  ctx.restore();
+}
+
+// 25. 16,384 HASH-SLOT CLUSTER RING TOPOLOGY (Style E: Circular Sharding Ring)
+function hashSlotRingCluster(ctx, cx, cy, opts = {}) {
+  const radius = opts.radius || 175;
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const timeSec = opts.timeSec || 0;
+  const shards = opts.shards || [
+    { name: 'Master Shard 1', range: 'Slots 0..5460', color: '#38BDF8', startDeg: -110, endDeg: 0 },
+    { name: 'Master Shard 2', range: 'Slots 5461..10922', color: '#34D399', startDeg: 10, endDeg: 120 },
+    { name: 'Master Shard 3', range: 'Slots 10923..16383', color: '#FACC15', startDeg: 130, endDeg: 240 }
+  ];
+
+  if (progress <= 0.01) return;
+
+  ctx.save();
+  ctx.globalAlpha *= progress;
+
+  // Draw segmented glowing ring arcs
+  shards.forEach((sh, idx) => {
+    const a1 = (sh.startDeg * Math.PI) / 180;
+    const a2 = (sh.endDeg * Math.PI) / 180;
+    const mid = (a1 + a2) / 2;
+
+    ctx.save();
+    ctx.strokeStyle = sh.color;
+    ctx.lineWidth = 16;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, a1, a1 + (a2 - a1) * progress);
+    ctx.stroke();
+    ctx.restore();
+
+    // Docked Shard Node outside arc midpoint
+    const nx = cx + Math.cos(mid) * (radius + 115);
+    const ny = cy + Math.sin(mid) * (radius + 88);
+
+    // Routing beam from center to shard
+    ctx.save();
+    ctx.strokeStyle = sh.color;
+    ctx.globalAlpha *= 0.45;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 5]);
+    ctx.lineDashOffset = -timeSec * 36;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(nx, ny);
+    ctx.stroke();
+    ctx.restore();
+
+    const nw = 188;
+    const nh = 68;
+    ctx.beginPath();
+    ctx.roundRect(nx - nw / 2, ny - nh / 2, nw, nh, 10);
+    ctx.fillStyle = '#0F172A';
+    ctx.fill();
+    ctx.strokeStyle = sh.color;
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 15px ${FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(sh.name, nx, ny - 6);
+
+    ctx.fillStyle = sh.color;
+    ctx.font = `600 13px ${FONTS.mono}`;
+    ctx.fillText(sh.range, nx, ny + 18);
+  });
+
+  // Center Smart Client Formula Core
+  ctx.beginPath();
+  ctx.arc(cx, cy, 86, 0, Math.PI * 2);
+  ctx.fillStyle = '#111827';
+  ctx.fill();
+  ctx.strokeStyle = '#5CE1E6';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = `700 15px ${FONTS.sans}`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Smart Client', cx, cy - 18);
+  ctx.fillStyle = '#5CE1E6';
+  ctx.font = `700 14px ${FONTS.mono}`;
+  ctx.fillText('CRC16(key)', cx, cy + 5);
+  ctx.fillStyle = '#FACC15';
+  ctx.fillText('% 16,384', cx, cy + 25);
+
+  ctx.restore();
+}
+
+// 26. 2x2 ARCHITECTURAL DO'S & DON'TS SCORECARD MATRIX (Style F: Blueprint Scorecard)
+function scorecardMatrix(ctx, x, y, w, h, opts = {}) {
+  const progress = opts.progress !== undefined ? opts.progress : 1;
+  const items = opts.items || [
+    { type: 'dont', title: 'Big Keys (>10MB Hashes)', cmd: '❌ DEL huge_user_hash', desc: 'Blocks single thread for seconds during synchronous free', color: '#F87171' },
+    { type: 'do', title: 'Async Background Free', cmd: '✔ UNLINK huge_user_hash', desc: 'Unlinks pointer in O(1) and frees memory on bio thread', color: '#34D399' },
+    { type: 'dont', title: 'Unbounded Lua Loops', cmd: '❌ EVAL "while true..."', desc: 'Atomic script execution freezes all 10,000+ clients', color: '#F87171' },
+    { type: 'do', title: '75% maxmemory Cap', cmd: '✔ maxmemory 75% RAM', desc: 'Leaves 25% headroom for BGSAVE Copy-On-Write pages', color: '#38BDF8' }
+  ];
+
+  if (progress <= 0.01) return;
+
+  const gap = 22;
+  const cardW = (w - gap) / 2;
+  const cardH = (h - gap) / 2;
+
+  ctx.save();
+  items.forEach((it, idx) => {
+    const col = idx % 2;
+    const row = Math.floor(idx / 2);
+    const cx = x + col * (cardW + gap);
+    const cy = y + row * (cardH + gap);
+    const localP = Math.max(0, Math.min(1, (progress * 1.2) - idx * 0.12));
+    if (localP <= 0.01) return;
+
+    ctx.save();
+    ctx.globalAlpha *= localP;
+
+    // Card surface with top accent bar
+    ctx.beginPath();
+    ctx.roundRect(cx, cy, cardW, cardH, 14);
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.fill();
+    ctx.strokeStyle = it.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Top status pill
+    const isDo = it.type === 'do';
+    ctx.beginPath();
+    ctx.roundRect(cx + 18, cy + 16, 128, 28, 14);
+    ctx.fillStyle = isDo ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)';
+    ctx.fill();
+    ctx.fillStyle = it.color;
+    ctx.font = `800 12.5px ${FONTS.mono}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(isDo ? '✔ BEST PRACTICE' : '❌ ANTI-PATTERN', cx + 82, cy + 35);
+
+    // Title
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `700 18px ${FONTS.sans}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(it.title, cx + 18, cy + 72);
+
+    // CLI Command box
+    ctx.beginPath();
+    ctx.roundRect(cx + 18, cy + 88, cardW - 36, 38, 8);
+    ctx.fillStyle = '#090D16';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = it.color;
+    ctx.font = `600 14.5px ${FONTS.mono}`;
+    ctx.fillText(it.cmd, cx + 32, cy + 112);
+
+    // Description
+    ctx.fillStyle = '#CBD5E1';
+    ctx.font = `500 14px ${FONTS.sans}`;
+    ctx.fillText(it.desc, cx + 18, cy + 154);
+
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
 module.exports = {
   isometricServerStack,
   foldedFileBadge,
@@ -1124,5 +1790,12 @@ module.exports = {
   pubSubTopicBox,
   circuitBreakerSwitch,
   cdnEdgeGlobe,
-  rateLimiterBucket
+  rateLimiterBucket,
+  memoryHierarchyPyramid,
+  byteArrayTape,
+  radialHubAndSpoke,
+  horizontalLaneRace,
+  quorumTriangleMesh,
+  hashSlotRingCluster,
+  scorecardMatrix
 };

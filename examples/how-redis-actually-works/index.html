@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>How Redis Actually Works Under the Hood — ByteByteGo Deep Dive</title>
+  <title>How Redis Actually Works Under the Hood — ByteByteGo Multi-Style Deep Dive</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #262626; width: 1920px; height: 1080px; overflow: hidden; }
@@ -19,330 +19,294 @@
       title: 'How Redis Actually Works Under the Hood',
       palette: 'byteCharcoal',
       fps: 30,
+      showCaptions: false,
       scenes: [
         // ====================================================================
-        // SCENE 1: In-Memory Storage & SDS vs C Strings (0s -> 30s)
+        // SCENE 1 [STYLE A: 3D Memory Pyramid + Contiguous Byte-Array Tape]
+        // Backdrop: dotMatrix
         // ====================================================================
         {
           id: 'in-memory-and-sds',
-          chapter: '01. In-Memory Architecture & Simple Dynamic Strings (SDS)',
+          chapter: '01. Hardware Latency Pyramid & Simple Dynamic Strings (SDS)',
           duration: 30,
-          qaTime: 12.0,
-          backdrop: 'waves',
+          qaTime: 16.0,
+          backdrop: 'dotMatrix',
           transition: 'slideLeft',
-          sfx: [
-            { time: 0.3, type: 'pop' },
-            { time: 1.2, type: 'draw' },
-            { time: 2.5, type: 'whoosh' },
-            { time: 4.0, type: 'success' },
-            { time: 14.0, type: 'whoosh' },
-            { time: 20.0, type: 'tick' }
-          ],
+          sfx: [],
           captions: [
             { start: 0.5, end: 13.5, text: 'Redis achieves extreme speed by keeping all working datasets directly in DRAM, where memory access takes just one hundred nanoseconds compared to ten thousand nanoseconds on fast NVMe disks.' },
             { start: 14.5, end: 27.5, text: 'Under the hood, Redis replaces standard C null-terminated strings with Simple Dynamic Strings, storing pre-computed lengths for instant O of 1 lookups and binary-safe buffers.' }
           ],
           initialState: () => ({
-            diskCard: 0,
-            ramCard: 0,
-            hero: 0,
-            sdsCard: 0,
-            arrow: 0
+            pyramid: 0,
+            tape: 0,
+            compare: 0
           }),
           build(tl, s) {
-            tl.to(s, { diskCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
-              .to(s, { ramCard: 1, duration: 0.8, ease: 'power2.out' }, 0.8)
-              .to(s, { hero: 1, duration: 0.7, ease: 'back.out(1.5)' }, 1.8)
-              .to(s, { sdsCard: 1, duration: 0.8, ease: 'power2.out' }, 14.0)
-              .to(s, { arrow: 1, duration: 0.6, ease: 'power2.out' }, 15.5);
-            Camera.zoomTo(tl, s, { x: 1380, y: 520, zoom: 1.22, duration: 1.4 }, 14.5);
+            tl.to(s, { pyramid: 1, duration: 0.9, ease: 'power2.out' }, 0.2)
+              .to(s, { tape: 1, duration: 0.9, ease: 'power2.out' }, 1.0)
+              .to(s, { compare: 1, duration: 0.8, ease: 'back.out(1.4)' }, 2.0);
+            Camera.zoomTo(tl, s, { x: 1340, y: 520, zoom: 1.18, duration: 1.4 }, 18.0);
             Camera.reset(tl, s, 26.5, 1.0);
           },
-          render(ctx, { state, t }) {
-            // Left: Disk vs DRAM Latency Bottleneck
-            Theme.drawGlassCard(ctx, 160, 230, 480, 560, {
-              tint: 'slate',
-              badge: 'Physical Storage Latency',
-              badgeSide: 'left',
-              progress: state.diskCard
+          render(ctx, { state }) {
+            // Left: 3D Hardware Latency Hierarchy Pyramid (No wrapper box!)
+            ctx.save();
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = `700 15px ${Theme.FONTS.mono}`;
+            ctx.textAlign = 'center';
+            ctx.fillText('HARDWARE STORAGE HIERARCHY (LOGARITHMIC LATENCY)', 470, 185);
+            ctx.restore();
+
+            Illustrations.memoryHierarchyPyramid(ctx, 490, 480, {
+              width: 500,
+              height: 480,
+              progress: state.pyramid
             });
 
-            Icons.draw(ctx, 'postgresElephant', 400, 310, 60, { alpha: state.diskCard });
-
-            Illustrations.wireframeCylinderDb(ctx, 400, 440, {
-              width: 160,
-              height: 140,
-              color: '#94A3B8',
-              label: 'NVMe Disk (~10,000ns)',
-              progress: state.diskCard
+            // Right Top: Contiguous Byte-Array Memory Strip (SDS Layout)
+            Illustrations.byteArrayTape(ctx, 880, 275, 920, 92, {
+              title: 'SDS Contiguous Memory Tape (struct sdshdr32)',
+              progress: state.tape,
+              brackets: [
+                { startRatio: 0.0, endRatio: 0.37, label: '9-Byte Metadata Header', color: '#FACC15' },
+                { startRatio: 0.37, endRatio: 0.82, label: 'Binary-Safe Payload', color: '#38BDF8' },
+                { startRatio: 0.82, endRatio: 1.0, label: 'Free Buffer', color: '#4ADE80' }
+              ]
             });
 
-            if (state.diskCard > 0.5) {
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 16px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('• Heavy Kernel File System Syscalls', 400, 620);
-              ctx.fillText('• Page Buffer Swaps & Mechanical Latency', 400, 655);
-              ctx.fillStyle = '#F87171';
-              ctx.font = `600 16px ${Theme.FONTS.mono}`;
-              ctx.fillText('Disk Seek Latency: 10 - 15 μs', 400, 710);
-            }
+            // Right Bottom: Side-by-Side C String vs Redis SDS Comparison Nodes
+            if (state.compare > 0.05) {
+              ctx.save();
+              ctx.globalAlpha *= state.compare;
 
-            // Middle: Kinetic Speed Slam & Latency Hierarchy
-            if (state.hero > 0.05) {
-              Illustrations.heroMetricSlam(ctx, '< 100 ns', {
-                cx: 960,
-                cy: 380,
-                fontSize: 84,
-                color: '#5CE1E6',
-                subtitle: 'Direct DRAM Access Time',
-                scale: state.hero
-              });
-
-              Theme.drawGlassCard(ctx, 700, 490, 520, 190, {
-                tint: 'teal',
-                badge: '100x Speed Gap',
-                badgeSide: 'center',
-                progress: state.hero
-              });
-
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 19px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('DRAM: ~100ns  vs  NVMe SSD: ~10,000ns', 960, 555);
-              ctx.fillStyle = '#FACC15';
-              ctx.font = `600 16px ${Theme.FONTS.mono}`;
-              ctx.fillText('Throughput: 100,000+ QPS per Core', 960, 595);
-              ctx.fillStyle = '#6EE7B7';
-              ctx.font = `500 15px ${Theme.FONTS.sans}`;
-              ctx.fillText('Zero Disk I/O Blocking in Hot Request Path', 960, 635);
-            }
-
-            // Right: Redis Internal Simple Dynamic String (SDS) Struct
-            Theme.drawGlassCard(ctx, 1280, 230, 480, 560, {
-              tint: 'crimson',
-              badge: 'SDS: Simple Dynamic String (sds.c)',
-              badgeSide: 'right',
-              progress: state.sdsCard > 0 ? state.sdsCard : state.ramCard
-            });
-
-            Icons.draw(ctx, 'redisCube', 1520, 310, 64, { glowColor: '#EF4444', alpha: state.ramCard });
-
-            if (state.sdsCard > 0.3) {
-              // SDS Struct Layout Frame
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+              // Legacy C String Box
               ctx.beginPath();
-              ctx.roundRect(1320, 380, 400, 210, 8);
+              ctx.roundRect(880, 430, 440, 290, 14);
+              ctx.fillStyle = 'rgba(127, 29, 29, 0.22)';
               ctx.fill();
-              ctx.strokeStyle = '#38BDF8';
-              ctx.lineWidth = 1.8;
+              ctx.strokeStyle = '#EF4444';
+              ctx.lineWidth = 2;
               ctx.stroke();
 
-              ctx.fillStyle = '#38BDF8';
-              ctx.font = `700 15px ${Theme.FONTS.mono}`;
-              ctx.textAlign = 'left';
-              ctx.fillText('struct sdshdr32 {', 1340, 410);
-              ctx.fillStyle = '#FACC15';
-              ctx.fillText('  uint32_t len;   // length = 5 (O(1))', 1340, 440);
-              ctx.fillStyle = '#A7F3D0';
-              ctx.fillText('  uint32_t alloc; // capacity = 16', 1340, 470);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.fillText('  char flags;     // header type', 1340, 500);
-              ctx.fillStyle = '#F472B6';
-              ctx.fillText('  char buf[];     // "REDIS\\0"', 1340, 530);
-              ctx.fillStyle = '#38BDF8';
-              ctx.fillText('};', 1340, 560);
-
-              ctx.fillStyle = '#86EFAC';
-              ctx.font = `600 15.5px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('✔ O(1) strlen() without scanning strings', 1520, 635);
-              ctx.fillText('✔ 100% Binary Safe (Protobuf / Images)', 1520, 665);
-              ctx.fillText('✔ Pre-allocates buffer to avoid realloc()', 1520, 695);
-            } else {
-              Illustrations.cacheMemoryMatrix(ctx, 1340, 410, 360, 220, t, {
-                header: 'RAM Cache Matrix (DRAM)',
-                cols: 3,
-                rows: 3
-              });
               ctx.fillStyle = '#FCA5A5';
-              ctx.font = `500 16px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('Working data resident in DRAM', 1520, 690);
+              ctx.font = `800 16px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('❌ Standard C String (char*)', 908, 472);
+
+              const cPoints = [
+                '• Scans until \\0 null byte -> O(N) strlen()',
+                '• Truncates binary data containing \\0 bytes',
+                '• Reallocates memory on every append',
+                '• Vulnerable to buffer overflow attacks'
+              ];
+              cPoints.forEach((pt, i) => {
+                ctx.fillStyle = '#E2E8F0';
+                ctx.font = `500 15px ${Theme.FONTS.sans}`;
+                ctx.fillText(pt, 908, 522 + i * 44);
+              });
+
+              // Redis SDS Box
+              ctx.beginPath();
+              ctx.roundRect(1360, 430, 440, 290, 14);
+              ctx.fillStyle = 'rgba(6, 78, 59, 0.28)';
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.lineWidth = 2.2;
+              ctx.stroke();
+
+              ctx.fillStyle = '#6EE7B7';
+              ctx.font = `800 16px ${Theme.FONTS.mono}`;
+              ctx.fillText('✔ Redis SDS (Simple Dynamic String)', 1388, 472);
+
+              const sdsPoints = [
+                '• Reads len field directly -> O(1) strlen()',
+                '• 100% Binary-Safe (Images, Protobuf, Audio)',
+                '• Pre-allocates free capacity (Zero realloc)',
+                '• Single contiguous CPU cache-line allocation'
+              ];
+              sdsPoints.forEach((pt, i) => {
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `500 15px ${Theme.FONTS.sans}`;
+                ctx.fillText(pt, 1388, 522 + i * 44);
+              });
+
+              ctx.restore();
             }
 
-            if (state.hero > 0.4) {
-              Theme.drawTakeawayPill(ctx, 'DRAM Access & Simple Dynamic Strings (SDS) Guarantee Sub-Microsecond O(1) Speed');
+            if (state.compare > 0.3) {
+              Theme.drawTakeawayPill(ctx, 'DRAM Access & Simple Dynamic Strings (SDS) Guarantee Sub-Microsecond O(1) Speed', {
+                variant: 'banner',
+                tag: 'MEMORY ENGINE',
+                border: '#34D399'
+              });
             }
           }
         },
 
         // ====================================================================
-        // SCENE 2: The Single-Threaded Event Loop & Linux epoll (30s -> 60s)
+        // SCENE 2 [STYLE B: 360° Radial Hub-and-Spoke Reactor Ring]
+        // Backdrop: spotlight
         // ====================================================================
         {
           id: 'event-loop-and-epoll',
-          chapter: '02. Single-Threaded Event Loop & Linux epoll Reactor',
+          chapter: '02. Single-Threaded Event Loop & 360° Linux epoll Reactor',
           duration: 30,
-          qaTime: 12.0,
-          backdrop: 'blueprint',
+          qaTime: 16.0,
+          backdrop: 'spotlight',
           transition: 'slideLeft',
-          sfx: [
-            { time: 0.3, type: 'pop' },
-            { time: 1.1, type: 'draw' },
-            { time: 2.2, type: 'tick' },
-            { time: 3.5, type: 'whoosh' },
-            { time: 14.0, type: 'whoosh' },
-            { time: 21.0, type: 'success' }
-          ],
+          sfx: [],
           captions: [
             { start: 0.5, end: 13.5, text: 'Many wonder why Redis runs on a single execution thread. Multi-threading introduces mutex contention, lock synchronization, and expensive CPU context switches.' },
             { start: 14.5, end: 27.5, text: 'Instead, Redis employs the Linux epoll reactor pattern, monitoring thousands of client sockets concurrently and executing queued commands sequentially with zero lock overhead.' }
           ],
           initialState: () => ({
-            clients: 0,
-            epoll: 0,
-            queue: 0,
-            core: 0
+            hub: 0,
+            pipeline: 0
           }),
           build(tl, s) {
-            tl.to(s, { clients: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
-              .to(s, { epoll: 1, duration: 0.8, ease: 'power2.out' }, 0.8)
-              .to(s, { queue: 1, duration: 0.7, ease: 'power2.out' }, 1.5)
-              .to(s, { core: 1, duration: 0.8, ease: 'power2.out' }, 2.3);
-            Camera.zoomTo(tl, s, { x: 1420, y: 520, zoom: 1.24, duration: 1.4 }, 14.5);
+            tl.to(s, { hub: 1, duration: 1.0, ease: 'power2.out' }, 0.2)
+              .to(s, { pipeline: 1, duration: 0.9, ease: 'power2.out' }, 1.2);
+            Camera.zoomTo(tl, s, { x: 640, y: 500, zoom: 1.18, duration: 1.4 }, 18.0);
             Camera.reset(tl, s, 26.5, 1.0);
           },
           render(ctx, { state, t }) {
-            // Left: Concurrent TCP Clients
-            Theme.drawGlassCard(ctx, 160, 220, 360, 580, {
-              tint: 'teal',
-              badge: 'Concurrent Client Sockets',
-              badgeSide: 'left',
-              progress: state.clients
+            // Left/Center: 360-Degree Radial Hub-and-Spoke Reactor Topology
+            Illustrations.radialHubAndSpoke(ctx, 610, 520, {
+              rx: 380,
+              ry: 260,
+              hubRadius: 96,
+              hubTitle: 'epoll_wait()',
+              hubSub: '10,000+ Non-Blocking Sockets',
+              hubColor: '#FACC15',
+              progress: state.hub,
+              timeSec: t,
+              nodes: [
+                { label: 'Client #1', cmd: 'SET user:1', angle: -140, color: '#38BDF8' },
+                { label: 'Client #2', cmd: 'GET cart:9', angle: -180, color: '#34D399' },
+                { label: 'Client #3', cmd: 'INCR hits', angle: 140, color: '#C084FC' },
+                { label: 'Client #4', cmd: 'HSET prof', angle: -75, color: '#F472B6' },
+                { label: 'Client #5', cmd: 'ZADD rank', angle: 75, color: '#FBBF24' },
+                { label: 'Client #6', cmd: 'LPUSH job', angle: 22, color: '#60A5FA' }
+              ]
             });
 
-            Illustrations.lineArtUser(ctx, 340, 330, { label: 'Client 1 (SET order:42)', color: '#5CE1E6', progress: state.clients });
-            Illustrations.lineArtUser(ctx, 340, 500, { label: 'Client 2 (GET user:99)', color: '#4ADE80', progress: state.clients });
-            Illustrations.lineArtUser(ctx, 340, 670, { label: 'Client 3 (INCR views)', color: '#C084FC', progress: state.clients });
-
-            // Center: Linux epoll Reactor
-            Theme.drawGlassCard(ctx, 580, 220, 490, 580, {
-              tint: 'olive',
-              badge: 'I/O Multiplexer (ae_epoll.c)',
-              badgeSide: 'center',
-              progress: state.epoll
-            });
-
-            Illustrations.loadBalancerRouter(ctx, 825, 410, {
-              radius: 64,
+            // Curved Connector from Radial Reactor Hub through open corridor to Single-Thread Pipeline
+            Connectors.curvedArrow(ctx, 700, 480, 1215, 295, {
+              progress: state.pipeline,
+              curvature: -0.18,
               color: '#FACC15',
-              label: 'epoll_wait() Reactor',
-              algorithm: 'Kernel Event Notification',
-              progress: state.epoll
+              label: 'Ready Socket Events (O(1))'
             });
 
-            Connectors.solidArrow(ctx, 420, 330, 750, 390, { progress: state.epoll, color: '#5CE1E6', dashed: true, timeSec: t });
-            Connectors.solidArrow(ctx, 420, 500, 750, 410, { progress: state.epoll, color: '#4ADE80', dashed: true, timeSec: t });
-            Connectors.solidArrow(ctx, 420, 670, 750, 430, { progress: state.epoll, color: '#C084FC', dashed: true, timeSec: t });
+            // Right: Vertical Single-Thread Execution Pipeline
+            if (state.pipeline > 0.05) {
+              ctx.save();
+              ctx.globalAlpha *= state.pipeline;
 
-            if (state.epoll > 0.5) {
-              ctx.fillStyle = '#FEF08A';
-              ctx.font = `700 17px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('Non-Blocking Event Polling', 825, 550);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 15px ${Theme.FONTS.sans}`;
-              ctx.fillText('• 10,000+ Sockets monitored in O(1)', 825, 585);
-              ctx.fillText('• Awakens CPU only when socket has bytes', 825, 615);
-              ctx.fillText('• Zero thread context switching latency', 825, 645);
-            }
+              // Stage 1: Sequential Event Queue
+              Illustrations.pubSubTopicBox(ctx, 1220, 240, 560, 110, {
+                title: '1. aeEventLoop Ready Queue (FIFO)',
+                tint: 'olive',
+                offsets: ['SET user:1', 'GET cart:9', 'INCR hits', 'ZADD rank'],
+                activeSlot: 0,
+                progress: state.pipeline
+              });
 
-            // Right: Single Execution Thread
-            Theme.drawGlassCard(ctx, 1130, 220, 630, 580, {
-              tint: 'emerald',
-              badge: 'Single Execution Thread (Lock-Free)',
-              badgeSide: 'right',
-              progress: state.core
-            });
+              Connectors.solidArrow(ctx, 1500, 355, 1500, 415, {
+                progress: state.pipeline,
+                color: '#34D399'
+              });
 
-            Illustrations.pubSubTopicBox(ctx, 1170, 290, 550, 110, {
-              title: 'Sequential Ready Event Queue',
-              tint: 'slate',
-              offsets: ['SET #1', 'GET #2', 'INCR #3', 'READY'],
-              activeSlot: 2,
-              progress: state.queue
-            });
+              // Stage 2: Lock-Free Single CPU Execution Core
+              ctx.beginPath();
+              ctx.roundRect(1220, 420, 560, 195, 14);
+              ctx.fillStyle = 'rgba(6, 78, 59, 0.30)';
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.lineWidth = 2.2;
+              ctx.stroke();
 
-            Connectors.solidArrow(ctx, 905, 410, 1170, 345, { progress: state.queue, color: '#FACC15', label: 'Push Events' });
+              Icons.draw(ctx, 'cpuSilicon', 1310, 515, 86, { glowColor: '#4ADE80' });
 
-            Icons.draw(ctx, 'cpuSilicon', 1330, 540, 92, { glowColor: '#4ADE80', alpha: state.core });
-            Icons.draw(ctx, 'turboMeter', 1560, 540, 92, { glowColor: '#F59E0B', alpha: state.core });
-
-            if (state.core > 0.5) {
               ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 19px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('Pure L1/L2 CPU Cache Localization', 1445, 660);
-              ctx.fillStyle = '#86EFAC';
-              ctx.font = `600 15.5px ${Theme.FONTS.mono}`;
-              ctx.fillText('No Mutex • No Race Conditions • No Deadlocks', 1445, 695);
-              ctx.fillStyle = '#94A3B8';
-              ctx.font = `500 14px ${Theme.FONTS.sans}`;
-              ctx.fillText('Note: Redis 6.0+ uses worker threads for socket parsing only', 1445, 730);
+              ctx.font = `700 20px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('2. Single Execution Thread (call())', 1380, 470);
+
+              ctx.fillStyle = '#6EE7B7';
+              ctx.font = `600 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('• Zero Mutex Locks or Semaphores', 1380, 508);
+              ctx.fillText('• Zero Thread Context Switch Penalty', 1380, 540);
+              ctx.fillText('• 100% Hot L1/L2 CPU Instruction Cache', 1380, 572);
+
+              // Stage 3: Redis 6.0+ Threaded I/O Footnote Banner
+              ctx.beginPath();
+              ctx.roundRect(1220, 645, 560, 115, 12);
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+              ctx.fill();
+              ctx.strokeStyle = '#38BDF8';
+              ctx.lineWidth = 1.6;
+              ctx.stroke();
+
+              ctx.fillStyle = '#38BDF8';
+              ctx.font = `700 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('⚡ REDIS 6.0+ THREADED I/O ENHANCEMENT', 1248, 682);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('Worker threads parallelize socket read/write parsing,', 1248, 712);
+              ctx.fillText('while memory command execution stays 100% single-threaded.', 1248, 738);
+
+              ctx.restore();
             }
 
-            if (state.core > 0.4) {
-              Theme.drawTakeawayPill(ctx, 'The epoll Reactor Pattern Eliminates Thread Locking and Context Switching Overhead');
+            if (state.pipeline > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'The epoll Reactor Pattern Eliminates Thread Locking and Context Switching Overhead', {
+                variant: 'pill',
+                border: '#FACC15',
+                bg: 'rgba(161, 98, 7, 0.28)'
+              });
             }
           }
         },
 
         // ====================================================================
-        // SCENE 3: Deep Dive into Internal Data Structures (60s -> 90s)
+        // SCENE 3 [STYLE C: Horizontal Top-vs-Bottom "VS" Race + SkipList Tower]
+        // Backdrop: isometric
         // ====================================================================
         {
           id: 'data-structures-and-rehash',
-          chapter: '03. Internal Data Structures & Progressive Rehashing',
+          chapter: '03. Progressive Rehashing Race vs Multi-Level SkipLists',
           duration: 30,
-          qaTime: 12.0,
-          backdrop: 'waves',
+          qaTime: 16.0,
+          backdrop: 'isometric',
           transition: 'slideLeft',
-          sfx: [
-            { time: 0.3, type: 'pop' },
-            { time: 1.0, type: 'draw' },
-            { time: 2.5, type: 'tick' },
-            { time: 4.0, type: 'success' },
-            { time: 14.0, type: 'whoosh' },
-            { time: 22.0, type: 'tick' }
-          ],
+          sfx: [],
           captions: [
             { start: 0.5, end: 13.5, text: 'Redis is far more than a key-value store; it is a specialized data structure engine with memory-compact encodings like listpacks and quicklists.' },
             { start: 14.5, end: 27.5, text: 'When hash tables resize, Redis avoids global freezes through progressive rehashing, migrating small buckets incrementally during normal queries to prevent latency spikes.' }
           ],
           initialState: () => ({
             topBadges: 0,
-            dictCard: 0,
-            skipListCard: 0,
-            rehashFlow: 0
+            race: 0,
+            skipList: 0
           }),
           build(tl, s) {
-            tl.to(s, { topBadges: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
-              .to(s, { dictCard: 1, duration: 0.8, ease: 'power2.out' }, 0.9)
-              .to(s, { skipListCard: 1, duration: 0.8, ease: 'power2.out' }, 1.7)
-              .to(s, { rehashFlow: 1, duration: 0.8, ease: 'power2.out' }, 14.0);
-            Camera.zoomTo(tl, s, { x: 580, y: 560, zoom: 1.25, duration: 1.4 }, 14.5);
+            tl.to(s, { topBadges: 1, duration: 0.7, ease: 'power2.out' }, 0.2)
+              .to(s, { race: 1, duration: 0.9, ease: 'power2.out' }, 0.8)
+              .to(s, { skipList: 1, duration: 0.9, ease: 'power2.out' }, 1.6);
+            Camera.zoomTo(tl, s, { x: 560, y: 600, zoom: 1.18, duration: 1.4 }, 18.0);
             Camera.reset(tl, s, 26.5, 1.0);
           },
           render(ctx, { state }) {
             // Top Compact Memory Encodings Strip
             if (state.topBadges > 0.05) {
               const types = [
-                { tag: 'STRING', bg: '#0284C7', desc: 'SDS (raw bytes / caching)' },
-                { tag: 'LISTPACK', bg: '#10B981', desc: 'Contiguous compact memory' },
-                { tag: 'HASHTABLE', bg: '#F59E0B', desc: 'dict with progressive rehash' },
-                { tag: 'SKIPLIST', bg: '#8B5CF6', desc: 'ZSET multi-level pointers' },
-                { tag: 'QUICKLIST', bg: '#EC4899', desc: 'Linked list of listpacks' }
+                { tag: 'STRING', bg: '#0284C7', desc: 'SDS O(1) Buffer' },
+                { tag: 'LISTPACK', bg: '#10B981', desc: 'Contiguous Array' },
+                { tag: 'DICT', bg: '#F59E0B', desc: 'Dual Hash Tables' },
+                { tag: 'SKIPLIST', bg: '#8B5CF6', desc: '32-Level Express' },
+                { tag: 'QUICKLIST', bg: '#EC4899', desc: 'Zipped LinkedList' }
               ];
               const spanW = 1600;
               const startX = (1920 - spanW) / 2;
@@ -350,596 +314,598 @@
 
               types.forEach((item, idx) => {
                 const cx = startX + idx * stepW + stepW / 2;
-                Illustrations.foldedFileBadge(ctx, cx, 230, item.tag, {
+                Illustrations.foldedFileBadge(ctx, cx, 215, item.tag, {
                   ribbonBg: item.bg,
-                  width: 90,
-                  height: 104,
+                  width: 86,
+                  height: 98,
                   caption: item.desc,
                   progress: state.topBadges
                 });
               });
             }
 
-            // Left: Progressive Rehashing (dict.c)
-            Theme.drawGlassCard(ctx, 160, 360, 760, 450, {
-              tint: 'teal',
-              badge: 'Progressive Rehashing (dict.c)',
-              badgeSide: 'left',
-              progress: state.dictCard
+            // Left: Horizontal Top-vs-Bottom "VS" Execution Race
+            Illustrations.horizontalLaneRace(ctx, 140, 350, 880, 470, {
+              progress: state.race
             });
 
-            if (state.dictCard > 0.2) {
+            // Visual Bucket Migration inside the Top & Bottom Lanes
+            if (state.race > 0.4) {
+              ctx.save();
+              ctx.globalAlpha *= state.race;
+
+              // Top Lane Blocked Bar
+              ctx.beginPath();
+              ctx.roundRect(168, 435, 824, 82, 8);
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+              ctx.fill();
+              ctx.strokeStyle = '#EF4444';
+              ctx.stroke();
+
+              ctx.fillStyle = '#EF4444';
+              ctx.fillRect(184, 455, 520, 42);
               ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 18px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'left';
-              ctx.fillText('Incremental Migration: ht[0] (Old) -> ht[1] (2x New)', 200, 415);
-
-              // ht[0] bucket
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-              ctx.beginPath();
-              ctx.roundRect(200, 440, 340, 110, 8);
-              ctx.fill();
-              ctx.strokeStyle = '#F87171';
-              ctx.lineWidth = 1.6;
-              ctx.stroke();
-
-              ctx.fillStyle = '#F87171';
               ctx.font = `700 15px ${Theme.FONTS.mono}`;
-              ctx.fillText('ht[0] (Size: 4,096 Buckets)', 220, 470);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 13.5px ${Theme.FONTS.mono}`;
-              ctx.fillText('• bucket[0]: Migrated ✔', 220, 498);
-              ctx.fillText('• bucket[1]: Migrating... ⚡', 220, 524);
+              ctx.textAlign = 'center';
+              ctx.fillText('⛔ COPYING 100,000,000 KEYS AT ONCE (CLIENT QUERIES TIMED OUT)', 444, 481);
 
-              // ht[1] bucket
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-              ctx.beginPath();
-              ctx.roundRect(570, 440, 320, 110, 8);
-              ctx.fill();
-              ctx.strokeStyle = '#34D399';
-              ctx.lineWidth = 1.6;
-              ctx.stroke();
+              // Bottom Lane Incremental ht[0] -> ht[1] buckets
+              const buckets = ['b[0] ✔', 'b[1] ✔', 'b[2] ⚡', 'b[3]', 'b[4]'];
+              buckets.forEach((b, i) => {
+                const bx = 172 + i * 110;
+                const by = 695;
+                const active = i === 2;
+                const done = i < 2;
+                ctx.beginPath();
+                ctx.roundRect(bx, by, 96, 56, 8);
+                ctx.fillStyle = active ? 'rgba(250, 204, 21, 0.25)' : (done ? 'rgba(16, 185, 129, 0.22)' : 'rgba(15, 23, 42, 0.85)');
+                ctx.fill();
+                ctx.strokeStyle = active ? '#FACC15' : (done ? '#34D399' : '#475569');
+                ctx.lineWidth = active ? 2.2 : 1.5;
+                ctx.stroke();
 
-              ctx.fillStyle = '#34D399';
-              ctx.font = `700 15px ${Theme.FONTS.mono}`;
-              ctx.fillText('ht[1] (Size: 8,192 Buckets)', 590, 470);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 13.5px ${Theme.FONTS.mono}`;
-              ctx.fillText('• Receives migrated entries', 590, 498);
-              ctx.fillText('• All new writes go here', 590, 524);
-
-              // Connector Arrow
-              Connectors.solidArrow(ctx, 420, 550, 680, 550, {
-                progress: state.rehashFlow,
-                color: '#FACC15',
-                label: 'rehashidx: 1 bucket per query'
+                ctx.fillStyle = active ? '#FEF08A' : '#FFFFFF';
+                ctx.font = `700 14px ${Theme.FONTS.mono}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(b, bx + 48, by + 33);
               });
 
-              ctx.fillStyle = '#5CE1E6';
-              ctx.font = `600 16px ${Theme.FONTS.sans}`;
-              ctx.fillText('✔ Zero "Stop-The-World" Latency Spikes during table resize', 200, 640);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
-              ctx.fillText('• Searches check ht[0] first, then ht[1]', 200, 675);
-              ctx.fillText('• Once rehashidx == size, ht[1] becomes ht[0] and memory is freed', 200, 705);
+              ctx.fillStyle = '#34D399';
+              ctx.font = `700 14.5px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('rehashidx=2 -> ht[1] (1 bucket/op)', 735, 728);
+              ctx.restore();
             }
 
-            // Right: ZSET Multi-Level SkipList Hierarchy
-            Theme.drawGlassCard(ctx, 960, 360, 800, 450, {
-              tint: 'emerald',
-              badge: 'Sorted Sets: SkipList + Hash Table',
-              badgeSide: 'right',
-              progress: state.skipListCard
-            });
-
-            Illustrations.bTreeHierarchy(ctx, 1360, 430, {
-              root: ['L3: 100', 'L3: 500'],
-              children: [
-                { keys: ['L2: 50', 'L2: 100'], active: false },
-                { keys: ['L2: 250', 'L2: 500'], active: true },
-                { keys: ['L2: 750', 'L2: 999'], active: false }
-              ],
-              progress: state.skipListCard
-            });
-
-            if (state.skipListCard > 0.4) {
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 18px ${Theme.FONTS.sans}`;
+            // Right: Open Multi-Level SkipList Hierarchy on Isometric Grid
+            if (state.skipList > 0.05) {
+              ctx.save();
+              ctx.globalAlpha *= state.skipList;
+              ctx.fillStyle = '#C084FC';
+              ctx.font = `800 17px ${Theme.FONTS.mono}`;
               ctx.textAlign = 'center';
-              ctx.fillText('O(log N) Leaderboards & Range Queries', 1360, 690);
-              ctx.fillStyle = '#FACC15';
-              ctx.font = `600 15px ${Theme.FONTS.mono}`;
-              ctx.fillText('Forward pointers skip up to 32 levels with probabilistic balancing', 1360, 725);
+              ctx.fillText('ZSET MULTI-LEVEL SKIPLIST (O(log N) EXPRESS LANES)', 1420, 380);
+              ctx.restore();
+
+              Illustrations.bTreeHierarchy(ctx, 1420, 425, {
+                root: ['L3: 100', 'L3: 500'],
+                children: [
+                  { keys: ['L2: 40', 'L2: 100'], active: false },
+                  { keys: ['L2: 240', 'L2: 500'], active: true },
+                  { keys: ['L2: 780', 'L2: 990'], active: false }
+                ],
+                progress: state.skipList
+              });
+
+              if (state.skipList > 0.5) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(1080, 685, 680, 125, 12);
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+                ctx.fill();
+                ctx.strokeStyle = '#A855F7';
+                ctx.lineWidth = 1.8;
+                ctx.stroke();
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `700 17px ${Theme.FONTS.sans}`;
+                ctx.textAlign = 'center';
+                ctx.fillText('Dual Engine: Hash Table (O(1) Score) + SkipList (O(log N) Range)', 1420, 728);
+                ctx.fillStyle = '#FACC15';
+                ctx.font = `600 14.5px ${Theme.FONTS.mono}`;
+                ctx.fillText('Simpler than B-Trees • Lock-Free Pointer Traversal • O(log N) ZRANGE', 1420, 768);
+                ctx.restore();
+              }
             }
 
-            if (state.dictCard > 0.4) {
-              Theme.drawTakeawayPill(ctx, 'Progressive Rehashing and Multi-Level SkipLists Guarantee Zero Stop-The-World Freezes');
+            if (state.race > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Progressive Rehashing and Multi-Level SkipLists Guarantee Zero Stop-The-World Freezes', {
+                variant: 'terminal'
+              });
             }
           }
         },
 
         // ====================================================================
-        // SCENE 4: Non-Blocking Persistence: RDB Copy-On-Write vs AOF (90s -> 120s)
+        // SCENE 4 [STYLE D: Horizontal User-Space / Kernel-Space Strata Diagram]
+        // Backdrop: splitHorizontal
         // ====================================================================
         {
           id: 'persistence-cow-and-aof',
-          chapter: '04. Non-Blocking Persistence: RDB Copy-On-Write vs AOF',
+          chapter: '04. User/Kernel Space Strata: RDB Copy-On-Write vs AOF',
           duration: 30,
-          qaTime: 12.0,
-          backdrop: 'speedlines',
+          qaTime: 16.0,
+          backdrop: 'splitHorizontal',
           transition: 'fade',
-          sfx: [
-            { time: 0.3, type: 'pop' },
-            { time: 1.2, type: 'draw' },
-            { time: 2.5, type: 'tick' },
-            { time: 4.0, type: 'success' },
-            { time: 14.0, type: 'whoosh' },
-            { time: 22.0, type: 'tick' }
-          ],
+          sfx: [],
           captions: [
             { start: 0.5, end: 13.5, text: 'To survive restarts without sacrificing performance, Redis combines point-in-time RDB snapshots with continuous Append-Only File journaling.' },
             { start: 14.5, end: 27.5, text: 'RDB forks a background worker utilizing operating system Copy-On-Write, streaming memory to disk while the parent continues serving client writes uninterrupted.' }
           ],
           initialState: () => ({
-            mainProc: 0,
-            forkProc: 0,
-            aofStream: 0
+            userSpace: 0,
+            kernelSpace: 0,
+            storage: 0
           }),
           build(tl, s) {
-            tl.to(s, { mainProc: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
-              .to(s, { forkProc: 1, duration: 0.8, ease: 'power2.out' }, 1.0)
-              .to(s, { aofStream: 1, duration: 0.8, ease: 'power2.out' }, 14.0);
-            Camera.zoomTo(tl, s, { x: 740, y: 520, zoom: 1.25, duration: 1.4 }, 14.5);
+            tl.to(s, { userSpace: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
+              .to(s, { kernelSpace: 1, duration: 0.9, ease: 'power2.out' }, 1.0)
+              .to(s, { storage: 1, duration: 0.9, ease: 'power2.out' }, 1.8);
+            Camera.zoomTo(tl, s, { x: 960, y: 580, zoom: 1.16, duration: 1.4 }, 18.0);
             Camera.reset(tl, s, 26.5, 1.0);
           },
-          render(ctx, { state, t }) {
-            // Left: Main Parent Process (Uninterrupted Client Traffic)
-            Theme.drawGlassCard(ctx, 160, 220, 520, 580, {
-              tint: 'crimson',
-              badge: 'Parent Process (Port 6379)',
-              badgeSide: 'left',
-              progress: state.mainProc
-            });
+          render(ctx, { state }) {
+            // STRATUM 1: USER SPACE (Top Half y = 160..480)
+            if (state.userSpace > 0.05) {
+              ctx.save();
+              ctx.globalAlpha *= state.userSpace;
 
-            Icons.draw(ctx, 'redisCube', 420, 310, 64, { glowColor: '#EF4444', alpha: state.mainProc });
+              ctx.fillStyle = '#38BDF8';
+              ctx.font = `800 15px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('STRATUM 1 // LINUX USER SPACE PROCESSES', 140, 175);
 
-            if (state.mainProc > 0.3) {
+              // Parent Process Node
+              ctx.beginPath();
+              ctx.roundRect(140, 200, 460, 185, 14);
+              ctx.fillStyle = 'rgba(153, 27, 27, 0.28)';
+              ctx.fill();
+              ctx.strokeStyle = '#F87171';
+              ctx.lineWidth = 2.2;
+              ctx.stroke();
+
+              Icons.draw(ctx, 'redisCube', 210, 275, 58, { glowColor: '#EF4444' });
               ctx.fillStyle = '#FFFFFF';
               ctx.font = `700 20px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('Live In-Memory State', 420, 385);
+              ctx.fillText('Redis Parent (PID 101)', 260, 255);
               ctx.fillStyle = '#4ADE80';
-              ctx.font = `600 16px ${Theme.FONTS.mono}`;
-              ctx.fillText('✔ Serves 100K QPS Uninterrupted', 420, 420);
-
-              const memBlocks = [
-                { name: 'Page 0x1A: [Shared Read-Only]', color: '#38BDF8' },
-                { name: 'Page 0x1B: [Shared Read-Only]', color: '#38BDF8' },
-                { name: 'Page 0x1C: [Copy-On-Write Mutated ⚡]', color: '#FACC15' }
-              ];
-              memBlocks.forEach((mb, idx) => {
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-                ctx.beginPath();
-                ctx.roundRect(220, 460 + idx * 56, 400, 46, 8);
-                ctx.fill();
-                ctx.strokeStyle = mb.color;
-                ctx.lineWidth = 1.6;
-                ctx.stroke();
-
-                ctx.fillStyle = mb.color;
-                ctx.font = `600 15px ${Theme.FONTS.mono}`;
-                ctx.fillText(mb.name, 420, 490 + idx * 56);
-              });
-
+              ctx.font = `600 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('✔ Serving 100,000 QPS Live Writes', 260, 288);
               ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
-              ctx.fillText('Client write duplicates only the modified 4KB page', 420, 680);
-            }
+              ctx.font = `500 14px ${Theme.FONTS.sans}`;
+              ctx.fillText('Mutates Page 0x03 -> Triggers Kernel COW fault', 170, 352);
 
-            // Middle: Forked Child Process (BGSAVE & RDB Snapshot)
-            Theme.drawGlassCard(ctx, 720, 220, 490, 580, {
-              tint: 'olive',
-              badge: 'BGSAVE (fork() Snapshot)',
-              badgeSide: 'center',
-              progress: state.forkProc
-            });
-
-            Connectors.solidArrow(ctx, 640, 350, 720, 350, {
-              progress: state.forkProc,
-              color: '#FACC15',
-              label: 'fork() Syscall'
-            });
-
-            if (state.forkProc > 0.3) {
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 20px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'center';
-              ctx.fillText('Isolated Child Snapshot', 965, 310);
-
-              Illustrations.foldedFileBadge(ctx, 965, 430, 'RDB', {
-                ribbonBg: '#10B981',
-                caption: 'dump.rdb (Compact Binary)',
-                progress: state.forkProc
+              // fork() Arrow
+              Connectors.solidArrow(ctx, 600, 290, 740, 290, {
+                progress: state.userSpace,
+                color: '#FACC15',
+                label: 'fork() (0.2ms)'
               });
+
+              // Child Process Node
+              ctx.beginPath();
+              ctx.roundRect(740, 200, 460, 185, 14);
+              ctx.fillStyle = 'rgba(161, 98, 7, 0.24)';
+              ctx.fill();
+              ctx.strokeStyle = '#FACC15';
+              ctx.lineWidth = 2.2;
+              ctx.stroke();
 
               ctx.fillStyle = '#FEF08A';
-              ctx.font = `700 17px ${Theme.FONTS.sans}`;
-              ctx.fillText('Operating System Copy-On-Write', 965, 570);
+              ctx.font = `700 20px ${Theme.FONTS.sans}`;
+              ctx.fillText('BGSAVE Child (PID 408)', 775, 255);
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `600 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('Read-Only Frozen Memory View', 775, 288);
               ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
-              ctx.fillText('• Shares parent RAM without memory duplication', 965, 605);
-              ctx.fillText('• Streams to disk at maximum NVMe write speeds', 965, 635);
-              ctx.fillText('• Zero lock holding on active client connections', 965, 665);
+              ctx.font = `500 14px ${Theme.FONTS.sans}`;
+              ctx.fillText('Serializes point-in-time pages to dump.rdb', 775, 352);
+
+              // Right User-Space: AOF Command Buffer
+              Illustrations.pubSubTopicBox(ctx, 1260, 230, 520, 120, {
+                title: 'AOF Real-Time Write Buffer (aof_buf)',
+                tint: 'teal',
+                offsets: ['SET k1 v1', 'INCR hits', 'HSET u9', 'FLUSH'],
+                activeSlot: 3,
+                progress: state.userSpace
+              });
+
+              ctx.restore();
             }
 
-            // Right: Append-Only File (AOF Journaling)
-            Theme.drawGlassCard(ctx, 1250, 220, 510, 580, {
-              tint: 'teal',
-              badge: 'AOF Stream (Append-Only File)',
-              badgeSide: 'right',
-              progress: state.aofStream
-            });
+            // KERNEL BOUNDARY LINE Across 1920px Canvas (y = 435)
+            ctx.save();
+            ctx.strokeStyle = '#FACC15';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([12, 8]);
+            ctx.beginPath();
+            ctx.moveTo(100, 435);
+            ctx.lineTo(1820, 435);
+            ctx.stroke();
+            ctx.setLineDash([]);
 
-            Illustrations.pubSubTopicBox(ctx, 1280, 300, 450, 110, {
-              title: 'appendonly.aof (Write Journal)',
-              tint: 'teal',
-              offsets: ['*3 $3 SET', '$4 user', '$5 Alice'],
-              activeSlot: 2,
-              progress: state.aofStream
-            });
+            ctx.beginPath();
+            ctx.roundRect(660, 415, 600, 40, 20);
+            ctx.fillStyle = '#1E293B';
+            ctx.fill();
+            ctx.strokeStyle = '#FACC15';
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
 
-            if (state.aofStream > 0.4) {
-              Illustrations.wireframeCylinderDb(ctx, 1505, 530, {
+            ctx.fillStyle = '#FEF08A';
+            ctx.font = `800 14px ${Theme.FONTS.mono}`;
+            ctx.textAlign = 'center';
+            ctx.fillText('▲ USER SPACE   |   ▼ LINUX KERNEL MMU & COPY-ON-WRITE RAM', 960, 440);
+            ctx.restore();
+
+            // STRATUM 2: KERNEL PHYSICAL RAM PAGES & NVMe STORAGE (y = 490..860)
+            if (state.kernelSpace > 0.05) {
+              ctx.save();
+              ctx.globalAlpha *= state.kernelSpace;
+
+              const pages = [
+                { id: '4KB Page 0x01', state: 'Shared Read-Only', color: '#38BDF8', cow: false },
+                { id: '4KB Page 0x02', state: 'Shared Read-Only', color: '#38BDF8', cow: false },
+                { id: '4KB Page 0x03', state: 'Original (Child)', color: '#34D399', cow: false },
+                { id: '4KB Page 0x03_COW', state: 'Mutated Copy ⚡', color: '#FACC15', cow: true }
+              ];
+
+              pages.forEach((pg, i) => {
+                const px = 140 + i * 272;
+                const py = 505;
+                ctx.beginPath();
+                ctx.roundRect(px, py, 252, 95, 10);
+                ctx.fillStyle = pg.cow ? 'rgba(250, 204, 21, 0.22)' : 'rgba(15, 23, 42, 0.9)';
+                ctx.fill();
+                ctx.strokeStyle = pg.color;
+                ctx.lineWidth = pg.cow ? 2.5 : 1.8;
+                ctx.stroke();
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.font = `700 16px ${Theme.FONTS.mono}`;
+                ctx.textAlign = 'center';
+                ctx.fillText(pg.id, px + 126, py + 38);
+
+                ctx.fillStyle = pg.color;
+                ctx.font = `600 13.5px ${Theme.FONTS.mono}`;
+                ctx.fillText(pg.state, px + 126, py + 68);
+              });
+
+              ctx.restore();
+            }
+
+            // Bottom Storage Targets
+            if (state.storage > 0.05) {
+              ctx.save();
+              ctx.globalAlpha *= state.storage;
+
+              // RDB Binary Snapshot Badge
+              ctx.beginPath();
+              ctx.roundRect(140, 645, 1060, 175, 14);
+              ctx.fillStyle = 'rgba(6, 78, 59, 0.25)';
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+
+              Illustrations.foldedFileBadge(ctx, 250, 732, 'RDB', {
+                ribbonBg: '#10B981',
+                width: 82,
+                height: 94,
+                progress: state.storage
+              });
+
+              ctx.fillStyle = '#FFFFFF';
+              ctx.font = `700 20px ${Theme.FONTS.sans}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('dump.rdb — Compact Binary Point-in-Time Snapshot', 340, 695);
+              ctx.fillStyle = '#A7F3D0';
+              ctx.font = `600 15px ${Theme.FONTS.mono}`;
+              ctx.fillText('• Child writes shared RAM pages sequentially to NVMe disk', 340, 735);
+              ctx.fillText('• Parent only duplicates 4KB pages that change during BGSAVE (Zero RAM 2x spike)', 340, 770);
+
+              // AOF Disk Cylinder on Right
+              ctx.beginPath();
+              ctx.roundRect(1260, 505, 520, 315, 14);
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+              ctx.fill();
+              ctx.strokeStyle = '#38BDF8';
+              ctx.lineWidth = 2;
+              ctx.stroke();
+
+              Illustrations.wireframeCylinderDb(ctx, 1520, 625, {
                 width: 140,
-                height: 130,
+                height: 120,
                 color: '#38BDF8',
-                label: 'fsync: everysec (1s Max Loss)',
-                progress: state.aofStream
+                label: 'appendonly.aof (fsync: everysec)',
+                progress: state.storage
               });
 
               ctx.fillStyle = '#4ADE80';
-              ctx.font = `600 16px ${Theme.FONTS.sans}`;
+              ctx.font = `600 15px ${Theme.FONTS.mono}`;
               ctx.textAlign = 'center';
-              ctx.fillText('BGREWRITEAOF Compacts Journal', 1505, 670);
-              ctx.fillStyle = '#94A3B8';
-              ctx.font = `500 13.5px ${Theme.FONTS.mono}`;
-              ctx.fillText('Truncates 1,000 INCR -> Single SET command', 1505, 705);
+              ctx.fillText('BGREWRITEAOF: Compacts 1000 INCR -> 1 SET', 1520, 785);
+
+              ctx.restore();
             }
 
-            if (state.forkProc > 0.4) {
-              Theme.drawTakeawayPill(ctx, 'OS Copy-On-Write & AOF Streaming Deliver Maximum Durability with Zero Client Latency');
+            if (state.storage > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'OS Copy-On-Write & AOF Streaming Deliver Maximum Durability with Zero Client Latency', {
+                variant: 'banner',
+                tag: 'ZERO-BLOCK I/O',
+                border: '#38BDF8'
+              });
             }
           }
         },
 
         // ====================================================================
-        // SCENE 5: High Availability & Clustering: Sentinel vs Hash Slots (120s -> 150s)
+        // SCENE 5 [STYLE E: Triangular Quorum Mesh + 360° 16,384 Hash-Slot Ring]
+        // Backdrop: blueprint
         // ====================================================================
         {
           id: 'sentinel-and-cluster-slots',
-          chapter: '05. High Availability & Clustering: Sentinel vs Hash Slots',
+          chapter: '05. Sentinel Quorum Triangle Mesh & 16,384 Hash-Slot Ring',
           duration: 30,
-          qaTime: 12.0,
+          qaTime: 16.0,
           backdrop: 'blueprint',
           transition: 'slideLeft',
-          sfx: [
-            { time: 0.3, type: 'pop' },
-            { time: 1.1, type: 'draw' },
-            { time: 2.5, type: 'tick' },
-            { time: 4.0, type: 'success' },
-            { time: 14.0, type: 'whoosh' },
-            { time: 22.0, type: 'tick' }
-          ],
+          sfx: [],
           captions: [
             { start: 0.5, end: 13.5, text: 'For high availability, Redis Sentinel monitors master health through quorum heartbeats, automatically promoting replicas and updating topology when a node fails.' },
             { start: 14.5, end: 27.5, text: 'For horizontal scale, Redis Cluster shards datasets across sixteen thousand three hundred eighty-four hash slots, allowing smart clients to route requests directly to the owning shard.' }
           ],
           initialState: () => ({
-            sentinelCard: 0,
-            clusterCard: 0,
-            failover: 0,
-            slots: 0
+            quorum: 0,
+            ring: 0
           }),
           build(tl, s) {
-            tl.to(s, { sentinelCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
-              .to(s, { clusterCard: 1, duration: 0.8, ease: 'power2.out' }, 0.9)
-              .to(s, { failover: 1, duration: 0.8, ease: 'power2.out' }, 1.8)
-              .to(s, { slots: 1, duration: 0.8, ease: 'power2.out' }, 14.0);
-            Camera.zoomTo(tl, s, { x: 1370, y: 520, zoom: 1.25, duration: 1.4 }, 14.5);
+            tl.to(s, { quorum: 1, duration: 0.9, ease: 'power2.out' }, 0.2)
+              .to(s, { ring: 1, duration: 1.0, ease: 'power2.out' }, 1.1);
+            Camera.zoomTo(tl, s, { x: 1380, y: 520, zoom: 1.18, duration: 1.4 }, 18.0);
             Camera.reset(tl, s, 26.5, 1.0);
           },
           render(ctx, { state, t }) {
-            // Left: Redis Sentinel (HA Failover & Quorum)
-            Theme.drawGlassCard(ctx, 160, 220, 740, 580, {
-              tint: 'olive',
-              badge: 'Redis Sentinel: Quorum & Auto-Failover',
-              badgeSide: 'left',
-              progress: state.sentinelCard
+            // Left: Triangular Sentinel Quorum Mesh (Open Blueprint Style)
+            ctx.save();
+            ctx.fillStyle = '#FACC15';
+            ctx.font = `800 16px ${Theme.FONTS.mono}`;
+            ctx.textAlign = 'center';
+            ctx.fillText('REDIS SENTINEL // RAFT QUORUM & AUTO-FAILOVER MESH', 480, 185);
+            ctx.restore();
+
+            Illustrations.quorumTriangleMesh(ctx, 480, 385, {
+              radius: 155,
+              progress: state.quorum,
+              timeSec: t
             });
 
-            if (state.sentinelCard > 0.2) {
-              // Master + Replica Architecture
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 18px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'left';
-              ctx.fillText('Replication Topology & Heartbeats:', 200, 275);
+            // Failover Master -> Replica Promotion Nodes below Triangle
+            if (state.quorum > 0.3) {
+              ctx.save();
+              ctx.globalAlpha *= state.quorum;
 
-              // Master Node
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              // Dead Master
               ctx.beginPath();
-              ctx.roundRect(200, 300, 310, 80, 8);
+              ctx.roundRect(140, 610, 300, 130, 12);
+              ctx.fillStyle = 'rgba(127, 29, 29, 0.28)';
               ctx.fill();
-              ctx.strokeStyle = state.failover > 0.5 ? '#EF4444' : '#34D399';
-              ctx.lineWidth = 1.8;
+              ctx.strokeStyle = '#EF4444';
+              ctx.lineWidth = 2;
               ctx.stroke();
 
-              ctx.fillStyle = state.failover > 0.5 ? '#F87171' : '#34D399';
-              ctx.font = `700 16px ${Theme.FONTS.mono}`;
-              ctx.fillText(state.failover > 0.5 ? 'Master (FAILED ❌)' : 'Master (Port 6379) ⚡', 220, 332);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 13px ${Theme.FONTS.sans}`;
-              ctx.fillText('Async replication with psync2 backlog ring', 220, 360);
-
-              // Replica Node
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-              ctx.beginPath();
-              ctx.roundRect(200, 410, 310, 80, 8);
-              ctx.fill();
-              ctx.strokeStyle = state.failover > 0.5 ? '#34D399' : '#38BDF8';
-              ctx.lineWidth = 1.8;
-              ctx.stroke();
-
-              ctx.fillStyle = state.failover > 0.5 ? '#34D399' : '#38BDF8';
-              ctx.font = `700 16px ${Theme.FONTS.mono}`;
-              ctx.fillText(state.failover > 0.5 ? 'Replica -> PROMOTED MASTER ✔' : 'Replica (Port 6380)', 220, 442);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 13px ${Theme.FONTS.sans}`;
-              ctx.fillText('Ready for zero-downtime promotion', 220, 470);
-
-              // 3 Sentinel Nodes
-              const sentinels = ['Sentinel 1', 'Sentinel 2', 'Sentinel 3'];
-              sentinels.forEach((sn, idx) => {
-                const sy = 300 + idx * 64;
-                ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-                ctx.beginPath();
-                ctx.roundRect(550, sy, 310, 50, 8);
-                ctx.fill();
-                ctx.strokeStyle = '#FACC15';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-
-                Icons.draw(ctx, 'shieldGuard', 580, sy + 25, 28, { glowColor: '#FACC15' });
-                ctx.fillStyle = '#FEF08A';
-                ctx.font = `600 15px ${Theme.FONTS.mono}`;
-                ctx.fillText(sn + ' (PING Quorum)', 610, sy + 32);
-              });
-
-              ctx.fillStyle = '#FACC15';
-              ctx.font = `600 16px ${Theme.FONTS.sans}`;
-              ctx.fillText('Failover: sdown (Subjective) -> odown (Quorum Consensus)', 200, 545);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
-              ctx.fillText('• Raft-like leader election among Sentinels', 200, 580);
-              ctx.fillText('• Reconfigures clients automatically via Pub/Sub notifications', 200, 615);
-              ctx.fillText('• Split-brain protection via min-replicas-to-write setting', 200, 650);
-            }
-
-            // Right: Redis Cluster (16,384 Hash Slots)
-            Theme.drawGlassCard(ctx, 940, 220, 820, 580, {
-              tint: 'teal',
-              badge: 'Redis Cluster: 16,384 Hash Slots',
-              badgeSide: 'right',
-              progress: state.clusterCard
-            });
-
-            if (state.clusterCard > 0.2) {
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 19px ${Theme.FONTS.sans}`;
+              ctx.fillStyle = '#FCA5A5';
+              ctx.font = `800 16px ${Theme.FONTS.mono}`;
               ctx.textAlign = 'center';
-              ctx.fillText('Deterministic Key Sharding Algorithm:', 1350, 275);
+              ctx.fillText('Master 6379 (ODOWN ❌)', 290, 650);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 13.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('Heartbeats timed out > down-after-ms', 290, 682);
+              ctx.fillText('Demoted upon recovery', 290, 710);
 
-              // Hash Formula Box
-              ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-              ctx.beginPath();
-              ctx.roundRect(1020, 305, 660, 54, 8);
-              ctx.fill();
-              ctx.strokeStyle = '#5CE1E6';
-              ctx.lineWidth = 1.8;
-              ctx.stroke();
-
-              ctx.fillStyle = '#5CE1E6';
-              ctx.font = `700 18px ${Theme.FONTS.mono}`;
-              ctx.fillText('Slot = CRC16(key) % 16,384 Hash Slots', 1350, 340);
-
-              // 3 Cluster Shards
-              const shards = [
-                { name: 'Master Shard 1', slots: 'Slots 0 - 5,460', keys: 'user:101 .. user:320', color: '#38BDF8' },
-                { name: 'Master Shard 2', slots: 'Slots 5,461 - 10,922', keys: 'order:420 .. order:980', color: '#34D399' },
-                { name: 'Master Shard 3', slots: 'Slots 10,923 - 16,383', keys: 'item:800 .. item:1200', color: '#FACC15' }
-              ];
-
-              shards.forEach((sh, idx) => {
-                const sx = 980 + idx * 250;
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-                ctx.beginPath();
-                ctx.roundRect(sx, 390, 230, 160, 8);
-                ctx.fill();
-                ctx.strokeStyle = sh.color;
-                ctx.lineWidth = 1.8;
-                ctx.stroke();
-
-                ctx.fillStyle = sh.color;
-                ctx.font = `700 16px ${Theme.FONTS.mono}`;
-                ctx.fillText(sh.name, sx + 115, 425);
-                ctx.fillStyle = '#FFFFFF';
-                ctx.font = `600 14px ${Theme.FONTS.mono}`;
-                ctx.fillText(sh.slots, sx + 115, 460);
-                ctx.fillStyle = '#94A3B8';
-                ctx.font = `500 12.5px ${Theme.FONTS.mono}`;
-                ctx.fillText(sh.keys, sx + 115, 495);
-                ctx.fillStyle = '#4ADE80';
-                ctx.font = `600 13px ${Theme.FONTS.sans}`;
-                ctx.fillText('Active Shard ✔', sx + 115, 528);
+              Connectors.solidArrow(ctx, 440, 675, 530, 675, {
+                progress: state.quorum,
+                color: '#34D399',
+                label: 'Promote'
               });
 
+              // Promoted Replica
+              ctx.beginPath();
+              ctx.roundRect(530, 610, 310, 130, 12);
+              ctx.fillStyle = 'rgba(6, 78, 59, 0.32)';
+              ctx.fill();
+              ctx.strokeStyle = '#34D399';
+              ctx.lineWidth = 2.2;
+              ctx.stroke();
+
+              ctx.fillStyle = '#6EE7B7';
+              ctx.font = `800 16px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('Replica -> NEW MASTER ✔', 685, 650);
               ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 17px ${Theme.FONTS.sans}`;
-              ctx.fillText('Smart Client Direct Routing & Gossip Protocol', 1350, 600);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
-              ctx.fillText('• Clients cache slot mapping to send queries directly to owner', 1350, 635);
-              ctx.fillText('• If slot moves during resharding: server returns -MOVED redirect', 1350, 665);
-              ctx.fillText('• Gossip ping/pong protocol maintains cluster topology state', 1350, 695);
+              ctx.font = `500 13.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('Synced via psync2 replication backlog', 685, 682);
+              ctx.fillText('Clients updated via Sentinel Pub/Sub', 685, 710);
+
+              ctx.restore();
             }
 
-            if (state.clusterCard > 0.4) {
-              Theme.drawTakeawayPill(ctx, 'Sentinel Auto-Failover and 16,384 Hash Slots Enable Resilient Horizontal Scale');
+            // Center vertical divider line
+            ctx.save();
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([8, 8]);
+            ctx.beginPath();
+            ctx.moveTo(910, 170);
+            ctx.lineTo(910, 840);
+            ctx.stroke();
+            ctx.restore();
+
+            // Right: 360-Degree 16,384 Hash-Slot Sharding Ring
+            ctx.save();
+            ctx.fillStyle = '#38BDF8';
+            ctx.font = `800 16px ${Theme.FONTS.mono}`;
+            ctx.textAlign = 'center';
+            ctx.fillText('REDIS CLUSTER // 16,384 DETERMINISTIC HASH-SLOT RING', 1410, 185);
+            ctx.restore();
+
+            Illustrations.hashSlotRingCluster(ctx, 1410, 515, {
+              radius: 170,
+              progress: state.ring,
+              timeSec: t
+            });
+
+            if (state.ring > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Sentinel Quorum Failover and 16,384 Hash Slots Enable Resilient Horizontal Scale', {
+                variant: 'pill',
+                border: '#38BDF8'
+              });
             }
           }
         },
 
         // ====================================================================
-        // SCENE 6: Memory Eviction, TTL Expiration & Production Gotchas (150s -> 180s)
+        // SCENE 6 [STYLE F: Sampled LRU Lottery + 2x2 Architect Scorecard Matrix]
+        // Backdrop: waves
         // ====================================================================
         {
           id: 'eviction-ttl-and-gotchas',
-          chapter: '06. Memory Eviction, TTL Expiration & Production Best Practices',
+          chapter: '06. Sampled LRU Eviction & Production Architect Scorecard',
           duration: 30,
-          qaTime: 12.0,
+          qaTime: 16.0,
           backdrop: 'waves',
           transition: 'fade',
-          sfx: [
-            { time: 0.3, type: 'pop' },
-            { time: 1.2, type: 'draw' },
-            { time: 2.5, type: 'tick' },
-            { time: 4.0, type: 'success' },
-            { time: 14.0, type: 'whoosh' },
-            { time: 22.0, type: 'tick' }
-          ],
+          sfx: [],
           captions: [
             { start: 0.5, end: 13.5, text: 'When memory reaches capacity, Redis protects itself using approximated LRU or LFU algorithms, sampling candidate keys without the overhead of heavy linked lists.' },
             { start: 14.5, end: 27.5, text: 'In production, always avoid massive keys that block the single thread, replace synchronous delete with unlink, and configure max-memory limits to prevent kernel OOM kills.' }
           ],
           initialState: () => ({
-            evictionCard: 0,
-            gotchasCard: 0,
-            lruSample: 0
+            lru: 0,
+            scorecard: 0
           }),
           build(tl, s) {
-            tl.to(s, { evictionCard: 1, duration: 0.8, ease: 'power2.out' }, 0.2)
-              .to(s, { gotchasCard: 1, duration: 0.8, ease: 'power2.out' }, 0.9)
-              .to(s, { lruSample: 1, duration: 0.8, ease: 'power2.out' }, 14.0);
-            Camera.zoomTo(tl, s, { x: 1360, y: 520, zoom: 1.25, duration: 1.4 }, 14.5);
+            tl.to(s, { lru: 1, duration: 0.9, ease: 'power2.out' }, 0.2)
+              .to(s, { scorecard: 1, duration: 0.9, ease: 'power2.out' }, 1.0);
+            Camera.zoomTo(tl, s, { x: 1360, y: 520, zoom: 1.18, duration: 1.4 }, 18.0);
             Camera.reset(tl, s, 26.5, 1.0);
           },
-          render(ctx, { state, t }) {
-            // Left: Memory Eviction Mechanics & TTL
-            Theme.drawGlassCard(ctx, 160, 220, 740, 580, {
-              tint: 'crimson',
-              badge: 'Memory Eviction (maxmemory-policy)',
-              badgeSide: 'left',
-              progress: state.evictionCard
-            });
-
-            if (state.evictionCard > 0.2) {
-              ctx.fillStyle = '#FFFFFF';
-              ctx.font = `700 18px ${Theme.FONTS.sans}`;
-              ctx.textAlign = 'left';
-              ctx.fillText('Approximated LRU (Sampled Algorithm):', 200, 275);
-
-              // 5 Key Samples
-              const samples = [
-                { k: 'k1', idle: '120s idle', evict: false },
-                { k: 'k2', idle: '840s idle', evict: false },
-                { k: 'k3', idle: '4,200s idle (OLDEST)', evict: true },
-                { k: 'k4', idle: '30s idle', evict: false },
-                { k: 'k5', idle: '520s idle', evict: false }
-              ];
-
-              samples.forEach((sm, i) => {
-                const sy = 300 + i * 46;
-                ctx.fillStyle = sm.evict ? 'rgba(239, 68, 68, 0.25)' : 'rgba(15, 23, 42, 0.85)';
-                ctx.beginPath();
-                ctx.roundRect(200, sy, 660, 40, 6);
-                ctx.fill();
-                ctx.strokeStyle = sm.evict ? '#EF4444' : '#38BDF8';
-                ctx.lineWidth = sm.evict ? 2 : 1.2;
-                ctx.stroke();
-
-                ctx.fillStyle = sm.evict ? '#FCA5A5' : '#38BDF8';
-                ctx.font = `700 14px ${Theme.FONTS.mono}`;
-                ctx.fillText(`Sample [${i}]: ${sm.k}`, 220, sy + 25);
-                ctx.fillStyle = sm.evict ? '#EF4444' : '#CBD5E1';
-                ctx.fillText(sm.idle, 420, sy + 25);
-                ctx.fillStyle = sm.evict ? '#F87171' : '#4ADE80';
-                ctx.fillText(sm.evict ? 'EVICTED ⚡' : 'Kept', 740, sy + 25);
-              });
+          render(ctx, { state }) {
+            // Left: Approximated LRU 5-Key Sampling Pool (No massive outer glass box)
+            if (state.lru > 0.05) {
+              ctx.save();
+              ctx.globalAlpha *= state.lru;
 
               ctx.fillStyle = '#FACC15';
-              ctx.font = `600 16px ${Theme.FONTS.sans}`;
-              ctx.fillText('Why Sampled LRU? Zero Memory Overhead!', 200, 560);
-              ctx.fillStyle = '#CBD5E1';
-              ctx.font = `500 14px ${Theme.FONTS.sans}`;
-              ctx.fillText('• Pure LRU requires pointers on every key (costing gigabytes of RAM)', 200, 595);
-              ctx.fillText('• Redis samples 5 random keys, inspects 24-bit clock, evicts oldest', 200, 625);
-              ctx.fillText('• Active Expiration: 10 times/sec, samples 20 keys with TTL and purges', 200, 655);
-            }
+              ctx.font = `800 16px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('APPROXIMATED LRU EVICTION (maxmemory-samples = 5)', 140, 195);
 
-            // Right: Senior SA Production Best Practices
-            Theme.drawGlassCard(ctx, 940, 220, 820, 580, {
-              tint: 'emerald',
-              badge: 'Senior Architect Production Rules',
-              badgeSide: 'right',
-              progress: state.gotchasCard
-            });
+              // Memory Pressure Bar
+              ctx.beginPath();
+              ctx.roundRect(140, 220, 680, 58, 12);
+              ctx.fillStyle = '#111827';
+              ctx.fill();
+              ctx.strokeStyle = '#EF4444';
+              ctx.lineWidth = 2;
+              ctx.stroke();
 
-            if (state.gotchasCard > 0.2) {
-              const rules = [
-                {
-                  title: '1. Big Keys Hazard (Avoid Keys > 10MB)',
-                  desc: 'Serializing or deleting large hashes blocks the single thread for seconds. Use scan and UNLINK instead of DEL.',
-                  color: '#F87171'
-                },
-                {
-                  title: '2. Non-Blocking UNLINK vs Synchronous DEL',
-                  desc: 'DEL deallocates memory in the main thread. UNLINK dispatches memory freeing to a background thread asynchronously.',
-                  color: '#34D399'
-                },
-                {
-                  title: '3. Lua Script Timeouts & Atomicity',
-                  desc: 'Lua scripts run atomically without interruptions. A slow script or infinite loop freezes the entire Redis server.',
-                  color: '#FACC15'
-                },
-                {
-                  title: '4. maxmemory Limit & TCP Keepalive',
-                  desc: 'Always set maxmemory to 75% of machine RAM so background BGSAVE and replication buffers never trigger OS OOM killer.',
-                  color: '#38BDF8'
-                }
+              const barGrad = ctx.createLinearGradient(152, 0, 800, 0);
+              barGrad.addColorStop(0, '#10B981');
+              barGrad.addColorStop(0.65, '#FACC15');
+              barGrad.addColorStop(1, '#EF4444');
+              ctx.beginPath();
+              ctx.roundRect(150, 230, 640 * state.lru, 38, 8);
+              ctx.fillStyle = barGrad;
+              ctx.fill();
+
+              ctx.fillStyle = '#090D16';
+              ctx.font = `800 15px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'center';
+              ctx.fillText('RAM USAGE: 99.4% OF MAXMEMORY -> TRIGGER EVICTION POOL', 480, 254);
+
+              // 5 Sampled Candidate Cards in a Staggered Stack
+              const candidates = [
+                { key: 'session:9812', clock: '24-bit idle: 120s', status: 'RETAINED', evict: false },
+                { key: 'profile:4401', clock: '24-bit idle: 840s', status: 'RETAINED', evict: false },
+                { key: 'catalog:1029', clock: '24-bit idle: 4,200s (OLDEST)', status: 'EVICTED ⚡', evict: true },
+                { key: 'cart:7731', clock: '24-bit idle: 30s', status: 'RETAINED', evict: false },
+                { key: 'token:5590', clock: '24-bit idle: 520s', status: 'RETAINED', evict: false }
               ];
 
-              rules.forEach((r, idx) => {
-                const ry = 280 + idx * 115;
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+              candidates.forEach((c, i) => {
+                const cy = 305 + i * 74;
+                const cx = c.evict ? 165 : 140;
                 ctx.beginPath();
-                ctx.roundRect(980, ry, 740, 100, 8);
+                ctx.roundRect(cx, cy, 680, 60, 10);
+                ctx.fillStyle = c.evict ? 'rgba(153, 27, 27, 0.38)' : 'rgba(15, 23, 42, 0.88)';
                 ctx.fill();
-                ctx.strokeStyle = r.color;
-                ctx.lineWidth = 1.6;
+                ctx.strokeStyle = c.evict ? '#EF4444' : '#334155';
+                ctx.lineWidth = c.evict ? 2.4 : 1.5;
                 ctx.stroke();
 
-                ctx.fillStyle = r.color;
-                ctx.font = `700 16px ${Theme.FONTS.sans}`;
+                ctx.fillStyle = c.evict ? '#FCA5A5' : '#38BDF8';
+                ctx.font = `700 16px ${Theme.FONTS.mono}`;
                 ctx.textAlign = 'left';
-                ctx.fillText(r.title, 1005, ry + 32);
+                ctx.fillText(c.key, cx + 22, cy + 36);
 
-                ctx.fillStyle = '#CBD5E1';
-                ctx.font = `500 14px ${Theme.FONTS.sans}`;
-                ctx.fillText(r.desc, 1005, ry + 65);
+                ctx.fillStyle = c.evict ? '#FEF08A' : '#94A3B8';
+                ctx.font = `500 14.5px ${Theme.FONTS.mono}`;
+                ctx.fillText(c.clock, cx + 220, cy + 36);
+
+                ctx.fillStyle = c.evict ? '#EF4444' : '#34D399';
+                ctx.font = `800 14px ${Theme.FONTS.mono}`;
+                ctx.textAlign = 'right';
+                ctx.fillText(c.status, cx + 655, cy + 36);
               });
+
+              // Bottom Left: Active TTL Reaper Callout
+              ctx.beginPath();
+              ctx.roundRect(140, 695, 680, 110, 12);
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+              ctx.fill();
+              ctx.strokeStyle = '#38BDF8';
+              ctx.lineWidth = 1.6;
+              ctx.stroke();
+
+              ctx.fillStyle = '#38BDF8';
+              ctx.font = `700 15.5px ${Theme.FONTS.mono}`;
+              ctx.textAlign = 'left';
+              ctx.fillText('⏱️ Zero Linked-List Overhead + Active TTL Reaper (10 Hz)', 166, 732);
+              ctx.fillStyle = '#CBD5E1';
+              ctx.font = `500 14.5px ${Theme.FONTS.sans}`;
+              ctx.fillText('Saves gigabytes of prev/next pointers by storing a 24-bit clock inside robj.', 166, 762);
+              ctx.fillText('Active background reaper samples 20 TTL keys every 100ms to purge expired data.', 166, 788);
+
+              ctx.restore();
             }
 
-            if (state.gotchasCard > 0.4) {
-              Theme.drawTakeawayPill(ctx, 'Sampled Eviction, Non-Blocking Unlink, and Sharded Keys Guarantee Production Stability');
+            // Right: 2x2 Architectural Do's & Don'ts Scorecard Matrix
+            ctx.save();
+            ctx.fillStyle = '#34D399';
+            ctx.font = `800 16px ${Theme.FONTS.mono}`;
+            ctx.textAlign = 'left';
+            ctx.fillText('PRODUCTION ARCHITECTURE SCORECARD (DO\'S & DON\'TS)', 880, 195);
+            ctx.restore();
+
+            Illustrations.scorecardMatrix(ctx, 880, 220, 900, 585, {
+              progress: state.scorecard
+            });
+
+            if (state.scorecard > 0.4) {
+              Theme.drawTakeawayPill(ctx, 'Sampled Eviction, Non-Blocking Unlink, and Sharded Keys Guarantee Production Stability', {
+                variant: 'terminal'
+              });
             }
           }
         }

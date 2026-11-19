@@ -29,7 +29,7 @@ test('Studio exposes Camera, Effects, Connectors (incl. curvedArrow & flowArrow)
   assert.equal(typeof Studio.Connectors.elbowArrow, 'function');
 });
 
-test('All 19 ByteByteGo high-retention archetypes are merged into Studio.Illustrations', () => {
+test('All 26 ByteByteGo high-retention & multi-style archetypes are merged into Studio.Illustrations', () => {
   const expectedArchetypes = [
     'isometricServerStack',
     'foldedFileBadge',
@@ -49,7 +49,14 @@ test('All 19 ByteByteGo high-retention archetypes are merged into Studio.Illustr
     'pubSubTopicBox',
     'circuitBreakerSwitch',
     'cdnEdgeGlobe',
-    'rateLimiterBucket'
+    'rateLimiterBucket',
+    'memoryHierarchyPyramid',
+    'byteArrayTape',
+    'radialHubAndSpoke',
+    'horizontalLaneRace',
+    'quorumTriangleMesh',
+    'hashSlotRingCluster',
+    'scorecardMatrix'
   ];
   for (const fnName of expectedArchetypes) {
     assert.equal(typeof Studio.Illustrations[fnName], 'function', `Missing archetype: ${fnName}`);
