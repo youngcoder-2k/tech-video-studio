@@ -32,13 +32,13 @@ const SENIOR_SA_PERSONAS = {
     id: 'senior-sa',
     name: 'Senior Solutions Architect',
     language: 'en',
-    speed: 0.90,
-    rate: '-10%',
-    neuralVoice: 'en-US-AndrewMultilingualNeural',
+    speed: 0.94,
+    rate: '-6%',
+    neuralVoice: 'en-US-SteffanNeural',
     description:
-      'A calm, authoritative, articulate Senior Solutions Architect in his late 30s explaining distributed systems and cloud architecture. Warm baritone voice, unhurried conversational pacing, clear studio condenser microphone, subtle emphasis on engineering trade-offs.',
+      'A crisp, modern, authoritative Senior Solutions Architect and YouTube tech presenter explaining distributed systems and cloud architecture. Clean studio condenser microphone, natural conversational pacing, subtle emphasis on engineering trade-offs.',
     instruct:
-      'Speak at a calm, unhurried, easy-to-follow pace like an experienced Senior Solutions Architect walking a fellow engineer through a system design diagram. Take natural breathing pauses between clauses and emphasize architectural trade-offs clearly.'
+      'Speak at a crisp, calm, easy-to-follow pace like an experienced Senior Solutions Architect walking a fellow engineer through a ByteByteGo system design diagram.'
   },
   'staff-engineer': {
     id: 'staff-engineer',

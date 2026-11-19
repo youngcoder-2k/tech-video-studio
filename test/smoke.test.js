@@ -146,11 +146,12 @@ test('Antigravity plugin.json and SKILL.md adhere to strict customization schema
   assert.match(skillMd, /^---\nname:\s*tech-video-studio\ndescription:/);
 });
 
-test('VoiceStudio Senior SA engine polishes technical terms, defaults to unhurried -10% pacing, and exposes Senior SA personas', async () => {
+test('VoiceStudio Senior SA engine polishes technical terms, defaults to Steffan -6% pacing, and exposes Senior SA personas', async () => {
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'], 'senior-sa persona exists');
-  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].rate, '-10%');
-  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].speed, 0.90);
-  assert.equal(VoiceStudio.resolveEdgeRate({}, VoiceStudio.SENIOR_SA_PERSONAS['senior-sa']), '-10%');
+  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].neuralVoice, 'en-US-SteffanNeural');
+  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].rate, '-6%');
+  assert.equal(VoiceStudio.SENIOR_SA_PERSONAS['senior-sa'].speed, 0.94);
+  assert.equal(VoiceStudio.resolveEdgeRate({}, VoiceStudio.SENIOR_SA_PERSONAS['senior-sa']), '-6%');
   assert.equal(VoiceStudio.resolveEdgeRate({ speed: 0.88 }), '-12%');
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['staff-engineer'], 'staff-engineer persona exists');
   assert.ok(VoiceStudio.SENIOR_SA_PERSONAS['tech-storyteller'], 'tech-storyteller persona exists');
