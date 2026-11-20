@@ -1,0 +1,255 @@
+{
+  "title": "How the JVM Actually Works (Living Whiteboard v4.0)",
+  "palette": "byteByteGoTrue",
+  "fps": 30,
+  "persona": "senior-sa",
+  "scenes": [
+    {
+      "id": "scene-1-compilation-classloader",
+      "chapter": "01. Bytecode & ClassLoader Pipeline",
+      "backdrop": "dotMatrix",
+      "whiteboard": {
+        "actors": [
+          { "id": "src", "kind": "code", "x": 230, "y": 480, "w": 270, "h": 190, "label": "Main.java", "sub": "Source Code", "color": "#38BDF8", "items": ["class Main {", "  int sum(int n)", "}"], "initial": true },
+          { "id": "javac", "kind": "pill", "x": 540, "y": 480, "w": 170, "h": 68, "label": "javac", "color": "#FACC15", "initial": false },
+          { "id": "bytecode", "kind": "box", "x": 850, "y": 480, "w": 260, "h": 170, "label": "Main.class", "sub": "0xCAFEBABE", "color": "#34D399", "items": ["aload_0", "iadd / ireturn"], "initial": false },
+          { "id": "clGroup", "kind": "group", "x": 1440, "y": 510, "w": 740, "h": 450, "label": "JVM ClassLoader Subsystem", "color": "#A78BFA", "initial": false },
+          { "id": "loader", "kind": "box", "x": 1240, "y": 420, "w": 240, "h": 125, "label": "1. Loading", "sub": "Read Bytecode", "color": "#38BDF8", "initial": false },
+          { "id": "verifier", "kind": "box", "x": 1620, "y": 420, "w": 260, "h": 125, "label": "2. Linking", "sub": "Verify & Resolve", "color": "#FACC15", "initial": false },
+          { "id": "metaspace", "kind": "cylinder", "x": 1430, "y": 635, "w": 300, "h": 125, "label": "Method Area", "sub": "Metaspace (RAM)", "color": "#34D399", "initial": false }
+        ]
+      },
+      "beats": [
+        {
+          "role": "hook",
+          "duration": 10,
+          "title": "Step 1: Source Code to Portable Bytecode",
+          "subtitle": "Java never compiles directly to x86 or ARM machine code first.",
+          "accent": "#38BDF8",
+          "narration": "When you compile Java code, javac does not produce CPU machine instructions. Instead, it compiles your source into compact, platform-independent bytecode inside a dot-class file.",
+          "actions": [
+            { "type": "spawn", "target": "javac", "p": 0.12, "dur": 0.45 },
+            { "type": "connect", "from": "src", "to": "javac", "p": 0.22, "dur": 0.4, "color": "#38BDF8" },
+            { "type": "packet", "from": "src", "to": "javac", "p": 0.28, "dur": 1.1, "label": ".java", "color": "#38BDF8" },
+            { "type": "spawn", "target": "bytecode", "p": 0.46, "dur": 0.5 },
+            { "type": "connect", "from": "javac", "to": "bytecode", "p": 0.52, "dur": 0.4, "color": "#34D399" },
+            { "type": "packet", "from": "javac", "to": "bytecode", "p": 0.58, "dur": 1.1, "label": "0xCAFE", "color": "#34D399", "count": 2, "stagger": 0.35 },
+            { "type": "mutate", "target": "bytecode", "p": 0.78, "badge": "PORTABLE ✔", "status": "ok" },
+            { "type": "callout", "target": "bytecode", "p": 0.75, "pUntil": 0.98, "text": "Runs identically on Linux, macOS & Windows", "side": "bottom", "color": "#34D399" }
+          ]
+        },
+        {
+          "role": "context",
+          "duration": 11,
+          "title": "Step 2: Loading & Bytecode Verification",
+          "subtitle": "The ClassLoader reads bytes and proves type & stack safety.",
+          "accent": "#FACC15",
+          "narration": "At startup, the JVM ClassLoader pulls that bytecode into memory and runs the Linking phase. Its verifier mathematically proves the bytecode cannot corrupt memory or overflow the stack.",
+          "actions": [
+            { "type": "spawn", "target": "clGroup", "p": 0.04, "dur": 0.45 },
+            { "type": "spawn", "target": "loader", "p": 0.10, "dur": 0.45 },
+            { "type": "connect", "from": "bytecode", "to": "loader", "p": 0.18, "dur": 0.4, "color": "#38BDF8" },
+            { "type": "packet", "from": "bytecode", "to": "loader", "p": 0.24, "dur": 1.0, "label": "BYTECODE", "color": "#38BDF8" },
+            { "type": "spawn", "target": "verifier", "p": 0.36, "dur": 0.45 },
+            { "type": "connect", "from": "loader", "to": "verifier", "p": 0.42, "dur": 0.4, "color": "#FACC15" },
+            { "type": "packet", "from": "loader", "to": "verifier", "p": 0.48, "dur": 0.9, "label": "CHECK", "color": "#FACC15" },
+            { "type": "focus", "target": "verifier", "p": 0.56, "dur": 0.9, "zoom": 1.38 },
+            { "type": "mutate", "target": "verifier", "p": 0.68, "badge": "VERIFIED ✔", "status": "ok", "sub": "Stack & Type Safe" },
+            { "type": "callout", "target": "verifier", "p": 0.70, "pUntil": 0.96, "text": "Blocks illegal pointers & corrupted bytecode", "side": "top", "color": "#FACC15" }
+          ]
+        },
+        {
+          "role": "turn",
+          "duration": 9,
+          "title": "Step 3: Stored in Method Area (Metaspace)",
+          "subtitle": "Class metadata is now initialized and ready for execution.",
+          "accent": "#34D399",
+          "narration": "Once verified and initialized, class structures and static fields land inside Metaspace. Only then is your program ready to allocate objects and execute.",
+          "actions": [
+            { "type": "resetCamera", "p": 0.04, "dur": 0.8 },
+            { "type": "spawn", "target": "metaspace", "p": 0.18, "dur": 0.5 },
+            { "type": "connect", "from": "verifier", "to": "metaspace", "p": 0.28, "dur": 0.45, "color": "#34D399" },
+            { "type": "packet", "from": "verifier", "to": "metaspace", "p": 0.36, "dur": 1.1, "label": "INIT", "color": "#34D399", "count": 2, "stagger": 0.35 },
+            { "type": "mutate", "target": "metaspace", "p": 0.65, "badge": "LOADED ✔", "status": "ok" },
+            { "type": "spotlight", "targets": ["metaspace", "verifier"], "p": 0.62, "pUntil": 0.98 }
+          ],
+          "takeaway": "ClassLoader Guarantees Safe, Verified Bytecode Before Any Line Executes"
+        }
+      ]
+    },
+    {
+      "id": "scene-2-heap-and-gc",
+      "chapter": "02. Runtime Memory: Stack, Heap & Garbage Collection",
+      "backdrop": "dotMatrix",
+      "whiteboard": {
+        "actors": [
+          { "id": "stackGroup", "kind": "group", "x": 360, "y": 530, "w": 460, "h": 500, "label": "Thread Stack (Private)", "color": "#38BDF8", "initial": true },
+          { "id": "stackBox", "kind": "code", "x": 360, "y": 530, "w": 390, "h": 370, "label": "Call Frames", "sub": "LIFO Per-Thread", "color": "#38BDF8", "items": ["main()  -> ref#01"], "initial": true },
+          { "id": "heapGroup", "kind": "group", "x": 1270, "y": 530, "w": 1060, "h": 500, "label": "Shared JVM Heap (Generational GC)", "color": "#34D399", "initial": true },
+          { "id": "eden", "kind": "box", "x": 960, "y": 460, "w": 340, "h": 210, "label": "Eden Space", "sub": "New Objects Born Here", "color": "#34D399", "meter": 0.15, "initial": true },
+          { "id": "deadObj", "kind": "pill", "x": 960, "y": 670, "w": 260, "h": 62, "label": "Temp Objects (90%)", "color": "#F87171", "initial": false },
+          { "id": "survivor", "kind": "box", "x": 1350, "y": 460, "w": 260, "h": 175, "label": "Survivor S0/S1", "sub": "Short-Lived", "color": "#FACC15", "meter": 0.10, "initial": true },
+          { "id": "oldGen", "kind": "cylinder", "x": 1645, "y": 530, "w": 240, "h": 220, "label": "Old Gen", "sub": "Long-Lived", "color": "#A78BFA", "initial": true }
+        ]
+      },
+      "beats": [
+        {
+          "role": "mechanism",
+          "duration": 11,
+          "title": "Stack Frames vs Shared Heap Allocation",
+          "subtitle": "Every thread gets a private Stack; all objects live in the Heap.",
+          "accent": "#38BDF8",
+          "narration": "At runtime, each thread pushes method frames onto its own private Stack. Meanwhile, every new object you allocate flies straight into the shared Heap's Eden space using a fast pointer bump.",
+          "actions": [
+            { "type": "appendItem", "target": "stackBox", "p": 0.15, "text": "handleReq() -> ref#02", "color": "#FACC15" },
+            { "type": "appendItem", "target": "stackBox", "p": 0.35, "text": "new User()  -> ref#03", "color": "#34D399" },
+            { "type": "connect", "from": "stackBox", "to": "eden", "p": 0.30, "dur": 0.45, "color": "#34D399", "label": "new Obj()" },
+            { "type": "packet", "from": "stackBox", "to": "eden", "p": 0.40, "dur": 1.0, "label": "OBJ", "color": "#34D399", "count": 3, "stagger": 0.4 },
+            { "type": "mutate", "target": "eden", "p": 0.60, "dur": 1.2, "meter": 0.55, "badge": "ALLOCATING" },
+            { "type": "spawn", "target": "deadObj", "p": 0.72, "dur": 0.45 }
+          ]
+        },
+        {
+          "role": "deepening",
+          "duration": 10,
+          "title": "Eden Fills Up → Triggering Minor GC",
+          "subtitle": "Most objects die young — the Weak Generational Hypothesis.",
+          "accent": "#F87171",
+          "narration": "Under heavy traffic, Eden fills up rapidly. Because over ninety percent of Java objects die almost immediately, the JVM triggers a fast Minor Garbage Collection focused purely on Eden.",
+          "actions": [
+            { "type": "packet", "from": "stackBox", "to": "eden", "p": 0.08, "dur": 0.85, "label": "NEW", "color": "#FACC15", "count": 3, "stagger": 0.3 },
+            { "type": "mutate", "target": "eden", "p": 0.22, "dur": 1.4, "meter": 0.96, "status": "error", "badge": "96% FULL!" },
+            { "type": "focus", "target": "eden", "p": 0.45, "dur": 0.9, "zoom": 1.32 },
+            { "type": "callout", "target": "eden", "p": 0.58, "pUntil": 0.96, "text": "Minor GC scans ONLY live roots, not dead garbage!", "side": "top", "color": "#F87171" }
+          ]
+        },
+        {
+          "role": "proof",
+          "duration": 11,
+          "title": "Sweep Dead Objects & Promote Survivors",
+          "subtitle": "Live objects copy to Survivor → Old Gen; Eden resets to near 0%.",
+          "accent": "#34D399",
+          "narration": "Dead temporary objects are instantly wiped out in place. Only the tiny fraction of surviving objects get copied to Survivor spaces, and after several cycles, promoted into Old Gen.",
+          "actions": [
+            { "type": "resetCamera", "p": 0.04, "dur": 0.75 },
+            { "type": "mutate", "target": "deadObj", "p": 0.14, "dur": 0.7, "crossOut": true, "status": "error" },
+            { "type": "connect", "from": "eden", "to": "survivor", "p": 0.24, "dur": 0.4, "color": "#FACC15" },
+            { "type": "packet", "from": "eden", "to": "survivor", "p": 0.30, "dur": 1.0, "label": "LIVE", "color": "#34D399", "count": 2, "stagger": 0.35 },
+            { "type": "mutate", "target": "eden", "p": 0.38, "dur": 1.0, "meter": 0.08, "status": "ok", "badge": "CLEAN ✔" },
+            { "type": "mutate", "target": "survivor", "p": 0.52, "dur": 0.7, "meter": 0.42, "badge": "AGE +1" },
+            { "type": "connect", "from": "survivor", "to": "oldGen", "p": 0.60, "dur": 0.4, "color": "#A78BFA" },
+            { "type": "packet", "from": "survivor", "to": "oldGen", "p": 0.66, "dur": 1.0, "label": "PROMOTE", "color": "#A78BFA" },
+            { "type": "mutate", "target": "oldGen", "p": 0.82, "badge": "TENURED ✔", "status": "ok" }
+          ],
+          "takeaway": "Generational GC Reclaims 90% of Memory in Milliseconds Without Scanning Old Gen"
+        }
+      ]
+    },
+    {
+      "id": "scene-3-jit-execution",
+      "chapter": "03. The Execution Engine: Interpreter vs HotSpot JIT",
+      "backdrop": "dotMatrix",
+      "whiteboard": {
+        "actors": [
+          { "id": "bcStream", "kind": "box", "x": 250, "y": 520, "w": 250, "h": 150, "label": "Bytecode", "sub": "Hot Loop Method", "color": "#38BDF8", "initial": true },
+          { "id": "interp", "kind": "box", "x": 680, "y": 360, "w": 300, "h": 150, "label": "Interpreter", "sub": "Line-by-Line Exec", "color": "#FACC15", "badge": "1x SPEED", "initial": true },
+          { "id": "profiler", "kind": "box", "x": 680, "y": 670, "w": 300, "h": 150, "label": "HotSpot Profiler", "sub": "Calls: 120", "color": "#38BDF8", "meter": 0.15, "initial": true },
+          { "id": "jit", "kind": "box", "x": 1150, "y": 670, "w": 300, "h": 165, "label": "C2 JIT Compiler", "sub": "Inlining & Unrolling", "color": "#FB923C", "initial": false },
+          { "id": "codeCache", "kind": "cylinder", "x": 1150, "y": 360, "w": 280, "h": 150, "label": "Code Cache", "sub": "Native x86 / ARM", "color": "#34D399", "initial": false },
+          { "id": "cpu", "kind": "icon", "icon": "cpuSilicon", "x": 1640, "y": 490, "w": 160, "h": 160, "label": "CPU Silicon", "sub": "Bare-Metal Speed", "color": "#34D399", "initial": true }
+        ]
+      },
+      "beats": [
+        {
+          "role": "problem",
+          "duration": 10,
+          "title": "Why Java Starts Fast — Then Warms Up",
+          "subtitle": "The Interpreter runs immediately, while HotSpot watches every call.",
+          "accent": "#FACC15",
+          "narration": "To start instantly, the JVM first runs your bytecode through an Interpreter. It works right away, but translating every instruction over and over is slow. Meanwhile, the HotSpot Profiler silently counts hot loops.",
+          "actions": [
+            { "type": "connect", "from": "bcStream", "to": "interp", "p": 0.08, "dur": 0.4, "color": "#FACC15" },
+            { "type": "connect", "from": "bcStream", "to": "profiler", "p": 0.14, "dur": 0.4, "color": "#38BDF8", "style": "dashed" },
+            { "type": "packet", "from": "bcStream", "to": "interp", "p": 0.22, "dur": 1.2, "label": "OP", "color": "#FACC15", "count": 2, "stagger": 0.5 },
+            { "type": "connect", "from": "interp", "to": "cpu", "p": 0.35, "dur": 0.45, "color": "#FACC15", "style": "dashed" },
+            { "type": "packet", "from": "bcStream", "to": "profiler", "p": 0.48, "dur": 1.0, "label": "+1000", "color": "#38BDF8", "count": 2, "stagger": 0.4 },
+            { "type": "mutate", "target": "profiler", "p": 0.65, "dur": 1.2, "meter": 0.58, "sub": "Calls: 5,200" }
+          ]
+        },
+        {
+          "role": "breakthrough",
+          "duration": 11,
+          "title": "Hot Method Detected → C2 JIT Compiles to Native",
+          "subtitle": "Once a method crosses 10,000 calls, C2 optimizes it with live runtime data.",
+          "accent": "#FB923C",
+          "narration": "Once a method crosses ten thousand invocations, HotSpot flags it red hot and hands it to the C2 Just-In-Time compiler. Using real runtime branch profiles, C2 inlines methods and emits native CPU machine code.",
+          "actions": [
+            { "type": "mutate", "target": "profiler", "p": 0.08, "dur": 0.8, "meter": 1.0, "status": "hot", "badge": "10,000+ HOT!", "sub": "Threshold Crossed" },
+            { "type": "spawn", "target": "jit", "p": 0.20, "dur": 0.45 },
+            { "type": "connect", "from": "profiler", "to": "jit", "p": 0.26, "dur": 0.4, "color": "#FB923C" },
+            { "type": "packet", "from": "profiler", "to": "jit", "p": 0.32, "dur": 0.9, "label": "HOT IR", "color": "#FB923C" },
+            { "type": "focus", "target": "jit", "p": 0.42, "dur": 0.9, "zoom": 1.36 },
+            { "type": "mutate", "target": "jit", "p": 0.56, "badge": "COMPILED ✔", "status": "ok", "sub": "x86_64 / ARM64" },
+            { "type": "callout", "target": "jit", "p": 0.60, "pUntil": 0.96, "text": "Optimizes based on REAL runtime traffic!", "side": "top", "color": "#FB923C" }
+          ]
+        },
+        {
+          "role": "payoff",
+          "duration": 10,
+          "title": "Direct Code Cache → Bare-Metal CPU Execution",
+          "subtitle": "The Interpreter is bypassed completely for C++-rivaling throughput.",
+          "accent": "#34D399",
+          "narration": "That compiled machine code is stored inside the Code Cache. From that moment on, the JVM bypasses the Interpreter completely and executes native instructions directly on your CPU silicon at up to one hundred times the speed.",
+          "actions": [
+            { "type": "resetCamera", "p": 0.04, "dur": 0.8 },
+            { "type": "spawn", "target": "codeCache", "p": 0.14, "dur": 0.45 },
+            { "type": "connect", "from": "jit", "to": "codeCache", "p": 0.20, "dur": 0.4, "color": "#34D399" },
+            { "type": "packet", "from": "jit", "to": "codeCache", "p": 0.26, "dur": 0.85, "label": "NATIVE", "color": "#34D399" },
+            { "type": "connect", "from": "bcStream", "to": "codeCache", "p": 0.38, "dur": 0.45, "color": "#34D399", "curve": -160 },
+            { "type": "connect", "from": "codeCache", "to": "cpu", "p": 0.44, "dur": 0.4, "color": "#34D399", "style": "flow" },
+            { "type": "spotlight", "targets": ["bcStream", "codeCache", "cpu"], "p": 0.48, "pUntil": 0.98 },
+            { "type": "packet", "from": "codeCache", "to": "cpu", "p": 0.52, "dur": 0.65, "label": "x86_64", "color": "#34D399", "count": 4, "stagger": 0.28 },
+            { "type": "mutate", "target": "cpu", "p": 0.66, "badge": "100x FASTER ✔", "status": "ok" }
+          ],
+          "takeaway": "Adaptive JIT Compiles Hot Bytecode Into Bare-Metal Native Machine Code"
+        }
+      ]
+    },
+    {
+      "id": "scene-4-full-jvm-synthesis",
+      "chapter": "04. The Complete JVM Architecture",
+      "backdrop": "dotMatrix",
+      "whiteboard": {
+        "actors": [
+          { "id": "p1", "kind": "box", "x": 340, "y": 500, "w": 320, "h": 220, "label": "1. ClassLoader", "sub": "Portable & Verified", "color": "#38BDF8", "items": ["• Load .class bytes", "• Verify stack safety", "• Store in Metaspace"], "initial": true },
+          { "id": "p2", "kind": "box", "x": 960, "y": 500, "w": 340, "h": 220, "label": "2. Generational GC", "sub": "Self-Healing Memory", "color": "#FACC15", "items": ["• Fast Eden bump alloc", "• Sweep 90% short-lived", "• Promote to Old Gen"], "initial": true },
+          { "id": "p3", "kind": "box", "x": 1580, "y": 500, "w": 320, "h": 220, "label": "3. HotSpot JIT", "sub": "Adaptive Native Speed", "color": "#34D399", "items": ["• Profile hot loops", "• C2 inline & unroll", "• Bare-metal CPU exec"], "initial": true }
+        ]
+      },
+      "beats": [
+        {
+          "role": "synthesis",
+          "duration": 10,
+          "title": "How All Three Pillars Work Together",
+          "subtitle": "Portability, memory safety, and native speed in one runtime.",
+          "accent": "#34D399",
+          "narration": "Put it all together and the JVM's brilliance is clear. ClassLoaders guarantee portability and safety, Generational Garbage Collection automates memory at scale, and the HotSpot JIT turns hot bytecode into native speed.",
+          "actions": [
+            { "type": "spotlight", "targets": ["p1"], "p": 0.06, "pUntil": 0.34 },
+            { "type": "mutate", "target": "p1", "p": 0.12, "badge": "PORTABLE ✔", "status": "ok" },
+            { "type": "connect", "from": "p1", "to": "p2", "p": 0.30, "dur": 0.4, "color": "#38BDF8" },
+            { "type": "packet", "from": "p1", "to": "p2", "p": 0.34, "dur": 0.7, "label": "SAFE", "color": "#38BDF8" },
+            { "type": "spotlight", "targets": ["p2"], "p": 0.35, "pUntil": 0.64 },
+            { "type": "mutate", "target": "p2", "p": 0.42, "badge": "AUTO GC ✔", "status": "ok" },
+            { "type": "connect", "from": "p2", "to": "p3", "p": 0.60, "dur": 0.4, "color": "#FACC15" },
+            { "type": "packet", "from": "p2", "to": "p3", "p": 0.64, "dur": 0.7, "label": "LIVE", "color": "#FACC15" },
+            { "type": "spotlight", "targets": ["p3"], "p": 0.65, "pUntil": 0.86 },
+            { "type": "mutate", "target": "p3", "p": 0.72, "badge": "100x JIT ✔", "status": "ok" },
+            { "type": "clearSpotlight", "p": 0.87 }
+          ],
+          "takeaway": "JVM = Portable Bytecode + Self-Managing Heap + Adaptive Native Speed"
+        }
+      ]
+    }
+  ]
+}

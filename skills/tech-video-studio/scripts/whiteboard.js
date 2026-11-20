@@ -704,8 +704,11 @@ function renderScene(ctx, spec, t, totalDuration, opts = {}) {
   }
 
   // Apply smooth camera zoom/pan
-  ctx.save();
-  Camera.applyCameraTransform(ctx, state.camera, 1920, 1080);
+  Camera.apply(ctx, {
+    camX: state.camera.x,
+    camY: state.camera.y,
+    camZoom: state.camera.zoom
+  }, 1920, 1080);
 
   // Layer 1: Group containers (behind everything)
   for (const actor of state.actors.values()) {
@@ -769,7 +772,7 @@ function renderScene(ctx, spec, t, totalDuration, opts = {}) {
     drawCallout(ctx, callout, state.actors);
   }
 
-  ctx.restore();
+  Camera.restore(ctx);
 
   // Optional bottom takeaway pill (drawn in screen space)
   if (spec.takeaway) {

@@ -653,6 +653,37 @@ const BYTEBYTEGO_DNA = {
   maxHeroNodesPerBeat: 3
 };
 
+/**
+ * Draws a crisp ByteByteGo-style centered beat header (title + optional subtitle)
+ * safely positioned below the top chrome bar without overlapping the 1920x1080 whiteboard.
+ */
+function drawBeatHeader(ctx, title, subtitle = '', opts = {}) {
+  const alpha = opts.alpha != null ? Math.max(0, Math.min(1, opts.alpha)) : 1;
+  if (alpha <= 0.01 || !title) return;
+  const accent = opts.accent || '#38BDF8';
+
+  ctx.save();
+  ctx.globalAlpha *= alpha;
+  ctx.textAlign = 'center';
+
+  // Subtle accent bar above title
+  ctx.fillStyle = accent;
+  ctx.beginPath();
+  ctx.roundRect(960 - 34, 118, 68, 4, 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#F8FAFC';
+  ctx.font = `800 36px ${FONTS.sans}`;
+  ctx.fillText(title, 960, 164);
+
+  if (subtitle) {
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = `600 22px ${FONTS.sans}`;
+    ctx.fillText(subtitle, 960, 198);
+  }
+  ctx.restore();
+}
+
 module.exports = {
   PALETTES,
   BYTEBYTEGO_DNA,
@@ -661,6 +692,7 @@ module.exports = {
   FONTS,
   drawBackground,
   drawTopHeader,
+  drawBeatHeader,
   drawGlassCard,
   drawTakeawayPill,
   drawSpotlightMask,
