@@ -27,7 +27,7 @@
       "beats": [
         {
           "type": "pill-chain",
-          "duration": 12,
+          "duration": 9.32,
           "narration": "How does Java run on every machine? First, javac compiles your source code into portable bytecode.",
           "heroMetric": "WRITE ONCE, RUN ANYWHERE",
           "heroSub": "Java Source -> Platform-Neutral Bytecode",
@@ -42,7 +42,7 @@
         },
         {
           "type": "wireframe-fanout",
-          "duration": 12,
+          "duration": 9.53,
           "narration": "Instead of targeting one CPU, bytecode runs inside a JVM. The same file runs on any OS.",
           "source": {
             "badge": "CLASS",
@@ -74,7 +74,7 @@
         },
         {
           "type": "flat-step-flow",
-          "duration": 12,
+          "duration": 11.94,
           "direction": "horizontal",
           "narration": "At startup, the ClassLoader reads bytecode into memory. It verifies security, prepares static fields, and initializes classes.",
           "steps": [
@@ -112,7 +112,7 @@
       "beats": [
         {
           "type": "dashed-group-stack",
-          "duration": 12,
+          "duration": 9.85,
           "narration": "Every thread gets its own private Stack. Method calls push frames onto it, storing local variables safely.",
           "header": "Per-Thread JVM Stack",
           "subtitle": "Thread-private LIFO frames — zero lock contention",
@@ -131,7 +131,7 @@
         },
         {
           "type": "comparison-cards",
-          "duration": 12,
+          "duration": 8.74,
           "narration": "While stacks are private per thread, the Heap is shared. Every object you allocate lives on the Heap.",
           "left": {
             "title": "JVM Thread Stack",
@@ -160,7 +160,7 @@
         },
         {
           "type": "flat-step-flow",
-          "duration": 12,
+          "duration": 10.84,
           "direction": "vertical",
           "narration": "Class definitions and method bytecode live in Metaspace. Metaspace uses native OS memory, separate from the Heap.",
           "steps": [
@@ -192,7 +192,7 @@
       "beats": [
         {
           "type": "flat-step-flow",
-          "duration": 12,
+          "duration": 10.35,
           "direction": "horizontal",
           "narration": "First, the JVM interpreter executes bytecode line by line. Startup is instant, yet repeated loops stay slow.",
           "steps": [
@@ -223,7 +223,7 @@
         },
         {
           "type": "versus-gauge",
-          "duration": 12,
+          "duration": 10.3,
           "narration": "The HotSpot profiler spots frequently called methods. Then the JIT compiler turns them into fast native machine code.",
           "left": {
             "icon": "warningAlert",
@@ -251,7 +251,7 @@
         },
         {
           "type": "pill-chain",
-          "duration": 12,
+          "duration": 8.87,
           "narration": "Compiled native code is stored in the Code Cache. Your CPU then runs it at full speed.",
           "heroMetric": "TIERED JIT COMPILATION",
           "heroSub": "Profiled Runtime Optimizations Beat Static Compilers",
@@ -273,7 +273,7 @@
       "beats": [
         {
           "type": "commit-log-stream",
-          "duration": 12,
+          "duration": 9.94,
           "narration": "Most Java objects die very young. So the JVM allocates new objects rapidly inside Eden Space.",
           "source": {
             "icon": "lightningBolt",
@@ -327,7 +327,7 @@
         },
         {
           "type": "flat-step-flow",
-          "duration": 12,
+          "duration": 9.82,
           "direction": "horizontal",
           "narration": "Minor GC clears dead objects from Eden in milliseconds. Survivors age and get promoted into Old Generation.",
           "steps": [
@@ -360,7 +360,7 @@
         },
         {
           "type": "comparison-cards",
-          "duration": 12,
+          "duration": 12.42,
           "narration": "Modern collectors eliminate long freezes. G1GC balances throughput, while ZGC keeps pause times under one millisecond.",
           "left": {
             "title": "G1GC (Default Collector)",
@@ -396,7 +396,7 @@
       "beats": [
         {
           "type": "dashed-group-stack",
-          "duration": 12,
+          "duration": 11,
           "narration": "With Escape Analysis, the JIT detects local-only objects. It skips Heap allocation entirely and removes useless locks.",
           "header": "JIT Escape Analysis",
           "subtitle": "Local-only objects never touch the Heap or GC",
@@ -415,7 +415,7 @@
         },
         {
           "type": "versus-gauge",
-          "duration": 12,
+          "duration": 10.83,
           "narration": "This is why JVM services speed up over time. After warmup, JIT-compiled code runs over ten times faster.",
           "left": {
             "icon": "warningAlert",
@@ -443,7 +443,7 @@
         },
         {
           "type": "scorecard",
-          "duration": 12,
+          "duration": 10.75,
           "narration": "In production, size your Heap cleanly, choose G1GC or ZGC, and warm up services before serving traffic.",
           "items": [
             {

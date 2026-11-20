@@ -90,21 +90,21 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
     const BLUEPRINT = ${serialized};
 
     function renderBeatBody(ctx, beat, helpers, t) {
-      const { stagger, countUp } = helpers;
+      const { stagger, reveal, activeStep, beatT, beatSpan, countUp } = helpers;
       const type = beat.type || 'icon-flow';
 
       if (type === 'versus-gauge') {
-        const p1 = stagger(0, 0.45, 0.7);
-        const p2 = stagger(1, 0.5, 0.7);
-        const p3 = stagger(2, 0.55, 0.75);
-        const p4 = stagger(3, 0.6, 0.6);
+        const p1 = reveal(0, 4, 0.65);
+        const p2 = reveal(1, 4, 0.65);
+        const p3 = reveal(2, 4, 0.85);
+        const p4 = reveal(3, 4, 0.60);
 
         const L = beat.left || {};
         Icons.drawBadge(ctx, L.icon || 'hardDiskPlatter', 460, 435, 130, {
           color: L.color || '#EF4444',
           tag: L.tag || 'BOTTLENECK ❌',
           title: L.title || 'Slow Path',
-          sub: L.value !== undefined ? \`\${countUp(L.value, 1.5, 0.2)} \${L.unit || ''}\`.trim() : (L.sub || ''),
+          sub: L.value !== undefined ? \`\${countUp(L.value, 1.8, 0.2)} \${L.unit || ''}\`.trim() : (L.sub || ''),
           progress: p1,
           timeSec: t
         });
@@ -113,12 +113,13 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
         if (p2 > 0.05) {
           ctx.save();
           ctx.globalAlpha *= p2;
+          if (p2 < 0.95) Effects.sparkBurst(ctx, 960, 420, p2, { color: C.color || '#FACC15', radius: 95 });
           Effects.sonarPulse(ctx, 960, 430, t, { color: C.color || '#FACC15', minRadius: 35, maxRadius: 115 });
           Icons.draw(ctx, C.icon || 'rocketBoost', 960, 410, 96, { glowColor: C.color || '#FACC15', timeSec: t });
           ctx.fillStyle = '#FEF08A';
           ctx.font = \`900 30px \${Theme.FONTS.mono}\`;
           ctx.textAlign = 'center';
-          const cText = C.value !== undefined ? \`\${countUp(C.value, 1.8, 0.5)}\${C.label || 'x FASTER'}\` : (C.label || 'VS');
+          const cText = C.value !== undefined ? \`\${countUp(C.value, 1.8, beatSpan * 0.2)}\${C.label || 'x FASTER'}\` : (C.label || 'VS');
           ctx.fillText(cText, 960, 515);
           ctx.restore();
         }
@@ -131,7 +132,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           Effects.liveGaugeArc(ctx, 1460, 430, 118, p3, {
             color: R.color || '#34D399',
             valueRatio: R.valueRatio !== undefined ? R.valueRatio : 0.92,
-            label: R.value !== undefined ? \`\${countUp(R.value, 1.8, 0.7)} \${R.unit || ''}\`.trim() : (R.label || 'FAST'),
+            label: R.value !== undefined ? \`\${countUp(R.value, 1.8, beatSpan * 0.42)} \${R.unit || ''}\`.trim() : (R.label || 'FAST'),
             sub: R.sub || 'Optimized Path ✔'
           });
           ctx.restore();
@@ -149,9 +150,10 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
       }
 
       if (type === 'commit-log-stream') {
-        const p1 = stagger(0, 0.4, 0.65);
-        const p2 = stagger(1, 0.5, 0.75);
-        const p3 = stagger(2, 0.65, 0.6);
+        const p1 = reveal(0, 4, 0.65);
+        const p2 = reveal(1, 4, 0.70);
+        const pTape = Math.min(1, Math.max(0, (beatT - beatSpan * 0.14) / (beatSpan * 0.52)));
+        const p3 = reveal(3, 4, 0.60);
         const src = beat.source || {};
 
         Icons.drawBadge(ctx, src.icon || 'lightningBolt', 350, 470, 115, {
@@ -163,8 +165,9 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           timeSec: t
         });
 
-        if (p2 > 0.2) {
+        if (p2 > 0.1) {
           Connectors.flowArrow(ctx, 460, 470, 660, 470, t, {
+            progress: p2,
             color: src.color || '#FACC15',
             lineWidth: 3,
             label: beat.arrowLabel || 'O(1) Append',
@@ -175,9 +178,17 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
 
         Illustrations.byteArrayTape(ctx, 680, 415, 1020, 110, {
           title: beat.tapeTitle || 'Immutable Commit Log',
-          progress: p2,
+          progress: pTape,
           cells: beat.cells
         });
+
+        // True State Mutation: if first cell is marked DROPPED / EVICTED, slam red cross-out mid-beat!
+        if (Array.isArray(beat.cells) && beat.cells[0] && /DROP|EVICT|DEAD/i.test(String(beat.cells[0].sub || ''))) {
+          const pMut = reveal(2, 4, 0.55);
+          if (pMut > 0.05) {
+            Effects.crossOutFailure(ctx, 795, 468, pMut, { size: 58, color: '#EF4444' });
+          }
+        }
 
         if (beat.takeaway && p3 > 0.05) {
           Theme.drawTakeawayPill(ctx, beat.takeaway, {
@@ -333,10 +344,10 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
       }
 
       if (type === 'scorecard') {
-        const p1 = stagger(0, 0.35, 0.85);
-        const p2 = stagger(1, 0.65, 0.6);
+        const pCard = Math.min(1, Math.max(0, (beatT - 0.1) / (beatSpan * 0.65)));
+        const p2 = reveal(3, 4, 0.55);
         Illustrations.scorecardMatrix(ctx, 360, 230, 1200, 580, {
-          progress: p1,
+          progress: pCard,
           items: beat.items
         });
         if (beat.takeaway && p2 > 0.05) {
@@ -345,7 +356,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
         return;
       }
 
-      // STYLE 1 (Real ByteByteGo linux_20s.png): Solid Flat Vibrant Rounded Step Blocks + Crisp White Arrows
+      // STYLE 1 (Real ByteByteGo linux_20s.png): Solid Flat Vibrant Rounded Step Blocks + Sentence-Synced Arrows & Active Spotlight
       if (type === 'flat-step-flow') {
         const steps = Array.isArray(beat.steps) && beat.steps.length ? beat.steps : [
           { title: 'Step 1', sub: 'Input', fill: '#00B894', textColor: '#FFFFFF', icon: 'lightningBolt' },
@@ -353,19 +364,21 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
         ];
         const vertical = beat.direction === 'vertical' || steps.length <= 2;
         const count = Math.min(4, steps.length);
+        const curActive = activeStep(count);
 
         if (vertical) {
-          const boxW = 300;
+          const boxW = 310;
           const boxH = 210;
           const gap = 140;
           const totalH = count * boxH + (count - 1) * gap;
           const startY = Math.max(195, (920 - totalH) / 2);
 
           steps.slice(0, count).forEach((st, idx) => {
-            const p = stagger(idx, 0.55, 0.65);
+            const p = reveal(idx, count + 1, 0.60);
             if (p <= 0.01) return;
             const y = startY + idx * (boxH + gap);
             const pop = p < 0.75 ? (p / 0.75) * 1.05 : 1.05 - ((p - 0.75) / 0.25) * 0.05;
+            const isFocus = idx === curActive;
 
             ctx.save();
             ctx.globalAlpha *= p;
@@ -375,6 +388,14 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
             ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 28);
             ctx.fillStyle = st.fill || (idx % 2 === 0 ? '#00B894' : '#22D3EE');
             ctx.fill();
+            if (isFocus) {
+              ctx.strokeStyle = '#FFFFFF';
+              ctx.lineWidth = 4;
+              ctx.shadowColor = st.fill || '#34D399';
+              ctx.shadowBlur = 22;
+              ctx.stroke();
+              ctx.shadowBlur = 0;
+            }
 
             ctx.fillStyle = st.textColor || (idx % 2 === 0 ? '#FFFFFF' : '#0F172A');
             ctx.font = \`800 28px \${Theme.FONTS.sans}\`;
@@ -391,7 +412,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
             ctx.restore();
 
             if (idx < count - 1) {
-              const pa = stagger(idx + 1, 0.55, 0.55);
+              const pa = reveal(idx + 0.65, count + 1, 0.55);
               Connectors.solidArrow(ctx, 960, y + boxH + 6, 960, y + boxH + gap - 10, {
                 progress: pa,
                 color: '#FFFFFF',
@@ -410,10 +431,11 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           const y = 370;
 
           steps.slice(0, count).forEach((st, idx) => {
-            const p = stagger(idx, 0.5, 0.65);
+            const p = reveal(idx, count + 1, 0.60);
             if (p <= 0.01) return;
             const x = startX + idx * (boxW + gap);
             const pop = p < 0.75 ? (p / 0.75) * 1.05 : 1.05 - ((p - 0.75) / 0.25) * 0.05;
+            const isFocus = idx === curActive;
 
             ctx.save();
             ctx.globalAlpha *= p;
@@ -423,6 +445,14 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
             ctx.roundRect(-boxW / 2, -boxH / 2, boxW, boxH, 26);
             ctx.fillStyle = st.fill || ['#00B894', '#22D3EE', '#F59E0B', '#A78BFA'][idx % 4];
             ctx.fill();
+            if (isFocus) {
+              ctx.strokeStyle = '#FFFFFF';
+              ctx.lineWidth = 4;
+              ctx.shadowColor = st.fill || '#22D3EE';
+              ctx.shadowBlur = 22;
+              ctx.stroke();
+              ctx.shadowBlur = 0;
+            }
 
             ctx.fillStyle = st.textColor || (idx === 1 || idx === 2 ? '#0F172A' : '#FFFFFF');
             ctx.font = \`800 26px \${Theme.FONTS.sans}\`;
@@ -439,7 +469,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
             ctx.restore();
 
             if (idx < count - 1) {
-              const pa = stagger(idx + 1, 0.5, 0.55);
+              const pa = reveal(idx + 0.65, count + 1, 0.55);
               Connectors.solidArrow(ctx, x + boxW + 8, y + boxH / 2, x + boxW + gap - 10, y + boxH / 2, {
                 progress: pa,
                 color: '#FFFFFF',
@@ -451,16 +481,16 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           });
         }
 
-        const pBanner = stagger(count, 0.5, 0.6);
+        const pBanner = reveal(count, count + 1, 0.55);
         if (beat.takeaway && pBanner > 0.05) {
           Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'BYTEBYTEGO', border: '#00B894', alpha: pBanner });
         }
         return;
       }
 
-      // STYLE 2 (Real ByteByteGo http_25s.png): Self-Drawing Wireframe Fan-Out + 3 Crisp White Diagonal Arrows
+      // STYLE 2 (Real ByteByteGo http_25s.png): Self-Drawing Wireframe Fan-Out + Sentence-Synced Diagonal Arrows
       if (type === 'wireframe-fanout') {
-        const pSrc = stagger(0, 0.35, 0.75);
+        const pSrc = reveal(0, 4.5, 0.85);
         const src = beat.source || { badge: 'TOPIC', title: 'Kafka Topic', color: '#10B981' };
         const targets = Array.isArray(beat.targets) && beat.targets.length ? beat.targets : [
           { badge: 'BILLING', title: 'Group A (Live)', color: '#22D3EE' },
@@ -478,8 +508,8 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
 
         const ys = [275, 480, 685];
         targets.slice(0, 3).forEach((tg, idx) => {
-          const pArr = stagger(idx + 1, 0.5, 0.65);
-          const pDst = stagger(idx + 1, 0.6, 0.7);
+          const pArr = reveal(idx + 0.85, 4.5, 0.60);
+          const pDst = reveal(idx + 1.15, 4.5, 0.70);
           Connectors.solidArrow(ctx, 680, 445 + idx * 35, 1170, ys[idx], {
             progress: pArr,
             color: '#FFFFFF',
@@ -496,24 +526,23 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           });
         });
 
-        const pBanner = stagger(4, 0.45, 0.6);
+        const pBanner = reveal(3.8, 4.5, 0.55);
         if (beat.takeaway && pBanner > 0.05) {
           Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#22D3EE', alpha: pBanner });
         }
         return;
       }
 
-      // STYLE 3 (Real ByteByteGo bbg_card_style.png): Dashed-Border Group Container + Stacked Event Pills -> Wireframe DB
+      // STYLE 3 (Real ByteByteGo bbg_card_style.png): Dashed-Border Group Container + Progressive Stacked Pills -> Wireframe DB
       if (type === 'dashed-group-stack') {
-        const pBox = stagger(0, 0.3, 0.65);
-        const pStack = stagger(1, 0.4, 0.7);
-        const pArrow = stagger(2, 0.45, 0.65);
-        const pDb = stagger(3, 0.5, 0.7);
+        const pBox = reveal(0, 5, 0.60);
+        const pStack = reveal(0.5, 5, 0.60);
+        const pArrow = reveal(2.6, 5, 0.65);
+        const pDb = reveal(3.2, 5, 0.75);
 
         if (pBox > 0.02) {
           ctx.save();
           ctx.globalAlpha *= pBox;
-          // Outer dashed teal group box
           ctx.beginPath();
           ctx.roundRect(380, 200, 1160, 610, 24);
           ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
@@ -524,7 +553,6 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           ctx.stroke();
           ctx.setLineDash([]);
 
-          // Solid teal header pill
           ctx.beginPath();
           ctx.roundRect(740, 224, 440, 56, 16);
           ctx.fillStyle = beat.headerBg || '#1E7A8C';
@@ -534,7 +562,6 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           ctx.textAlign = 'center';
           ctx.fillText(beat.header || 'Record Batching', 960, 261);
 
-          // Olive subtitle pill
           if (beat.subtitle) {
             ctx.beginPath();
             ctx.roundRect(660, 296, 600, 44, 14);
@@ -550,7 +577,6 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
             ctx.fillText(beat.subtitle, 960, 325);
           }
 
-          // Inner plum dashed frame
           ctx.beginPath();
           ctx.roundRect(440, 362, 1040, 412, 20);
           ctx.fillStyle = 'rgba(88, 52, 82, 0.42)';
@@ -563,7 +589,6 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           ctx.restore();
         }
 
-        // Left Amber Batch Column with Bright Flat Crimson/Amber Event Pills
         if (pStack > 0.02) {
           const items = beat.stackItems || ['event 1', 'event 2', 'event 3', 'event 4'];
           ctx.save();
@@ -577,18 +602,19 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           ctx.stroke();
 
           items.slice(0, 4).forEach((lbl, idx) => {
-            const pi = stagger(idx, 0.28, 0.45);
+            const pi = reveal(0.7 + idx * 0.45, 5, 0.45);
             if (pi <= 0.01) return;
+            const slideY = (1 - pi) * -18;
             ctx.save();
             ctx.globalAlpha *= pi;
             ctx.beginPath();
-            ctx.roundRect(516, 412 + idx * 70, 258, 54, 10);
+            ctx.roundRect(516, 412 + idx * 70 + slideY, 258, 54, 10);
             ctx.fillStyle = beat.pillColor || '#EF4444';
             ctx.fill();
             ctx.fillStyle = '#FFFFFF';
             ctx.font = \`700 22px \${Theme.FONTS.sans}\`;
             ctx.textAlign = 'center';
-            ctx.fillText(lbl, 645, 447 + idx * 70);
+            ctx.fillText(lbl, 645, 447 + idx * 70 + slideY);
             ctx.restore();
           });
 
@@ -599,7 +625,6 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           ctx.restore();
         }
 
-        // Dashed Pure White Arrow -> Wireframe Cylinder Storage
         Connectors.dashedArrow(ctx, 810, 568, 1170, 568, {
           progress: pArrow,
           color: '#FFFFFF',
@@ -616,22 +641,23 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           progress: pDb
         });
 
-        const pBanner = stagger(4, 0.45, 0.6);
+        const pBanner = reveal(4.1, 5, 0.55);
         if (beat.takeaway && pBanner > 0.05) {
           Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'BATCHING', border: '#FACC15', alpha: pBanner });
         }
         return;
       }
 
-      // STYLE 4 (Real ByteByteGo linux_40s.png): Clean Two-Column Matte Olive-Header / Dark-Teal Comparison Cards
+      // STYLE 4 (Real ByteByteGo linux_40s.png): Two-Column Matte Comparison Cards with Sentence-Synced Bullets & Spotlight
       if (type === 'comparison-cards') {
         const left = beat.left || { title: 'Traditional', bullets: ['Slower random I/O', 'Per-message locks'] };
         const right = beat.right || { title: 'Apache Kafka', bullets: ['600+ MB/s sequential log', 'Zero broker locks'] };
-        const pLeft = stagger(0, 0.4, 0.7);
-        const pRight = stagger(1, 0.55, 0.7);
-        const pBanner = stagger(2, 0.65, 0.6);
+        const pLeft = reveal(0, 5, 0.65);
+        const pRight = reveal(2.1, 5, 0.65);
+        const pBanner = reveal(4.1, 5, 0.55);
+        const activeSide = activeStep(2);
 
-        const drawPanel = (x, panel, p, headerFill, bodyFill) => {
+        const drawPanel = (x, panel, p, headerFill, bodyFill, baseStep, isFocus) => {
           if (p <= 0.01) return;
           ctx.save();
           ctx.globalAlpha *= p;
@@ -639,13 +665,16 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           const h = 470;
           const y = 265;
 
-          // Body
           ctx.beginPath();
           ctx.roundRect(x, y, w, h, 22);
           ctx.fillStyle = bodyFill;
           ctx.fill();
+          if (isFocus) {
+            ctx.strokeStyle = '#34D399';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
 
-          // Matte Header Strip
           ctx.beginPath();
           ctx.roundRect(x, y, w, 68, [22, 22, 0, 0]);
           ctx.fillStyle = headerFill;
@@ -656,23 +685,23 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           ctx.textAlign = 'center';
           ctx.fillText(panel.title || '', x + w / 2, y + 44);
 
-          // Crisp White Bullet Points
           ctx.textAlign = 'left';
           ctx.font = \`600 25px \${Theme.FONTS.sans}\`;
           (panel.bullets || []).slice(0, 5).forEach((line, idx) => {
-            const pb = stagger(idx + 1, 0.35, 0.5);
+            const pb = reveal(baseStep + 0.35 + idx * 0.42, 5, 0.48);
             if (pb <= 0.01) return;
+            const slideX = (1 - pb) * -18;
             ctx.save();
             ctx.globalAlpha *= pb;
             ctx.fillStyle = '#F8FAFC';
-            ctx.fillText(\`-  \${line}\`, x + 42, y + 132 + idx * 72);
+            ctx.fillText(\`-  \${line}\`, x + 42 + slideX, y + 132 + idx * 72);
             ctx.restore();
           });
           ctx.restore();
         };
 
-        drawPanel(250, left, pLeft, left.headerBg || '#6E7A3B', left.bodyBg || '#213D37');
-        drawPanel(990, right, pRight, right.headerBg || '#0F766E', right.bodyBg || '#19373D');
+        drawPanel(250, left, pLeft, left.headerBg || '#6E7A3B', left.bodyBg || '#213D37', 0, activeSide === 0);
+        drawPanel(990, right, pRight, right.headerBg || '#0F766E', right.bodyBg || '#19373D', 2.1, activeSide === 1);
 
         if (beat.takeaway && pBanner > 0.05) {
           Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'banner', tag: beat.tag || 'COMPARISON', border: '#34D399', alpha: pBanner });
@@ -680,7 +709,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
         return;
       }
 
-      // STYLE 5 (Real ByteByteGo http_10s.png): Horizontal Gold-Outline Pill Chain + Pure White Arrows
+      // STYLE 5 (Real ByteByteGo http_10s.png): Horizontal Gold-Outline Pill Chain with Moving Focus Cursor
       if (type === 'pill-chain') {
         const pills = Array.isArray(beat.pills) && beat.pills.length ? beat.pills : ['Producer', 'LZ4 Batch', 'Partition Log', 'Consumer'];
         const count = Math.min(4, pills.length);
@@ -690,38 +719,45 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
         const totalW = count * pillW + (count - 1) * gap;
         const startX = (1920 - totalW) / 2;
         const cy = 500;
+        const curActive = activeStep(count);
 
         if (beat.heroMetric) {
-          const ph = stagger(0, 0.25, 0.65);
+          const ph = reveal(0, count + 1, 0.65);
           ctx.save();
           ctx.globalAlpha *= ph;
-          ctx.fillStyle = '#FACC15';
-          ctx.font = \`900 54px \${Theme.FONTS.mono}\`;
-          ctx.textAlign = 'center';
-          ctx.fillText(beat.heroMetric, 960, 320);
+          Effects.typeText(ctx, beat.heroMetric, 960, 320, ph, {
+            font: \`900 54px \${Theme.FONTS.mono}\`,
+            color: '#FACC15'
+          });
           if (beat.heroSub) {
             ctx.fillStyle = '#CBD5E1';
             ctx.font = \`600 22px \${Theme.FONTS.sans}\`;
+            ctx.textAlign = 'center';
             ctx.fillText(beat.heroSub, 960, 368);
           }
           ctx.restore();
         }
 
         pills.slice(0, count).forEach((lbl, idx) => {
-          const p = stagger(idx, 0.42, 0.6);
+          const p = reveal(idx * 0.85, count + 0.5, 0.55);
           if (p <= 0.01) return;
           const x = startX + idx * (pillW + gap);
-          const isHighlight = idx === count - 1;
+          const isHighlight = idx === curActive || idx === count - 1;
 
           ctx.save();
           ctx.globalAlpha *= p;
           ctx.beginPath();
           ctx.roundRect(x, cy - pillH / 2, pillW, pillH, 26);
-          ctx.fillStyle = isHighlight ? 'rgba(16, 185, 129, 0.22)' : 'rgba(20, 24, 30, 0.92)';
+          ctx.fillStyle = idx === curActive ? 'rgba(16, 185, 129, 0.30)' : (idx === count - 1 ? 'rgba(16, 185, 129, 0.18)' : 'rgba(20, 24, 30, 0.92)');
           ctx.fill();
           ctx.strokeStyle = isHighlight ? '#34D399' : '#FACC15';
-          ctx.lineWidth = 3;
+          ctx.lineWidth = idx === curActive ? 4 : 3;
+          if (idx === curActive) {
+            ctx.shadowColor = '#34D399';
+            ctx.shadowBlur = 16;
+          }
           ctx.stroke();
+          ctx.shadowBlur = 0;
 
           ctx.fillStyle = '#FFFFFF';
           ctx.font = \`800 26px \${Theme.FONTS.sans}\`;
@@ -730,7 +766,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           ctx.restore();
 
           if (idx < count - 1) {
-            const pa = stagger(idx + 1, 0.42, 0.5);
+            const pa = reveal(idx * 0.85 + 0.5, count + 0.5, 0.48);
             Connectors.solidArrow(ctx, x + pillW + 4, cy, x + pillW + gap - 6, cy, {
               progress: pa,
               color: '#FFFFFF',
@@ -740,7 +776,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           }
         });
 
-        const pBanner = stagger(count, 0.45, 0.6);
+        const pBanner = reveal(count - 0.1, count + 0.5, 0.55);
         if (beat.takeaway && pBanner > 0.05) {
           Theme.drawTakeawayPill(ctx, beat.takeaway, { variant: 'pill', border: '#FACC15', alpha: pBanner });
         }
@@ -756,8 +792,9 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
       const xs = count === 2 ? [500, 1420] : [380, 960, 1540];
       const size = count === 2 ? 132 : 120;
 
+      const curActive = activeStep(count);
       nodes.slice(0, count).forEach((node, idx) => {
-        const pn = stagger(idx, 0.42, 0.65);
+        const pn = reveal(idx, count + 1, 0.58);
         Icons.drawBadge(ctx, node.icon || 'cpuSilicon', xs[idx], 455, size, {
           color: node.color || '#38BDF8',
           tag: node.tag,
@@ -766,11 +803,14 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
           progress: pn,
           timeSec: t
         });
+        if (idx === curActive && pn > 0.7) {
+          Effects.sonarPulse(ctx, xs[idx], 455, t, { color: node.color || '#38BDF8', maxRadius: size + 24, rings: 1 });
+        }
         if (node.crossOut && pn > 0.7) {
           Effects.crossOutFailure(ctx, xs[idx], 455, (pn - 0.7) / 0.3, { size: 92 });
         }
         if (idx < count - 1) {
-          const pa = stagger(idx + 1, 0.45, 0.65);
+          const pa = reveal(idx + 0.55, count + 1, 0.52);
           const lbl = Array.isArray(beat.arrowLabels) ? beat.arrowLabels[idx] : (beat.arrowLabel || '');
           const col = Array.isArray(beat.arrowColors) ? beat.arrowColors[idx] : (beat.arrowColor || node.color || '#34D399');
           Connectors.flowArrow(ctx, xs[idx] + size + 16, 455, xs[idx + 1] - size - 16, 455, t, {
@@ -783,7 +823,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
         }
       });
 
-      const pBanner = stagger(count, 0.5, 0.6);
+      const pBanner = reveal(count, count + 1, 0.55);
       if (beat.takeaway && pBanner > 0.05) {
         Theme.drawTakeawayPill(ctx, beat.takeaway, {
           variant: beat.takeawayVariant || 'banner',
@@ -805,6 +845,19 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
       });
       const totalSceneDur = cursor || sc.duration || 20;
 
+      // Auto-emit crisp soft micro-pop/tick cues synced to each beat's progressive reveals (zero white-noise whoosh)
+      const autoSfx = [];
+      timedBeats.forEach((b) => {
+        const dur = Math.max(2, b.endSec - b.startSec);
+        autoSfx.push({ time: Number((b.startSec + 0.14).toFixed(2)), type: 'pop' });
+        if (dur >= 5) {
+          autoSfx.push({ time: Number((b.startSec + dur * 0.34).toFixed(2)), type: 'tick' });
+        }
+        if (dur >= 8) {
+          autoSfx.push({ time: Number((b.startSec + dur * 0.64).toFixed(2)), type: 'tick' });
+        }
+      });
+
       return {
         id: sc.id || \`scene-\${scIdx + 1}\`,
         chapter: sc.chapter || \`0\${scIdx + 1}. Section \${scIdx + 1}\`,
@@ -812,7 +865,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
         qaTime: Math.min(totalSceneDur - 1, 4.5),
         backdrop: sc.backdrop || 'dotMatrix',
         transition: sc.transition || 'fade',
-        sfx: [],
+        sfx: autoSfx,
         captions: timedBeats
           .filter((b) => b.narration && b.narration.trim())
           .map((b) => ({

@@ -604,6 +604,23 @@ function withBeat(ctx, localT, startSec, endSec, drawFn, opts = {}) {
     return 1 - ((1 - p) ** 2.6);
   };
 
+  // Sentence-Synced Full-Beat Reveal: spreads N visual events evenly across the beat's spoken span
+  // so a new visual action triggers every ~2.2-2.8s (matching real ByteByteGo cadence) instead of dumping all at t=1s!
+  const reveal = (stepIndex = 0, totalSteps = 3, dur = 0.62) => {
+    const usableSpan = Math.max(1.2, beatSpan * 0.78);
+    const startAt = stepIndex === 0 ? 0.12 : (0.12 + (stepIndex / Math.max(1, totalSteps)) * usableSpan);
+    const t = Math.max(0, elapsed - startAt);
+    const p = Math.min(1, t / Math.max(0.08, dur));
+    return 1 - ((1 - p) ** 2.6);
+  };
+
+  // Returns the currently highlighted step index (0 .. totalSteps-1) as the beat progresses
+  const activeStep = (totalSteps = 3) => {
+    const usableSpan = Math.max(1.2, beatSpan * 0.82);
+    const ratio = Math.max(0, Math.min(0.999, elapsed / usableSpan));
+    return Math.floor(ratio * Math.max(1, totalSteps));
+  };
+
   const pulse = (speed = 2.6, phase = 0) => 0.5 + 0.5 * Math.sin(elapsed * speed + phase);
 
   const countUp = (target, dur = 2.0, delay = 0.35) => {
@@ -618,7 +635,7 @@ function withBeat(ctx, localT, startSec, endSec, drawFn, opts = {}) {
   ctx.translate(960, 520 + offsetY + kineticFloatY);
   ctx.scale(kineticScale, kineticScale);
   ctx.translate(-960, -520);
-  drawFn({ alpha, progress, beatT: elapsed, beatRatio, stagger, pulse, countUp });
+  drawFn({ alpha, progress, beatT: elapsed, beatSpan, beatRatio, stagger, reveal, activeStep, pulse, countUp });
   ctx.restore();
 }
 

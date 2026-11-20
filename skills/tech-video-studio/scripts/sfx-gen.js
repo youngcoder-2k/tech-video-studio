@@ -117,6 +117,76 @@ function synthesizeSfxTrack(outWavPath, durationSec, cues = []) {
   return outWavPath;
 }
 
+/**
+ * Generates a warm, studio-subtle Ambient Tech Underscore Pad (-27 dB) + crisp UI micro-pops
+ * (zero white-noise whooshes) so technical explainers feel alive and broadcast-polished.
+ *
+ * @param {string} outWavPath
+ * @param {number} durationSec
+ * @param {Array<{time:number, type?:string, volume?:number}>} cues
+ * @param {object} opts - { bgmGain?: number, includeBgm?: boolean }
+ */
+function synthesizeAmbientBedAndPops(outWavPath, durationSec, cues = [], opts = {}) {
+  const totalSamples = Math.ceil(durationSec * SAMPLE_RATE);
+  const left = new Float32Array(totalSamples);
+  const right = new Float32Array(totalSamples);
+  const includeBgm = opts.includeBgm !== false;
+  const bgmGain = opts.bgmGain !== undefined ? opts.bgmGain : 0.034;
+
+  // 1. Warm minimalist lo-fi / tech explainer chord bed (Cmaj9 -> Am9 -> Fmaj9 -> G6)
+  if (includeBgm) {
+    const chords = [
+      [130.81, 196.00, 246.94, 293.66], // C3, G3, B3, D4
+      [110.00, 164.81, 196.00, 246.94], // A2, E3, G3, B3
+      [87.31,  130.81, 164.81, 196.00], // F2, C3, E3, G3
+      [98.00,  146.83, 196.00, 246.94]  // G2, D3, G3, B3
+    ];
+    const barSec = 4.0;
+    const fadeEdge = Math.min(1.5, durationSec * 0.15);
+
+    for (let i = 0; i < totalSamples; i++) {
+      const t = i / SAMPLE_RATE;
+      const barIdx = Math.floor(t / barSec) % chords.length;
+      const barPos = (t % barSec) / barSec;
+      const chord = chords[barIdx];
+
+      // Smooth crossfade envelope across each 4-second chord bar
+      const barEnv = Math.sin(Math.min(1, barPos * 6) * Math.PI * 0.5) *
+        Math.sin(Math.min(1, (1 - barPos) * 6) * Math.PI * 0.5);
+      // Gentle breathing LFO (0.25 Hz)
+      const breath = 0.82 + 0.18 * Math.sin(2 * Math.PI * 0.25 * t);
+      // Global fade in/out
+      const edgeEnv = Math.min(1, t / Math.max(0.1, fadeEdge)) *
+        Math.min(1, (durationSec - t) / Math.max(0.1, fadeEdge));
+
+      let sumL = 0;
+      let sumR = 0;
+      for (let n = 0; n < chord.length; n++) {
+        const f = chord[n];
+        // Slight stereo detune for lush studio warmth
+        sumL += Math.sin(2 * Math.PI * f * t) * (n === 0 ? 0.38 : 0.22);
+        sumR += Math.sin(2 * Math.PI * (f * 1.0015) * t + n * 0.4) * (n === 0 ? 0.38 : 0.22);
+      }
+
+      const env = barEnv * breath * edgeEnv * bgmGain;
+      left[i] += sumL * env;
+      right[i] += sumR * env;
+    }
+  }
+
+  // 2. Crisp micro-pop / tick accents synced to visual step reveals (never whoosh)
+  for (const cue of cues) {
+    const idx = Math.max(0, Math.floor((cue.time || 0) * SAMPLE_RATE));
+    if (idx < totalSamples) {
+      mixCue(left, right, idx, cue.type || 'pop', cue.volume !== undefined ? cue.volume : 0.15);
+    }
+  }
+
+  writeWavStereo16(outWavPath, left, right);
+  return outWavPath;
+}
+
 module.exports = {
-  synthesizeSfxTrack
+  synthesizeSfxTrack,
+  synthesizeAmbientBedAndPops
 };

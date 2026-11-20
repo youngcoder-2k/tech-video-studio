@@ -461,12 +461,22 @@ async function cmdRender(positional, flags) {
       }
     }
 
-    // Synthesize procedural motion SFX track if scene defines sfx cues and --no-sfx is not set
+    // Synthesize warm studio ambient tech bed + crisp soft micro-pops (zero white-noise whoosh)
     const sfxGen = loadSfxGen();
-    if (sfxGen && !flags['no-sfx'] && meta && Array.isArray(meta.sfxCues) && meta.sfxCues.length > 0) {
+    const wantSfx = !flags['no-sfx'];
+    const wantBgm = !flags['no-bgm'];
+    const sfxCues = (wantSfx && meta && Array.isArray(meta.sfxCues)) ? meta.sfxCues : [];
+    if (sfxGen && (wantBgm || sfxCues.length > 0)) {
       tmpSfxWav = outMp4 + '.sfx.wav';
-      sfxGen.synthesizeSfxTrack(tmpSfxWav, duration, meta.sfxCues);
-      console.log(`🔊 Synthesized ${meta.sfxCues.length} procedural motion SFX cues -> ${path.basename(tmpSfxWav)}`);
+      if (typeof sfxGen.synthesizeAmbientBedAndPops === 'function') {
+        sfxGen.synthesizeAmbientBedAndPops(tmpSfxWav, duration, sfxCues, { includeBgm: wantBgm });
+        console.log(`🔊 Synthesized ${wantBgm ? 'warm ambient tech bed + ' : ''}${sfxCues.length} soft micro-pop cues -> ${path.basename(tmpSfxWav)}`);
+      } else if (sfxCues.length > 0) {
+        sfxGen.synthesizeSfxTrack(tmpSfxWav, duration, sfxCues);
+        console.log(`🔊 Synthesized ${sfxCues.length} procedural motion SFX cues -> ${path.basename(tmpSfxWav)}`);
+      } else {
+        tmpSfxWav = null;
+      }
     }
 
     const buildAudioArgs = () => {
@@ -475,7 +485,7 @@ async function cmdRender(positional, flags) {
         audioArgs.push(
           '-i', activeAudioPath,
           '-i', tmpSfxWav,
-          '-filter_complex', '[1:a]volume=1.0[voice];[2:a]volume=0.14[sfx];[voice][sfx]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]',
+          '-filter_complex', '[1:a]volume=1.0[voice];[2:a]volume=0.65[sfx];[voice][sfx]amix=inputs=2:duration=first:dropout_transition=2:normalize=0[aout]',
           '-map', '0:v',
           '-map', '[aout]',
           '-c:a', 'aac',
@@ -898,7 +908,8 @@ async function cmdBuildVideo(positional, flags) {
     fps: flags.fps || '30',
     audio: prebuiltAudioWav || flags.audio,
     voice: prebuiltAudioWav ? undefined : (flags.voice !== undefined ? flags.voice : 'senior-sa'),
-    'no-sfx': flags.sfx ? false : true
+    'no-sfx': Boolean(flags['no-sfx']),
+    'no-bgm': Boolean(flags['no-bgm'])
   };
   try {
     await cmdRender([compiledHtml], renderFlags);

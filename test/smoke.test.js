@@ -223,3 +223,32 @@ test('rea-video Narrative-First Engine scaffolds 8-role ByteByteGo story arcs an
   assert.equal(audit.totalDurationSec, 180);
   assert.ok(audit.score >= 85, `Expected scaffolded narrative score >= 85, got ${audit.score}`);
 });
+
+test('v3.1.0 Living Whiteboard: ambient tech bed + soft micro-pops WAV and sentence-synced reveal/activeStep helpers', () => {
+  const tmpWav = path.join(os.tmpdir(), `studio_test_ambient_${Date.now()}.wav`);
+  try {
+    SfxGen.synthesizeAmbientBedAndPops(tmpWav, 2.0, [
+      { time: 0.15, type: 'pop' },
+      { time: 0.9, type: 'tick' },
+      { time: 1.4, type: 'whoosh' } // filtered out intentionally
+    ], { includeBgm: true });
+    assert.ok(fs.existsSync(tmpWav));
+    const buf = fs.readFileSync(tmpWav);
+    assert.equal(buf.toString('ascii', 0, 4), 'RIFF');
+    assert.equal(buf.toString('ascii', 8, 12), 'WAVE');
+    assert.equal(buf.readUInt32LE(24), 48000);
+  } finally {
+    if (fs.existsSync(tmpWav)) fs.unlinkSync(tmpWav);
+  }
+
+  // Verify Theme.withBeat passes reveal() and activeStep()
+  const mockCtx = { save() {}, restore() {}, translate() {}, scale() {}, globalAlpha: 1 };
+  let captured = null;
+  Studio.Theme.withBeat(mockCtx, 5.0, 0, 10, (info) => { captured = info; }, { kineticCamera: false });
+  assert.ok(captured, 'withBeat invoked drawFn');
+  assert.equal(typeof captured.reveal, 'function');
+  assert.equal(typeof captured.activeStep, 'function');
+  assert.equal(captured.beatSpan, 10);
+  assert.ok(captured.reveal(0, 3) > 0.9, 'Step 0 should be fully revealed at mid-beat');
+  assert.equal(captured.activeStep(3), 1, 'Middle step should be active at 50% of beat');
+});
