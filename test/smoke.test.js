@@ -252,3 +252,40 @@ test('v3.1.0 Living Whiteboard: ambient tech bed + soft micro-pops WAV and sente
   assert.ok(captured.reveal(0, 3) > 0.9, 'Step 0 should be fully revealed at mid-beat');
   assert.equal(captured.activeStep(3), 1, 'Middle step should be active at 50% of beat');
 });
+
+test('v4.0.0 Composable Whiteboard Engine evaluates causal packets, state mutations, camera focus zoom, and persistent multi-beat scenes', () => {
+  assert.ok(Studio.Whiteboard, 'Studio.Whiteboard exported');
+  const spec = {
+    actors: [
+      { id: 'client', kind: 'box', x: 360, y: 540, label: 'Client', initial: true },
+      { id: 'cache', kind: 'box', x: 960, y: 540, label: 'Redis Cache', meter: 0.2 },
+      { id: 'db', kind: 'cylinder', x: 1560, y: 540, label: 'Postgres', initial: true }
+    ],
+    actions: [
+      { type: 'spawn', target: 'cache', at: 0.5, dur: 0.5 },
+      { type: 'connect', from: 'client', to: 'cache', at: 1.0, dur: 0.5, label: 'GET /user' },
+      { type: 'packet', from: 'client', to: 'cache', at: 2.0, dur: 1.0, label: 'GET' },
+      { type: 'mutate', target: 'cache', at: 3.0, dur: 0.5, badge: 'HIT ✔', status: 'ok', meter: 0.85 },
+      { type: 'focus', target: 'cache', at: 4.0, dur: 1.0, zoom: 1.4 },
+      { type: 'resetCamera', at: 6.0, dur: 1.0 }
+    ]
+  };
+
+  const sMidPacket = Studio.Whiteboard.evaluateWhiteboardState(spec, 2.5, 10);
+  assert.equal(sMidPacket.activePackets.length, 1, 'Packet is in-flight at t=2.5s');
+  assert.ok(sMidPacket.actors.get('cache').spawnProgress >= 1, 'Cache spawned');
+
+  const sMutated = Studio.Whiteboard.evaluateWhiteboardState(spec, 5.2, 10);
+  assert.equal(sMutated.actors.get('cache').badge, 'HIT ✔');
+  assert.ok(sMutated.actors.get('cache').meter > 0.8, 'Meter mutated smoothly');
+  assert.ok(sMutated.camera.zoom > 1.35, 'Camera zoomed into cache actor');
+
+  const sReset = Studio.Whiteboard.evaluateWhiteboardState(spec, 7.5, 10);
+  assert.ok(Math.abs(sReset.camera.zoom - 1.0) < 0.05, 'Camera reset back to 1.0x');
+
+  const cues = Studio.Whiteboard.extractSfxCues(spec, 0, 10);
+  assert.ok(cues.length >= 3, 'Auto-extracted soft SFX cues from causal actions');
+
+  const Rea = require('../src/core/rea-analyzer');
+  assert.equal(typeof Rea.learnChannelGrammar, 'function');
+});

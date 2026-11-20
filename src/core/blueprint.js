@@ -86,12 +86,17 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
 <body>
   <canvas id="canvas" width="1920" height="1080"></canvas>
   <script>
-    const { Theme, Effects, Connectors, Icons, Illustrations, createVideo } = window.TechVideoStudio;
+    const { Theme, Effects, Connectors, Icons, Whiteboard, Illustrations, createVideo } = window.TechVideoStudio;
     const BLUEPRINT = ${serialized};
 
     function renderBeatBody(ctx, beat, helpers, t) {
       const { stagger, reveal, activeStep, beatT, beatSpan, countUp } = helpers;
       const type = beat.type || 'icon-flow';
+
+      if (type === 'whiteboard' && Whiteboard) {
+        Whiteboard.renderScene(ctx, beat, beatT, beatSpan);
+        return;
+      }
 
       if (type === 'versus-gauge') {
         const p1 = reveal(0, 4, 0.65);
@@ -845,18 +850,63 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
       });
       const totalSceneDur = cursor || sc.duration || 20;
 
+      // Persistent Multi-Beat Whiteboard Scene: actors stay on canvas across all beats with zero full-screen wipes!
+      let persistentWbSpec = null;
+      if (sc.whiteboard && Whiteboard) {
+        const mergedActions = Array.isArray(sc.whiteboard.actions) ? sc.whiteboard.actions.slice() : [];
+        timedBeats.forEach((b) => {
+          const bDur = Math.max(1, b.endSec - b.startSec);
+          if (Array.isArray(b.actions)) {
+            b.actions.forEach((act) => {
+              const mapped = { ...act };
+              if (mapped.at != null) {
+                mapped.at = Number((b.startSec + mapped.at).toFixed(3));
+              } else if (mapped.p != null) {
+                mapped.at = Number((b.startSec + mapped.p * bDur).toFixed(3));
+                delete mapped.p;
+              } else {
+                mapped.at = Number(b.startSec.toFixed(3));
+              }
+              if (mapped.until != null) {
+                mapped.until = Number((b.startSec + mapped.until).toFixed(3));
+              } else if (mapped.pUntil != null) {
+                mapped.until = Number((b.startSec + mapped.pUntil * bDur).toFixed(3));
+                delete mapped.pUntil;
+              }
+              if (mapped.pDur != null) {
+                mapped.dur = Number((mapped.pDur * bDur).toFixed(3));
+                delete mapped.pDur;
+              }
+              mergedActions.push(mapped);
+            });
+          }
+        });
+        persistentWbSpec = {
+          ...sc.whiteboard,
+          actions: mergedActions
+        };
+      }
+
       // Auto-emit crisp soft micro-pop/tick cues synced to each beat's progressive reveals (zero white-noise whoosh)
       const autoSfx = [];
-      timedBeats.forEach((b) => {
-        const dur = Math.max(2, b.endSec - b.startSec);
-        autoSfx.push({ time: Number((b.startSec + 0.14).toFixed(2)), type: 'pop' });
-        if (dur >= 5) {
-          autoSfx.push({ time: Number((b.startSec + dur * 0.34).toFixed(2)), type: 'tick' });
-        }
-        if (dur >= 8) {
-          autoSfx.push({ time: Number((b.startSec + dur * 0.64).toFixed(2)), type: 'tick' });
-        }
-      });
+      if (persistentWbSpec && Whiteboard) {
+        autoSfx.push(...Whiteboard.extractSfxCues(persistentWbSpec, 0, totalSceneDur));
+      } else {
+        timedBeats.forEach((b) => {
+          const dur = Math.max(2, b.endSec - b.startSec);
+          if (b.type === 'whiteboard' && Whiteboard) {
+            autoSfx.push(...Whiteboard.extractSfxCues(b, b.startSec, dur));
+          } else {
+            autoSfx.push({ time: Number((b.startSec + 0.14).toFixed(2)), type: 'pop' });
+            if (dur >= 5) {
+              autoSfx.push({ time: Number((b.startSec + dur * 0.34).toFixed(2)), type: 'tick' });
+            }
+            if (dur >= 8) {
+              autoSfx.push({ time: Number((b.startSec + dur * 0.64).toFixed(2)), type: 'tick' });
+            }
+          }
+        });
+      }
 
       return {
         id: sc.id || \`scene-\${scIdx + 1}\`,
@@ -874,6 +924,33 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
             text: b.narration.trim()
           })),
         render(ctx, { localT, t }) {
+          if (persistentWbSpec && Whiteboard) {
+            // Find currently active beat for screen-space header / takeaway overlay
+            const activeBeat = timedBeats.find((b) => localT >= b.startSec && localT < b.endSec) || timedBeats[timedBeats.length - 1];
+            Whiteboard.renderScene(ctx, persistentWbSpec, localT, totalSceneDur, { drawHeader: false });
+            if (activeBeat && activeBeat.title) {
+              const beatLocalT = Math.max(0, localT - activeBeat.startSec);
+              const beatRemain = Math.max(0, activeBeat.endSec - localT);
+              const headerAlpha = Math.min(1, beatLocalT / 0.3, beatRemain < 0.25 && activeBeat !== timedBeats[timedBeats.length - 1] ? beatRemain / 0.25 : 1);
+              Theme.drawBeatHeader(ctx, activeBeat.title, activeBeat.subtitle || '', {
+                alpha: Math.max(0, headerAlpha),
+                accent: activeBeat.accent || '#38BDF8'
+              });
+            }
+            if (activeBeat && activeBeat.takeaway) {
+              const beatLocalT = Math.max(0, localT - activeBeat.startSec);
+              const beatSpan = Math.max(1, activeBeat.endSec - activeBeat.startSec);
+              const pTake = Math.max(0, Math.min(1, (beatLocalT - beatSpan * 0.55) / 0.45));
+              if (pTake > 0.05) {
+                Theme.drawTakeawayPill(ctx, activeBeat.takeaway, {
+                  variant: 'pill',
+                  border: activeBeat.accent || '#34D399',
+                  alpha: pTake
+                });
+              }
+            }
+            return;
+          }
           timedBeats.forEach((b, bIdx) => {
             Theme.withBeat(ctx, localT, b.startSec, b.endSec, (helpers) => {
               renderBeatBody(ctx, b, helpers, t);

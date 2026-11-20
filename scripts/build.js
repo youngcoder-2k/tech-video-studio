@@ -18,6 +18,7 @@ const modules = {
   './core/layout': fs.readFileSync(path.join(ROOT, 'src/core/layout.js'), 'utf8'),
   './core/connectors': fs.readFileSync(path.join(ROOT, 'src/core/connectors.js'), 'utf8'),
   './core/icons': fs.readFileSync(path.join(ROOT, 'src/core/icons.js'), 'utf8'),
+  './core/whiteboard': fs.readFileSync(path.join(ROOT, 'src/core/whiteboard.js'), 'utf8'),
   './illustrations/primitives': fs.readFileSync(path.join(ROOT, 'src/illustrations/primitives.js'), 'utf8'),
   './illustrations/archetypes': fs.readFileSync(path.join(ROOT, 'src/illustrations/archetypes.js'), 'utf8'),
   './core/runner': fs.readFileSync(path.join(ROOT, 'src/core/runner.js'), 'utf8'),
@@ -83,6 +84,7 @@ fs.copyFileSync(path.join(ROOT, 'src/audio/sfx-gen.js'), path.join(skillScriptsD
 fs.copyFileSync(path.join(ROOT, 'src/audio/voicestudio.js'), path.join(skillScriptsDir, 'voicestudio.js'));
 fs.copyFileSync(path.join(ROOT, 'src/core/rea-analyzer.js'), path.join(skillScriptsDir, 'rea-analyzer.js'));
 fs.copyFileSync(path.join(ROOT, 'src/core/blueprint.js'), path.join(skillScriptsDir, 'blueprint.js'));
+fs.copyFileSync(path.join(ROOT, 'src/core/whiteboard.js'), path.join(skillScriptsDir, 'whiteboard.js'));
 fs.copyFileSync(path.join(ROOT, 'src/core/narrative.js'), path.join(skillScriptsDir, 'narrative.js'));
 fs.copyFileSync(path.join(ROOT, 'data/metaphors.json'), path.join(skillScriptsDir, 'metaphors.json'));
 

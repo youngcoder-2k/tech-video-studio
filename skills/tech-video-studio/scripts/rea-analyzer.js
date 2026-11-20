@@ -566,6 +566,157 @@ function exportVideoMd(analysis, outPath) {
   return md;
 }
 
+/**
+ * Learns generalizable Channel Design Grammar (ChannelDNA) across N reference videos
+ * instead of copying a single video's layout.
+ *
+ * Extracts statistical laws: consensus ground, beat cadence range, drawn coverage band,
+ * active motion ratio, easing distribution, dominant flow axes, and recurring accent palette.
+ */
+function median(values) {
+  if (!values || !values.length) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function learnChannelGrammar(inputPaths, opts = {}) {
+  const videoFiles = [];
+  const exts = new Set(['.mp4', '.webm', '.mov', '.mkv', '.m4v']);
+
+  for (const p of inputPaths) {
+    const resolved = path.resolve(p);
+    if (!fs.existsSync(resolved)) continue;
+    const stat = fs.statSync(resolved);
+    if (stat.isDirectory()) {
+      for (const entry of fs.readdirSync(resolved)) {
+        const full = path.join(resolved, entry);
+        if (exts.has(path.extname(entry).toLowerCase()) && fs.statSync(full).isFile()) {
+          videoFiles.push(full);
+        }
+      }
+    } else if (exts.has(path.extname(resolved).toLowerCase())) {
+      videoFiles.push(resolved);
+    }
+  }
+
+  if (videoFiles.length === 0) {
+    throw new Error('No video files (.mp4/.webm/.mov/.mkv) found to learn channel grammar.');
+  }
+
+  const analyses = videoFiles.map((vf) => analyzeVideoFile(vf, {
+    fps: opts.fps || 6,
+    maxFrames: opts.maxFrames || 600
+  }));
+
+  const groundVotes = new Map();
+  const easingVotes = new Map();
+  const dirVotes = new Map();
+  const accentVotes = new Map();
+
+  const beatDurs = [];
+  const coverPcts = [];
+  const activePcts = [];
+  const contPcts = [];
+
+  for (const a of analyses) {
+    groundVotes.set(a.ground, (groundVotes.get(a.ground) || 0) + 1);
+    beatDurs.push(a.avgSceneDurationSec);
+    coverPcts.push(a.avgCoverPct);
+    activePcts.push(a.activeFramesPct);
+    contPcts.push(a.continuousMotionPct);
+
+    for (const sc of a.scenes || []) {
+      if (sc.easing) easingVotes.set(sc.easing, (easingVotes.get(sc.easing) || 0) + 1);
+      if (sc.direction) dirVotes.set(sc.direction, (dirVotes.get(sc.direction) || 0) + 1);
+      for (const c of sc.colours || []) {
+        if (c.hex && c.hex.toLowerCase() !== a.ground.toLowerCase()) {
+          accentVotes.set(c.hex.toLowerCase(), (accentVotes.get(c.hex.toLowerCase()) || 0) + (c.share || 0.1));
+        }
+      }
+    }
+  }
+
+  const topOf = (map, fallback) => {
+    let best = fallback;
+    let maxV = -1;
+    for (const [k, v] of map.entries()) {
+      if (v > maxV) { maxV = v; best = k; }
+    }
+    return best;
+  };
+
+  const consensusGround = topOf(groundVotes, '#232323');
+  const medianBeatSec = Number(median(beatDurs).toFixed(2));
+  const medianCoverPct = Number(median(coverPcts).toFixed(1));
+  const medianActivePct = Number(median(activePcts).toFixed(1));
+  const medianContPct = Number(median(contPcts).toFixed(1));
+
+  const topAccents = Array.from(accentVotes.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([hex]) => hex);
+
+  const totalEasing = Array.from(easingVotes.values()).reduce((s, v) => s + v, 0) || 1;
+  const easingDistribution = {};
+  for (const [k, v] of easingVotes.entries()) {
+    easingDistribution[k] = Number(((v / totalEasing) * 100).toFixed(1));
+  }
+
+  const profile = {
+    channel: opts.channelName || 'ByteByteGo',
+    learnedAt: new Date().toISOString(),
+    sampleCount: analyses.length,
+    samples: analyses.map((a) => ({
+      file: path.basename(a.videoPath),
+      durationSec: a.durationSec,
+      ground: a.ground,
+      avgBeatSec: a.avgSceneDurationSec,
+      coverPct: a.avgCoverPct,
+      activeFramesPct: a.activeFramesPct
+    })),
+    grammar: {
+      consensusGround,
+      rhythm: {
+        medianBeatDurationSec: medianBeatSec,
+        minBeatDurationSec: Number(Math.min(...beatDurs).toFixed(2)),
+        maxBeatDurationSec: Number(Math.max(...beatDurs).toFixed(2)),
+        recommendedRevealIntervalSec: Number(Math.max(1.8, Math.min(3.0, medianBeatSec * 0.65)).toFixed(2))
+      },
+      composition: {
+        medianCoverPct,
+        minCoverPct: Number(Math.min(...coverPcts).toFixed(1)),
+        maxCoverPct: Number(Math.max(...coverPcts).toFixed(1)),
+        negativeSpaceTargetPct: Number((100 - medianCoverPct).toFixed(1))
+      },
+      motion: {
+        medianActiveFramesPct: medianActivePct,
+        medianContinuousMotionPct: medianContPct,
+        dominantEasing: topOf(easingVotes, 'ease_out'),
+        easingDistribution,
+        dominantFlowAxis: topOf(dirVotes, 'right')
+      },
+      palette: {
+        ground: consensusGround,
+        recurringAccents: topAccents
+      },
+      architecturePrinciples: [
+        'Use persistent composable whiteboard scenes across multi-beat explanations instead of full-screen wipes every beat.',
+        'Animate causal packet flows (sendPacket) that trigger live state mutations (mutate) on arrival.',
+        'Keep icons and diagrams rock-solid after settle; drive liveliness through timed reveals, spotlight focus, and smooth camera zoom/pan.',
+        `Maintain ~${(100 - medianCoverPct).toFixed(0)}% clean negative space on ${consensusGround} ground with reveal cadence every ~${Math.max(1.8, Math.min(3.0, medianBeatSec * 0.65)).toFixed(1)}s.`
+      ]
+    }
+  };
+
+  if (opts.outPath) {
+    fs.mkdirSync(path.dirname(opts.outPath), { recursive: true });
+    fs.writeFileSync(opts.outPath, JSON.stringify(profile, null, 2), 'utf8');
+  }
+
+  return profile;
+}
+
 module.exports = {
   rgbToHex,
   rgbToLab,
@@ -576,5 +727,6 @@ module.exports = {
   classifyDirection,
   analyzeVideoFile,
   compareVideos,
-  exportVideoMd
+  exportVideoMd,
+  learnChannelGrammar
 };

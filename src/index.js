@@ -6,6 +6,7 @@ const Effects = require('./core/draw-effects');
 const Layout = require('./core/layout');
 const Connectors = require('./core/connectors');
 const Icons = require('./core/icons');
+const Whiteboard = require('./core/whiteboard');
 const Primitives = require('./illustrations/primitives');
 const Archetypes = require('./illustrations/archetypes');
 const Runner = require('./core/runner');
@@ -15,13 +16,14 @@ const Runner = require('./core/runner');
 const Illustrations = Object.assign({}, Primitives, Archetypes);
 
 const TechVideoStudio = {
-  version: '2.4.0',
+  version: '4.0.0',
   Theme,
   Camera,
   Effects,
   Layout,
   Connectors,
   Icons,
+  Whiteboard,
   Illustrations,
   Archetypes,
   createVideo: Runner.createVideo

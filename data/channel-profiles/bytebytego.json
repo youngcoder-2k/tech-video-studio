@@ -1,0 +1,77 @@
+{
+  "channel": "ByteByteGo",
+  "learnedAt": "2026-11-20T03:27:50.620Z",
+  "sampleCount": 3,
+  "samples": [
+    {
+      "file": "acid.mp4.webm",
+      "durationSec": 45.02,
+      "ground": "#232323",
+      "avgBeatSec": 5,
+      "coverPct": 11.9,
+      "activeFramesPct": 73.6
+    },
+    {
+      "file": "http.mp4.webm",
+      "durationSec": 45.02,
+      "ground": "#232323",
+      "avgBeatSec": 2.81,
+      "coverPct": 5.3,
+      "activeFramesPct": 69.5
+    },
+    {
+      "file": "linux.mp4.webm",
+      "durationSec": 45.02,
+      "ground": "#232323",
+      "avgBeatSec": 5,
+      "coverPct": 11.3,
+      "activeFramesPct": 75.8
+    }
+  ],
+  "grammar": {
+    "consensusGround": "#232323",
+    "rhythm": {
+      "medianBeatDurationSec": 5,
+      "minBeatDurationSec": 2.81,
+      "maxBeatDurationSec": 5,
+      "recommendedRevealIntervalSec": 3
+    },
+    "composition": {
+      "medianCoverPct": 11.3,
+      "minCoverPct": 5.3,
+      "maxCoverPct": 11.9,
+      "negativeSpaceTargetPct": 88.7
+    },
+    "motion": {
+      "medianActiveFramesPct": 73.6,
+      "medianContinuousMotionPct": 0.3,
+      "dominantEasing": "ease_in_out",
+      "easingDistribution": {
+        "ease_in_out": 44.1,
+        "ease_in": 29.4,
+        "linear": 8.8,
+        "ease_out": 17.6
+      },
+      "dominantFlowAxis": "up"
+    },
+    "palette": {
+      "ground": "#232323",
+      "recurringAccents": [
+        "#404040",
+        "#606060",
+        "#204040",
+        "#606020",
+        "#404020",
+        "#808080",
+        "#402040",
+        "#a0a0a0"
+      ]
+    },
+    "architecturePrinciples": [
+      "Use persistent composable whiteboard scenes across multi-beat explanations instead of full-screen wipes every beat.",
+      "Animate causal packet flows (sendPacket) that trigger live state mutations (mutate) on arrival.",
+      "Keep icons and diagrams rock-solid after settle; drive liveliness through timed reveals, spotlight focus, and smooth camera zoom/pan.",
+      "Maintain ~89% clean negative space on #232323 ground with reveal cadence every ~3.0s."
+    ]
+  }
+}

@@ -771,6 +771,36 @@ function cmdReaCompare(positional, flags) {
 }
 
 // ============================================================================
+// COMMAND 7C: rea-channel <dir|video1 video2 ...> [--name ByteByteGo] [-o profile.json]
+// ============================================================================
+function cmdReaChannel(positional, flags) {
+  const rea = loadReaAnalyzer();
+  if (!rea || typeof rea.learnChannelGrammar !== 'function') {
+    throw new Error('rea-analyzer.js learnChannelGrammar() not found.');
+  }
+  if (!positional.length) {
+    throw new Error('Usage: techvid rea-channel <video-dir | video1 video2 ...> [--name ByteByteGo] [-o channel-dna.json]');
+  }
+  const channelName = flags.name || 'ByteByteGo';
+  const outPath = flags.out ? path.resolve(process.cwd(), flags.out) : null;
+  console.log(`🧬 Learning generalizable Channel Grammar for "${channelName}" across ${positional.length} input(s)...`);
+  const profile = rea.learnChannelGrammar(positional, {
+    channelName,
+    outPath,
+    fps: flags.fps ? parseInt(flags.fps, 10) : 6
+  });
+  const g = profile.grammar;
+  console.log(`\n✅ Learned Channel Grammar from ${profile.sampleCount} videos:`);
+  console.log(`   • Consensus Ground:       ${g.consensusGround}`);
+  console.log(`   • Median Beat Cadence:    ${g.rhythm.medianBeatDurationSec}s (Reveal every ~${g.rhythm.recommendedRevealIntervalSec}s)`);
+  console.log(`   • Drawn Coverage Band:    ${g.composition.minCoverPct}%–${g.composition.maxCoverPct}% (Median ${g.composition.medianCoverPct}%, Negative Space ${g.composition.negativeSpaceTargetPct}%)`);
+  console.log(`   • Motion Grammar:         Active ${g.motion.medianActiveFramesPct}%, Dominant Easing: ${g.motion.dominantEasing}, Flow Axis: ${g.motion.dominantFlowAxis}`);
+  console.log(`   • Recurring Accents:      ${g.palette.recurringAccents.join(', ')}`);
+  if (outPath) console.log(`   • Saved ChannelDNA JSON:  ${outPath}`);
+  console.log('');
+}
+
+// ============================================================================
 // COMMAND 8: plan-story <topic> [--arc deep-dive-3min|speed-paradox-2min|quick-explainer-60s] [-o out.json]
 // ============================================================================
 function cmdPlanStory(positional, flags) {
@@ -1039,6 +1069,10 @@ Usage:
       case 'rea-compare':
       case 'compare':
         cmdReaCompare(positional, flags);
+        break;
+      case 'rea-channel':
+      case 'channel-dna':
+        cmdReaChannel(positional, flags);
         break;
       case 'voice':
       case 'voicestudio':
