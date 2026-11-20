@@ -493,33 +493,71 @@ function drawSpotlightMask(ctx, arg1, arg2 = 0.65, arg3 = 1920, arg4 = 1080) {
 }
 
 /**
- * Broadcast Subtitles / Synchronized Voiceover Caption Bar.
+ * Broadcast Subtitles / Synchronized Voiceover Caption Bar (v4.1.1).
+ * Automatically wraps long sentences cleanly into max 2 balanced lines anchored near the bottom edge
+ * so subtitles NEVER overflow off-screen or collide with diagrams / takeaway pills.
  */
 function drawCaptionBar(ctx, text, options = {}) {
   if (!text) return;
   const canvasWidth = options.canvasWidth || 1920;
-  const y = options.y || 988;
+  const bottomY = options.bottomY || 1056;
   const alpha = options.alpha !== undefined ? options.alpha : 1;
   if (alpha <= 0.01) return;
 
   ctx.save();
   ctx.globalAlpha *= alpha;
-  ctx.font = `500 21px ${FONTS.sans}`;
-  const tw = ctx.measureText(text).width + 48;
-  const th = 44;
+  ctx.font = `600 24px ${FONTS.sans}`;
+
+  const maxTextW = options.maxWidth || 1360;
+  const clean = String(text).replace(/\s+/g, ' ').trim();
+  const words = clean.split(' ');
+  const lines = [];
+  let current = '';
+  for (const w of words) {
+    const candidate = current ? `${current} ${w}` : w;
+    if (ctx.measureText(candidate).width <= maxTextW || !current) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = w;
+    }
+  }
+  if (current) lines.push(current);
+
+  // Re-balance 2 lines so line 2 isn't a lonely single word
+  if (lines.length === 2 && words.length >= 6) {
+    const mid = Math.ceil(words.length / 2);
+    const l1 = words.slice(0, mid).join(' ');
+    const l2 = words.slice(mid).join(' ');
+    if (ctx.measureText(l1).width <= maxTextW && ctx.measureText(l2).width <= maxTextW) {
+      lines[0] = l1;
+      lines[1] = l2;
+    }
+  }
+
+  const displayLines = lines.slice(0, 2);
+  const lineH = 34;
+  const padX = 32;
+  const padY = 12;
+  const maxLineW = Math.max(...displayLines.map((l) => ctx.measureText(l).width));
+  const tw = Math.min(canvasWidth - 160, maxLineW + padX * 2);
+  const th = displayLines.length * lineH + padY * 2 - 4;
   const tx = (canvasWidth - tw) / 2;
+  const ty = options.y != null ? options.y : (bottomY - th);
 
   ctx.beginPath();
-  ctx.roundRect(tx, y, tw, th, 10);
-  ctx.fillStyle = 'rgba(15, 15, 15, 0.84)';
+  ctx.roundRect(tx, ty, tw, th, 12);
+  ctx.fillStyle = 'rgba(14, 17, 23, 0.90)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+  ctx.lineWidth = 1.4;
   ctx.stroke();
 
   ctx.fillStyle = options.color || '#F8FAFC';
   ctx.textAlign = 'center';
-  ctx.fillText(text, canvasWidth / 2, y + 29);
+  displayLines.forEach((line, idx) => {
+    ctx.fillText(line, canvasWidth / 2, ty + padY + 23 + idx * lineH);
+  });
   ctx.restore();
 }
 

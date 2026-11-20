@@ -233,7 +233,26 @@ function createVideo(config) {
       if (showCaptions) {
         const activeCap = allCaptions.find((c) => clamped >= c.start && clamped <= c.end);
         if (activeCap && activeCap.text) {
-          Theme.drawCaptionBar(ctx, activeCap.text, { canvasWidth: width });
+          // Sentence-synced proportional chunking so only 1 crisp sentence displays at a time
+          const sentences = String(activeCap.text)
+            .split(/(?<=[.?!])\s+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          let displayCap = activeCap.text;
+          if (sentences.length > 1) {
+            const totalChars = sentences.reduce((sum, s) => sum + Math.max(8, s.length), 0);
+            const capDur = Math.max(0.2, activeCap.end - activeCap.start);
+            const relP = Math.max(0, Math.min(0.9999, (clamped - activeCap.start) / capDur));
+            let acc = 0;
+            for (const s of sentences) {
+              acc += Math.max(8, s.length) / totalChars;
+              if (relP <= acc) {
+                displayCap = s;
+                break;
+              }
+            }
+          }
+          Theme.drawCaptionBar(ctx, displayCap, { canvasWidth: width });
         }
       }
 

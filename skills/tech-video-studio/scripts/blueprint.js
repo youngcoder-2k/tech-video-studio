@@ -945,6 +945,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
                 Theme.drawTakeawayPill(ctx, activeBeat.takeaway, {
                   variant: 'pill',
                   border: activeBeat.accent || '#34D399',
+                  y: BLUEPRINT.showCaptions === false ? 925 : 892,
                   alpha: pTake
                 });
               }
@@ -965,7 +966,7 @@ function compileBlueprintToHtml(blueprint, opts = {}) {
       palette: BLUEPRINT.palette || 'byteByteGoTrue',
       fps: BLUEPRINT.fps || 30,
       persona: BLUEPRINT.persona || 'senior-sa',
-      showCaptions: false,
+      showCaptions: BLUEPRINT.showCaptions !== false,
       scenes: compiledScenes
     });
   </script>
