@@ -268,7 +268,8 @@ function auditBlueprintNarrative(blueprint) {
         end: cursor + dur,
         duration: dur,
         role: (b.role || '').toLowerCase() || (allBeats.length === 0 ? 'hook' : (b.type === 'scorecard' ? 'payoff' : 'info')),
-        type: b.type || 'icon-flow',
+        type: sc.whiteboard ? 'whiteboard' : (b.type || 'icon-flow'),
+        isPersistentWhiteboard: Boolean(sc.whiteboard),
         words,
         sentences,
         estWpm,
@@ -300,15 +301,63 @@ function auditBlueprintNarrative(blueprint) {
     score -= 10;
   }
 
-  // 2. Check Visual Style Variety (never repeat exact same visual archetype on consecutive beats)
+  // 2. Check Visual Style Variety (never repeat exact same static template on consecutive beats; persistent whiteboard scenes are continuous by design)
   let repeatCount = 0;
   for (let i = 1; i < allBeats.length; i++) {
-    if (allBeats[i].type === allBeats[i - 1].type) {
+    if (!allBeats[i].isPersistentWhiteboard && allBeats[i].type === allBeats[i - 1].type) {
       repeatCount++;
       warnings.push(`Visual monotony at Beat #${allBeats[i].index}: "${allBeats[i].type}" repeats immediately after Beat #${allBeats[i - 1].index}.`);
     }
   }
   score -= Math.min(25, repeatCount * 8);
+
+  // 2B. Visual-First Icon Rule & Anti-Overlap Layout Audit for Whiteboard Scenes (v4.1.0)
+  scenes.forEach((sc, scIdx) => {
+    if (!sc.whiteboard || !Array.isArray(sc.whiteboard.actors)) return;
+    const nonGroup = sc.whiteboard.actors.filter((a) => a.kind !== 'group');
+    const withIcons = nonGroup.filter((a) => a.icon || (Array.isArray(a.icons) && a.icons.length > 0) || a.kind === 'icon');
+    const iconRatio = nonGroup.length ? withIcons.length / nonGroup.length : 1;
+    if (nonGroup.length >= 2 && iconRatio < 0.7) {
+      warnings.push(`Scene ${scIdx + 1} (${sc.id || scIdx + 1}): Only ${Math.round(iconRatio * 100)}% of whiteboard actors have visual icons/logos (target >= 70% for intuitive ByteByteGo clarity).`);
+      score -= 8;
+    }
+
+    const byId = new Map(sc.whiteboard.actors.map((a) => [a.id, a]));
+    // Check safe top header clearance (y - h/2 >= 215)
+    sc.whiteboard.actors.forEach((a) => {
+      const h = a.h || (a.kind === 'icon' ? 160 : a.kind === 'pill' ? 76 : 210);
+      const topY = (a.y || 540) - h / 2;
+      if (topY < 215) {
+        warnings.push(`Scene ${scIdx + 1}: Actor "${a.id}" top edge (${Math.round(topY)}px) enters the top header safe zone (< 215px).`);
+        score -= 4;
+      }
+    });
+
+    // Check connected actor clearance (>= 80px edge gap so arrows never squish!)
+    const allActions = []
+      .concat(Array.isArray(sc.whiteboard.actions) ? sc.whiteboard.actions : [])
+      .concat(...(sc.beats || []).map((b) => Array.isArray(b.actions) ? b.actions : []));
+    const checkedPairs = new Set();
+    allActions.forEach((act) => {
+      if ((act.type === 'connect' || act.type === 'packet') && act.from && act.to) {
+        const key = `${act.from}->${act.to}`;
+        if (checkedPairs.has(key)) return;
+        checkedPairs.add(key);
+        const a = byId.get(act.from);
+        const b = byId.get(act.to);
+        if (!a || !b) return;
+        const aw = a.w || 340, ah = a.h || 200;
+        const bw = b.w || 340, bh = b.h || 200;
+        const gapX = Math.abs(b.x - a.x) - (aw + bw) / 2;
+        const gapY = Math.abs(b.y - a.y) - (ah + bh) / 2;
+        const edgeGap = Math.max(gapX, gapY);
+        if (edgeGap < 75) {
+          warnings.push(`Scene ${scIdx + 1}: Connected actors "${a.id}" -> "${b.id}" have only ${Math.round(edgeGap)}px clearance (target >= 85px so arrows & packets breathe cleanly).`);
+          score -= 4;
+        }
+      }
+    });
+  });
 
   // 3. Check Speech Pacing & Sentence Breathability (avoid babbling or overcrowded beats)
   allBeats.forEach((b) => {
@@ -323,7 +372,8 @@ function auditBlueprintNarrative(blueprint) {
   });
 
   const uniqueTypes = [...new Set(allBeats.map((b) => b.type))];
-  if (uniqueTypes.length < Math.min(4, allBeats.length)) {
+  const allWhiteboard = allBeats.every((b) => b.isPersistentWhiteboard);
+  if (!allWhiteboard && uniqueTypes.length < Math.min(4, allBeats.length)) {
     warnings.push(`Low visual diversity: only ${uniqueTypes.length} visual styles used across ${allBeats.length} beats.`);
     score -= 10;
   }

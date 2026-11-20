@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>How the JVM Actually Works (Living Whiteboard v4.0)</title>
+  <title>How the JVM Actually Works</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #232323; width: 1920px; height: 1080px; overflow: hidden; }
@@ -15,7 +15,7 @@
   <script>
     const { Theme, Effects, Connectors, Icons, Whiteboard, Illustrations, createVideo } = window.TechVideoStudio;
     const BLUEPRINT = {
-  "title": "How the JVM Actually Works (Living Whiteboard v4.0)",
+  "title": "How the JVM Actually Works",
   "palette": "byteByteGoTrue",
   "fps": 30,
   "persona": "senior-sa",
@@ -29,16 +29,17 @@
           {
             "id": "src",
             "kind": "code",
-            "x": 230,
+            "x": 240,
             "y": 480,
-            "w": 270,
-            "h": 190,
+            "w": 340,
+            "h": 240,
             "label": "Main.java",
             "sub": "Source Code",
             "color": "#38BDF8",
             "items": [
               "class Main {",
               "  int sum(int n)",
+              "  return n * 2;",
               "}"
             ],
             "initial": true
@@ -46,10 +47,10 @@
           {
             "id": "javac",
             "kind": "pill",
-            "x": 540,
+            "x": 580,
             "y": 480,
-            "w": 170,
-            "h": 68,
+            "w": 200,
+            "h": 76,
             "label": "javac",
             "color": "#FACC15",
             "initial": false
@@ -57,26 +58,27 @@
           {
             "id": "bytecode",
             "kind": "box",
-            "x": 850,
+            "x": 930,
             "y": 480,
-            "w": 260,
-            "h": 170,
+            "w": 340,
+            "h": 230,
             "label": "Main.class",
-            "sub": "0xCAFEBABE",
+            "sub": "0xCAFEBABE Bytecode",
             "color": "#34D399",
             "items": [
               "aload_0",
-              "iadd / ireturn"
+              "iload_1 / imul",
+              "ireturn"
             ],
             "initial": false
           },
           {
             "id": "clGroup",
             "kind": "group",
-            "x": 1440,
-            "y": 510,
-            "w": 740,
-            "h": 450,
+            "x": 1500,
+            "y": 520,
+            "w": 720,
+            "h": 500,
             "label": "JVM ClassLoader Subsystem",
             "color": "#A78BFA",
             "initial": false
@@ -84,22 +86,22 @@
           {
             "id": "loader",
             "kind": "box",
-            "x": 1240,
+            "x": 1330,
             "y": 420,
-            "w": 240,
-            "h": 125,
+            "w": 310,
+            "h": 150,
             "label": "1. Loading",
-            "sub": "Read Bytecode",
+            "sub": "Read .class Bytes",
             "color": "#38BDF8",
             "initial": false
           },
           {
             "id": "verifier",
             "kind": "box",
-            "x": 1620,
+            "x": 1690,
             "y": 420,
-            "w": 260,
-            "h": 125,
+            "w": 320,
+            "h": 150,
             "label": "2. Linking",
             "sub": "Verify & Resolve",
             "color": "#FACC15",
@@ -108,10 +110,10 @@
           {
             "id": "metaspace",
             "kind": "cylinder",
-            "x": 1430,
-            "y": 635,
-            "w": 300,
-            "h": 125,
+            "x": 1510,
+            "y": 645,
+            "w": 420,
+            "h": 170,
             "label": "Method Area",
             "sub": "Metaspace (RAM)",
             "color": "#34D399",
@@ -128,6 +130,14 @@
           "accent": "#38BDF8",
           "narration": "When you compile Java code, javac does not produce CPU machine instructions. Instead, it compiles your source into compact, platform-independent bytecode inside a dot-class file.",
           "actions": [
+            {
+              "type": "focus",
+              "x": 600,
+              "y": 480,
+              "zoom": 1.25,
+              "p": 0,
+              "dur": 0.01
+            },
             {
               "type": "spawn",
               "target": "javac",
@@ -198,10 +208,18 @@
           "role": "context",
           "duration": 15.22,
           "title": "Step 2: Loading & Bytecode Verification",
-          "subtitle": "The ClassLoader reads bytes and proves type & stack safety.",
+          "subtitle": "The ClassLoader reads bytes and mathematically proves safety.",
           "accent": "#FACC15",
           "narration": "At startup, the JVM ClassLoader pulls that bytecode into memory and runs the Linking phase. Its verifier mathematically proves the bytecode cannot corrupt memory or overflow the stack.",
           "actions": [
+            {
+              "type": "focus",
+              "x": 1450,
+              "y": 520,
+              "zoom": 1.22,
+              "p": 0.04,
+              "dur": 1
+            },
             {
               "type": "spawn",
               "target": "clGroup",
@@ -258,7 +276,7 @@
               "type": "focus",
               "target": "verifier",
               "p": 0.56,
-              "dur": 0.9,
+              "dur": 0.8,
               "zoom": 1.38
             },
             {
@@ -291,7 +309,7 @@
             {
               "type": "resetCamera",
               "p": 0.04,
-              "dur": 0.8
+              "dur": 0.9
             },
             {
               "type": "spawn",
@@ -348,49 +366,50 @@
           {
             "id": "stackGroup",
             "kind": "group",
-            "x": 360,
-            "y": 530,
-            "w": 460,
-            "h": 500,
-            "label": "Thread Stack (Private)",
+            "x": 380,
+            "y": 550,
+            "w": 520,
+            "h": 550,
+            "label": "Thread Stack (Private Memory)",
             "color": "#38BDF8",
             "initial": true
           },
           {
             "id": "stackBox",
             "kind": "code",
-            "x": 360,
-            "y": 530,
-            "w": 390,
-            "h": 370,
-            "label": "Call Frames",
-            "sub": "LIFO Per-Thread",
+            "x": 380,
+            "y": 550,
+            "w": 440,
+            "h": 440,
+            "label": "Call Stack",
+            "sub": "LIFO Execution Frames",
             "color": "#38BDF8",
             "items": [
-              "main()  -> ref#01"
+              "main()       -> [0x01]",
+              "handleReq()  -> [0x02]"
             ],
             "initial": true
           },
           {
             "id": "heapGroup",
             "kind": "group",
-            "x": 1270,
-            "y": 530,
-            "w": 1060,
-            "h": 500,
-            "label": "Shared JVM Heap (Generational GC)",
+            "x": 1280,
+            "y": 550,
+            "w": 1100,
+            "h": 550,
+            "label": "Shared JVM Heap (Generational Memory)",
             "color": "#34D399",
             "initial": true
           },
           {
             "id": "eden",
             "kind": "box",
-            "x": 960,
-            "y": 460,
-            "w": 340,
-            "h": 210,
+            "x": 930,
+            "y": 475,
+            "w": 380,
+            "h": 250,
             "label": "Eden Space",
-            "sub": "New Objects Born Here",
+            "sub": "Fast Pointer Bump Alloc",
             "color": "#34D399",
             "meter": 0.15,
             "initial": true
@@ -398,23 +417,23 @@
           {
             "id": "deadObj",
             "kind": "pill",
-            "x": 960,
-            "y": 670,
-            "w": 260,
-            "h": 62,
-            "label": "Temp Objects (90%)",
+            "x": 930,
+            "y": 710,
+            "w": 320,
+            "h": 72,
+            "label": "Dead Garbage (90% Die Young)",
             "color": "#F87171",
             "initial": false
           },
           {
             "id": "survivor",
             "kind": "box",
-            "x": 1350,
-            "y": 460,
-            "w": 260,
-            "h": 175,
-            "label": "Survivor S0/S1",
-            "sub": "Short-Lived",
+            "x": 1330,
+            "y": 475,
+            "w": 300,
+            "h": 230,
+            "label": "Survivor S0 / S1",
+            "sub": "Tenured Age Tracking",
             "color": "#FACC15",
             "meter": 0.1,
             "initial": true
@@ -422,12 +441,12 @@
           {
             "id": "oldGen",
             "kind": "cylinder",
-            "x": 1645,
-            "y": 530,
-            "w": 240,
-            "h": 220,
-            "label": "Old Gen",
-            "sub": "Long-Lived",
+            "x": 1640,
+            "y": 550,
+            "w": 280,
+            "h": 280,
+            "label": "Old Generation",
+            "sub": "Long-Lived Objects",
             "color": "#A78BFA",
             "initial": true
           }
@@ -443,17 +462,22 @@
           "narration": "At runtime, each thread pushes method frames onto its own private Stack. Meanwhile, every new object you allocate flies straight into the shared Heap's Eden space using a fast pointer bump.",
           "actions": [
             {
+              "type": "resetCamera",
+              "p": 0,
+              "dur": 0.01
+            },
+            {
               "type": "appendItem",
               "target": "stackBox",
               "p": 0.15,
-              "text": "handleReq() -> ref#02",
+              "text": "handleReq()  -> [0x02]",
               "color": "#FACC15"
             },
             {
               "type": "appendItem",
               "target": "stackBox",
               "p": 0.35,
-              "text": "new User()  -> ref#03",
+              "text": "new Order()  -> [0x03]",
               "color": "#34D399"
             },
             {
@@ -523,14 +547,14 @@
             {
               "type": "focus",
               "target": "eden",
-              "p": 0.45,
+              "p": 0.38,
               "dur": 0.9,
-              "zoom": 1.32
+              "zoom": 1.35
             },
             {
               "type": "callout",
               "target": "eden",
-              "p": 0.58,
+              "p": 0.55,
               "pUntil": 0.96,
               "text": "Minor GC scans ONLY live roots, not dead garbage!",
               "side": "top",
@@ -549,7 +573,7 @@
             {
               "type": "resetCamera",
               "p": 0.04,
-              "dur": 0.75
+              "dur": 0.8
             },
             {
               "type": "mutate",
@@ -633,11 +657,11 @@
           {
             "id": "bcStream",
             "kind": "box",
-            "x": 250,
+            "x": 260,
             "y": 520,
-            "w": 250,
-            "h": 150,
-            "label": "Bytecode",
+            "w": 320,
+            "h": 210,
+            "label": "Bytecode Stream",
             "sub": "Hot Loop Method",
             "color": "#38BDF8",
             "initial": true
@@ -645,12 +669,12 @@
           {
             "id": "interp",
             "kind": "box",
-            "x": 680,
-            "y": 360,
-            "w": 300,
-            "h": 150,
+            "x": 690,
+            "y": 370,
+            "w": 360,
+            "h": 190,
             "label": "Interpreter",
-            "sub": "Line-by-Line Exec",
+            "sub": "Line-by-Line Execution",
             "color": "#FACC15",
             "badge": "1x SPEED",
             "initial": true
@@ -658,12 +682,12 @@
           {
             "id": "profiler",
             "kind": "box",
-            "x": 680,
+            "x": 690,
             "y": 670,
-            "w": 300,
-            "h": 150,
+            "w": 360,
+            "h": 190,
             "label": "HotSpot Profiler",
-            "sub": "Calls: 120",
+            "sub": "Invocation Counter",
             "color": "#38BDF8",
             "meter": 0.15,
             "initial": true
@@ -671,24 +695,24 @@
           {
             "id": "jit",
             "kind": "box",
-            "x": 1150,
+            "x": 1160,
             "y": 670,
-            "w": 300,
-            "h": 165,
+            "w": 380,
+            "h": 200,
             "label": "C2 JIT Compiler",
-            "sub": "Inlining & Unrolling",
+            "sub": "Inlining & Loop Unrolling",
             "color": "#FB923C",
             "initial": false
           },
           {
             "id": "codeCache",
             "kind": "cylinder",
-            "x": 1150,
-            "y": 360,
-            "w": 280,
-            "h": 150,
+            "x": 1160,
+            "y": 370,
+            "w": 360,
+            "h": 200,
             "label": "Code Cache",
-            "sub": "Native x86 / ARM",
+            "sub": "Compiled Machine Code",
             "color": "#34D399",
             "initial": false
           },
@@ -697,11 +721,11 @@
             "kind": "icon",
             "icon": "cpuSilicon",
             "x": 1640,
-            "y": 490,
-            "w": 160,
-            "h": 160,
+            "y": 520,
+            "w": 180,
+            "h": 180,
             "label": "CPU Silicon",
-            "sub": "Bare-Metal Speed",
+            "sub": "Bare-Metal Execution",
             "color": "#34D399",
             "initial": true
           }
@@ -716,6 +740,14 @@
           "accent": "#FACC15",
           "narration": "To start instantly, the JVM first runs your bytecode through an Interpreter. It works right away, but translating every instruction over and over is slow. Meanwhile, the HotSpot Profiler silently counts hot loops.",
           "actions": [
+            {
+              "type": "focus",
+              "x": 620,
+              "y": 520,
+              "zoom": 1.25,
+              "p": 0,
+              "dur": 0.01
+            },
             {
               "type": "connect",
               "from": "bcStream",
@@ -783,6 +815,14 @@
           "narration": "Once a method crosses ten thousand invocations, HotSpot flags it red hot and hands it to the C2 Just-In-Time compiler. Using real runtime branch profiles, C2 inlines methods and emits native CPU machine code.",
           "actions": [
             {
+              "type": "focus",
+              "x": 1020,
+              "y": 640,
+              "zoom": 1.28,
+              "p": 0.1,
+              "dur": 1
+            },
+            {
               "type": "mutate",
               "target": "profiler",
               "p": 0.08,
@@ -818,8 +858,8 @@
             {
               "type": "focus",
               "target": "jit",
-              "p": 0.42,
-              "dur": 0.9,
+              "p": 0.45,
+              "dur": 0.8,
               "zoom": 1.36
             },
             {
@@ -852,7 +892,7 @@
             {
               "type": "resetCamera",
               "p": 0.04,
-              "dur": 0.8
+              "dur": 0.9
             },
             {
               "type": "spawn",
@@ -937,17 +977,17 @@
           {
             "id": "p1",
             "kind": "box",
-            "x": 340,
-            "y": 500,
-            "w": 320,
-            "h": 220,
+            "x": 350,
+            "y": 540,
+            "w": 460,
+            "h": 420,
             "label": "1. ClassLoader",
-            "sub": "Portable & Verified",
+            "sub": "Portable & Type-Safe",
             "color": "#38BDF8",
             "items": [
-              "• Load .class bytes",
-              "• Verify stack safety",
-              "• Store in Metaspace"
+              "• Load .class bytecode",
+              "• Verify stack & type safety",
+              "• Store structures in Metaspace"
             ],
             "initial": true
           },
@@ -955,33 +995,33 @@
             "id": "p2",
             "kind": "box",
             "x": 960,
-            "y": 500,
-            "w": 340,
-            "h": 220,
+            "y": 540,
+            "w": 480,
+            "h": 420,
             "label": "2. Generational GC",
-            "sub": "Self-Healing Memory",
+            "sub": "Automated Heap Memory",
             "color": "#FACC15",
             "items": [
-              "• Fast Eden bump alloc",
-              "• Sweep 90% short-lived",
-              "• Promote to Old Gen"
+              "• Fast Eden pointer bump",
+              "• Sweep 90% dead temporary objects",
+              "• Promote survivors into Old Gen"
             ],
             "initial": true
           },
           {
             "id": "p3",
             "kind": "box",
-            "x": 1580,
-            "y": 500,
-            "w": 320,
-            "h": 220,
-            "label": "3. HotSpot JIT",
+            "x": 1570,
+            "y": 540,
+            "w": 460,
+            "h": 420,
+            "label": "3. HotSpot C2 JIT",
             "sub": "Adaptive Native Speed",
             "color": "#34D399",
             "items": [
-              "• Profile hot loops",
-              "• C2 inline & unroll",
-              "• Bare-metal CPU exec"
+              "• Profile hot loops at runtime",
+              "• Inline methods & optimize code",
+              "• Execute directly on CPU silicon"
             ],
             "initial": true
           }
@@ -996,6 +1036,11 @@
           "accent": "#34D399",
           "narration": "Put it all together and the JVM's brilliance is clear. ClassLoaders guarantee portability and safety, Generational Garbage Collection automates memory at scale, and the HotSpot JIT turns hot bytecode into native speed.",
           "actions": [
+            {
+              "type": "resetCamera",
+              "p": 0,
+              "dur": 0.01
+            },
             {
               "type": "spotlight",
               "targets": [

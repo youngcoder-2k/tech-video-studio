@@ -1,5 +1,5 @@
 {
-  "title": "How the JVM Actually Works (Living Whiteboard v4.0)",
+  "title": "How the JVM Actually Works",
   "palette": "byteByteGoTrue",
   "fps": 30,
   "persona": "senior-sa",
@@ -10,13 +10,13 @@
       "backdrop": "dotMatrix",
       "whiteboard": {
         "actors": [
-          { "id": "src", "kind": "code", "x": 230, "y": 480, "w": 270, "h": 190, "label": "Main.java", "sub": "Source Code", "color": "#38BDF8", "items": ["class Main {", "  int sum(int n)", "}"], "initial": true },
-          { "id": "javac", "kind": "pill", "x": 540, "y": 480, "w": 170, "h": 68, "label": "javac", "color": "#FACC15", "initial": false },
-          { "id": "bytecode", "kind": "box", "x": 850, "y": 480, "w": 260, "h": 170, "label": "Main.class", "sub": "0xCAFEBABE", "color": "#34D399", "items": ["aload_0", "iadd / ireturn"], "initial": false },
-          { "id": "clGroup", "kind": "group", "x": 1440, "y": 510, "w": 740, "h": 450, "label": "JVM ClassLoader Subsystem", "color": "#A78BFA", "initial": false },
-          { "id": "loader", "kind": "box", "x": 1240, "y": 420, "w": 240, "h": 125, "label": "1. Loading", "sub": "Read Bytecode", "color": "#38BDF8", "initial": false },
-          { "id": "verifier", "kind": "box", "x": 1620, "y": 420, "w": 260, "h": 125, "label": "2. Linking", "sub": "Verify & Resolve", "color": "#FACC15", "initial": false },
-          { "id": "metaspace", "kind": "cylinder", "x": 1430, "y": 635, "w": 300, "h": 125, "label": "Method Area", "sub": "Metaspace (RAM)", "color": "#34D399", "initial": false }
+          { "id": "src", "kind": "code", "icon": "javaLogo", "x": 220, "y": 555, "w": 300, "h": 260, "label": "Main.java", "sub": "Source Code", "color": "#38BDF8", "items": ["class Main {", "  int sum(n)", "}"], "initial": true },
+          { "id": "javac", "kind": "pill", "icon": "gear", "x": 560, "y": 555, "w": 195, "h": 78, "label": "javac", "color": "#FACC15", "initial": false },
+          { "id": "bytecode", "kind": "box", "icon": "binaryFile", "icons": ["linuxPenguin", "appleLogo", "winOS"], "x": 915, "y": 555, "w": 310, "h": 275, "label": "Main.class", "sub": "0xCAFEBABE", "color": "#34D399", "items": ["aload_0 / imul", "ireturn"], "initial": false },
+          { "id": "clGroup", "kind": "group", "icon": "boxArchive", "x": 1515, "y": 585, "w": 720, "h": 560, "label": "JVM ClassLoader Subsystem", "color": "#A78BFA", "initial": false },
+          { "id": "loader", "kind": "box", "icon": "magnifyingGlass", "x": 1320, "y": 465, "w": 255, "h": 195, "label": "1. Loading", "sub": "Read .class Bytes", "color": "#38BDF8", "initial": false },
+          { "id": "verifier", "kind": "box", "icon": "shieldGuard", "x": 1705, "y": 465, "w": 260, "h": 195, "label": "2. Linking", "sub": "Verify & Resolve", "color": "#FACC15", "initial": false },
+          { "id": "metaspace", "kind": "cylinder", "icon": "ramChip", "x": 1515, "y": 745, "w": 360, "h": 185, "label": "Method Area", "sub": "Metaspace (RAM)", "color": "#34D399", "initial": false }
         ]
       },
       "beats": [
@@ -28,34 +28,35 @@
           "accent": "#38BDF8",
           "narration": "When you compile Java code, javac does not produce CPU machine instructions. Instead, it compiles your source into compact, platform-independent bytecode inside a dot-class file.",
           "actions": [
-            { "type": "spawn", "target": "javac", "p": 0.12, "dur": 0.45 },
-            { "type": "connect", "from": "src", "to": "javac", "p": 0.22, "dur": 0.4, "color": "#38BDF8" },
-            { "type": "packet", "from": "src", "to": "javac", "p": 0.28, "dur": 1.1, "label": ".java", "color": "#38BDF8" },
-            { "type": "spawn", "target": "bytecode", "p": 0.46, "dur": 0.5 },
-            { "type": "connect", "from": "javac", "to": "bytecode", "p": 0.52, "dur": 0.4, "color": "#34D399" },
-            { "type": "packet", "from": "javac", "to": "bytecode", "p": 0.58, "dur": 1.1, "label": "0xCAFE", "color": "#34D399", "count": 2, "stagger": 0.35 },
-            { "type": "mutate", "target": "bytecode", "p": 0.78, "badge": "PORTABLE ✔", "status": "ok" },
-            { "type": "callout", "target": "bytecode", "p": 0.75, "pUntil": 0.98, "text": "Runs identically on Linux, macOS & Windows", "side": "bottom", "color": "#34D399" }
+            { "type": "focus", "x": 575, "y": 565, "zoom": 1.18, "p": 0.0, "dur": 0.01 },
+            { "type": "spawn", "target": "javac", "p": 0.08, "dur": 0.45 },
+            { "type": "connect", "from": "src", "to": "javac", "p": 0.16, "dur": 0.4, "color": "#38BDF8" },
+            { "type": "packet", "from": "src", "to": "javac", "p": 0.22, "dur": 1.0, "label": ".java", "color": "#38BDF8" },
+            { "type": "spawn", "target": "bytecode", "p": 0.34, "dur": 0.5 },
+            { "type": "connect", "from": "javac", "to": "bytecode", "p": 0.42, "dur": 0.4, "color": "#34D399" },
+            { "type": "packet", "from": "javac", "to": "bytecode", "p": 0.48, "dur": 1.1, "label": "0xCAFE", "color": "#34D399", "count": 2, "stagger": 0.35 },
+            { "type": "mutate", "target": "bytecode", "p": 0.72, "badge": "PORTABLE ✔", "status": "ok" },
+            { "type": "callout", "target": "bytecode", "p": 0.70, "pUntil": 0.98, "text": "Runs identically on Linux, macOS & Windows", "side": "bottom", "color": "#34D399" }
           ]
         },
         {
           "role": "context",
           "duration": 11,
           "title": "Step 2: Loading & Bytecode Verification",
-          "subtitle": "The ClassLoader reads bytes and proves type & stack safety.",
+          "subtitle": "The ClassLoader reads bytes and mathematically proves safety.",
           "accent": "#FACC15",
           "narration": "At startup, the JVM ClassLoader pulls that bytecode into memory and runs the Linking phase. Its verifier mathematically proves the bytecode cannot corrupt memory or overflow the stack.",
           "actions": [
+            { "type": "focus", "x": 1450, "y": 575, "zoom": 1.12, "p": 0.04, "dur": 0.95 },
             { "type": "spawn", "target": "clGroup", "p": 0.04, "dur": 0.45 },
             { "type": "spawn", "target": "loader", "p": 0.10, "dur": 0.45 },
             { "type": "connect", "from": "bytecode", "to": "loader", "p": 0.18, "dur": 0.4, "color": "#38BDF8" },
-            { "type": "packet", "from": "bytecode", "to": "loader", "p": 0.24, "dur": 1.0, "label": "BYTECODE", "color": "#38BDF8" },
+            { "type": "packet", "from": "bytecode", "to": "loader", "p": 0.24, "dur": 1.0, "label": "BYTES", "color": "#38BDF8" },
             { "type": "spawn", "target": "verifier", "p": 0.36, "dur": 0.45 },
             { "type": "connect", "from": "loader", "to": "verifier", "p": 0.42, "dur": 0.4, "color": "#FACC15" },
-            { "type": "packet", "from": "loader", "to": "verifier", "p": 0.48, "dur": 0.9, "label": "CHECK", "color": "#FACC15" },
-            { "type": "focus", "target": "verifier", "p": 0.56, "dur": 0.9, "zoom": 1.38 },
-            { "type": "mutate", "target": "verifier", "p": 0.68, "badge": "VERIFIED ✔", "status": "ok", "sub": "Stack & Type Safe" },
-            { "type": "callout", "target": "verifier", "p": 0.70, "pUntil": 0.96, "text": "Blocks illegal pointers & corrupted bytecode", "side": "top", "color": "#FACC15" }
+            { "type": "packet", "from": "loader", "to": "verifier", "p": 0.48, "dur": 0.9, "label": "VERIFY", "color": "#FACC15" },
+            { "type": "mutate", "target": "verifier", "p": 0.64, "badge": "VERIFIED ✔", "status": "ok", "sub": "Stack & Type Safe" },
+            { "type": "callout", "target": "verifier", "p": 0.66, "pUntil": 0.96, "text": "Blocks illegal pointers & corrupted bytecode", "side": "bottom", "color": "#FACC15" }
           ]
         },
         {
@@ -66,10 +67,10 @@
           "accent": "#34D399",
           "narration": "Once verified and initialized, class structures and static fields land inside Metaspace. Only then is your program ready to allocate objects and execute.",
           "actions": [
-            { "type": "resetCamera", "p": 0.04, "dur": 0.8 },
-            { "type": "spawn", "target": "metaspace", "p": 0.18, "dur": 0.5 },
-            { "type": "connect", "from": "verifier", "to": "metaspace", "p": 0.28, "dur": 0.45, "color": "#34D399" },
-            { "type": "packet", "from": "verifier", "to": "metaspace", "p": 0.36, "dur": 1.1, "label": "INIT", "color": "#34D399", "count": 2, "stagger": 0.35 },
+            { "type": "resetCamera", "p": 0.04, "dur": 0.85 },
+            { "type": "spawn", "target": "metaspace", "p": 0.16, "dur": 0.5 },
+            { "type": "connect", "from": "verifier", "to": "metaspace", "p": 0.26, "dur": 0.45, "color": "#34D399" },
+            { "type": "packet", "from": "verifier", "to": "metaspace", "p": 0.34, "dur": 1.1, "label": "INIT", "color": "#34D399", "count": 2, "stagger": 0.35 },
             { "type": "mutate", "target": "metaspace", "p": 0.65, "badge": "LOADED ✔", "status": "ok" },
             { "type": "spotlight", "targets": ["metaspace", "verifier"], "p": 0.62, "pUntil": 0.98 }
           ],
@@ -83,13 +84,13 @@
       "backdrop": "dotMatrix",
       "whiteboard": {
         "actors": [
-          { "id": "stackGroup", "kind": "group", "x": 360, "y": 530, "w": 460, "h": 500, "label": "Thread Stack (Private)", "color": "#38BDF8", "initial": true },
-          { "id": "stackBox", "kind": "code", "x": 360, "y": 530, "w": 390, "h": 370, "label": "Call Frames", "sub": "LIFO Per-Thread", "color": "#38BDF8", "items": ["main()  -> ref#01"], "initial": true },
-          { "id": "heapGroup", "kind": "group", "x": 1270, "y": 530, "w": 1060, "h": 500, "label": "Shared JVM Heap (Generational GC)", "color": "#34D399", "initial": true },
-          { "id": "eden", "kind": "box", "x": 960, "y": 460, "w": 340, "h": 210, "label": "Eden Space", "sub": "New Objects Born Here", "color": "#34D399", "meter": 0.15, "initial": true },
-          { "id": "deadObj", "kind": "pill", "x": 960, "y": 670, "w": 260, "h": 62, "label": "Temp Objects (90%)", "color": "#F87171", "initial": false },
-          { "id": "survivor", "kind": "box", "x": 1350, "y": 460, "w": 260, "h": 175, "label": "Survivor S0/S1", "sub": "Short-Lived", "color": "#FACC15", "meter": 0.10, "initial": true },
-          { "id": "oldGen", "kind": "cylinder", "x": 1645, "y": 530, "w": 240, "h": 220, "label": "Old Gen", "sub": "Long-Lived", "color": "#A78BFA", "initial": true }
+          { "id": "stackGroup", "kind": "group", "icon": "stackLayers", "x": 340, "y": 585, "w": 480, "h": 560, "label": "Thread Stack (Private)", "color": "#38BDF8", "initial": true },
+          { "id": "stackBox", "kind": "code", "icon": "stackLayers", "x": 340, "y": 595, "w": 400, "h": 420, "label": "Call Stack", "sub": "LIFO Per-Thread", "color": "#38BDF8", "items": ["main()      -> [0x01]"], "initial": true },
+          { "id": "heapGroup", "kind": "group", "icon": "ramChip", "x": 1270, "y": 585, "w": 1160, "h": 560, "label": "Shared JVM Heap (Generational GC)", "color": "#34D399", "initial": true },
+          { "id": "eden", "kind": "box", "icon": "boxArchive", "x": 910, "y": 490, "w": 340, "h": 235, "label": "Eden Space", "sub": "Pointer Bump Alloc", "color": "#34D399", "meter": 0.15, "initial": true },
+          { "id": "deadObj", "kind": "pill", "icon": "trashSweep", "x": 910, "y": 755, "w": 350, "h": 74, "label": "Temp Objects (90%)", "color": "#F87171", "initial": false },
+          { "id": "survivor", "kind": "box", "icon": "checkShield", "x": 1335, "y": 490, "w": 280, "h": 235, "label": "Survivor S0/S1", "sub": "Short-Lived", "color": "#FACC15", "meter": 0.10, "initial": true },
+          { "id": "oldGen", "kind": "cylinder", "icon": "databaseStack", "x": 1685, "y": 585, "w": 255, "h": 265, "label": "Old Gen", "sub": "Long-Lived", "color": "#A78BFA", "initial": true }
         ]
       },
       "beats": [
@@ -101,8 +102,9 @@
           "accent": "#38BDF8",
           "narration": "At runtime, each thread pushes method frames onto its own private Stack. Meanwhile, every new object you allocate flies straight into the shared Heap's Eden space using a fast pointer bump.",
           "actions": [
-            { "type": "appendItem", "target": "stackBox", "p": 0.15, "text": "handleReq() -> ref#02", "color": "#FACC15" },
-            { "type": "appendItem", "target": "stackBox", "p": 0.35, "text": "new User()  -> ref#03", "color": "#34D399" },
+            { "type": "resetCamera", "p": 0.0, "dur": 0.01 },
+            { "type": "appendItem", "target": "stackBox", "p": 0.15, "text": "handleReq() -> [0x02]", "color": "#FACC15" },
+            { "type": "appendItem", "target": "stackBox", "p": 0.35, "text": "new Order() -> [0x03]", "color": "#34D399" },
             { "type": "connect", "from": "stackBox", "to": "eden", "p": 0.30, "dur": 0.45, "color": "#34D399", "label": "new Obj()" },
             { "type": "packet", "from": "stackBox", "to": "eden", "p": 0.40, "dur": 1.0, "label": "OBJ", "color": "#34D399", "count": 3, "stagger": 0.4 },
             { "type": "mutate", "target": "eden", "p": 0.60, "dur": 1.2, "meter": 0.55, "badge": "ALLOCATING" },
@@ -119,8 +121,8 @@
           "actions": [
             { "type": "packet", "from": "stackBox", "to": "eden", "p": 0.08, "dur": 0.85, "label": "NEW", "color": "#FACC15", "count": 3, "stagger": 0.3 },
             { "type": "mutate", "target": "eden", "p": 0.22, "dur": 1.4, "meter": 0.96, "status": "error", "badge": "96% FULL!" },
-            { "type": "focus", "target": "eden", "p": 0.45, "dur": 0.9, "zoom": 1.32 },
-            { "type": "callout", "target": "eden", "p": 0.58, "pUntil": 0.96, "text": "Minor GC scans ONLY live roots, not dead garbage!", "side": "top", "color": "#F87171" }
+            { "type": "focus", "x": 960, "y": 585, "zoom": 1.18, "p": 0.38, "dur": 0.9 },
+            { "type": "callout", "target": "eden", "p": 0.55, "pUntil": 0.96, "text": "Minor GC scans ONLY live roots, not dead garbage!", "side": "bottom", "color": "#F87171" }
           ]
         },
         {
@@ -131,7 +133,7 @@
           "accent": "#34D399",
           "narration": "Dead temporary objects are instantly wiped out in place. Only the tiny fraction of surviving objects get copied to Survivor spaces, and after several cycles, promoted into Old Gen.",
           "actions": [
-            { "type": "resetCamera", "p": 0.04, "dur": 0.75 },
+            { "type": "resetCamera", "p": 0.04, "dur": 0.8 },
             { "type": "mutate", "target": "deadObj", "p": 0.14, "dur": 0.7, "crossOut": true, "status": "error" },
             { "type": "connect", "from": "eden", "to": "survivor", "p": 0.24, "dur": 0.4, "color": "#FACC15" },
             { "type": "packet", "from": "eden", "to": "survivor", "p": 0.30, "dur": 1.0, "label": "LIVE", "color": "#34D399", "count": 2, "stagger": 0.35 },
@@ -151,12 +153,12 @@
       "backdrop": "dotMatrix",
       "whiteboard": {
         "actors": [
-          { "id": "bcStream", "kind": "box", "x": 250, "y": 520, "w": 250, "h": 150, "label": "Bytecode", "sub": "Hot Loop Method", "color": "#38BDF8", "initial": true },
-          { "id": "interp", "kind": "box", "x": 680, "y": 360, "w": 300, "h": 150, "label": "Interpreter", "sub": "Line-by-Line Exec", "color": "#FACC15", "badge": "1x SPEED", "initial": true },
-          { "id": "profiler", "kind": "box", "x": 680, "y": 670, "w": 300, "h": 150, "label": "HotSpot Profiler", "sub": "Calls: 120", "color": "#38BDF8", "meter": 0.15, "initial": true },
-          { "id": "jit", "kind": "box", "x": 1150, "y": 670, "w": 300, "h": 165, "label": "C2 JIT Compiler", "sub": "Inlining & Unrolling", "color": "#FB923C", "initial": false },
-          { "id": "codeCache", "kind": "cylinder", "x": 1150, "y": 360, "w": 280, "h": 150, "label": "Code Cache", "sub": "Native x86 / ARM", "color": "#34D399", "initial": false },
-          { "id": "cpu", "kind": "icon", "icon": "cpuSilicon", "x": 1640, "y": 490, "w": 160, "h": 160, "label": "CPU Silicon", "sub": "Bare-Metal Speed", "color": "#34D399", "initial": true }
+          { "id": "bcStream", "kind": "box", "icon": "binaryFile", "x": 240, "y": 565, "w": 280, "h": 225, "label": "Bytecode", "sub": "Hot Loop Method", "color": "#38BDF8", "initial": true },
+          { "id": "interp", "kind": "box", "icon": "gear", "x": 690, "y": 415, "w": 325, "h": 205, "label": "Interpreter", "sub": "Line-by-Line Exec", "color": "#FACC15", "badge": "1x SPEED", "initial": true },
+          { "id": "profiler", "kind": "box", "icon": "flameNitro", "x": 690, "y": 720, "w": 325, "h": 210, "label": "HotSpot Profiler", "sub": "Calls: 120", "color": "#38BDF8", "meter": 0.15, "initial": true },
+          { "id": "jit", "kind": "box", "icon": "lightningBolt", "x": 1180, "y": 720, "w": 330, "h": 210, "label": "C2 JIT Compiler", "sub": "Inlining & Unrolling", "color": "#FB923C", "initial": false },
+          { "id": "codeCache", "kind": "cylinder", "icon": "rocketBoost", "x": 1180, "y": 415, "w": 310, "h": 205, "label": "Code Cache", "sub": "Native x86 / ARM", "color": "#34D399", "initial": false },
+          { "id": "cpu", "kind": "icon", "icon": "cpuSilicon", "x": 1660, "y": 565, "w": 185, "h": 185, "label": "CPU Silicon", "sub": "Bare-Metal Speed", "color": "#34D399", "initial": true }
         ]
       },
       "beats": [
@@ -168,6 +170,7 @@
           "accent": "#FACC15",
           "narration": "To start instantly, the JVM first runs your bytecode through an Interpreter. It works right away, but translating every instruction over and over is slow. Meanwhile, the HotSpot Profiler silently counts hot loops.",
           "actions": [
+            { "type": "focus", "x": 580, "y": 565, "zoom": 1.15, "p": 0.0, "dur": 0.01 },
             { "type": "connect", "from": "bcStream", "to": "interp", "p": 0.08, "dur": 0.4, "color": "#FACC15" },
             { "type": "connect", "from": "bcStream", "to": "profiler", "p": 0.14, "dur": 0.4, "color": "#38BDF8", "style": "dashed" },
             { "type": "packet", "from": "bcStream", "to": "interp", "p": 0.22, "dur": 1.2, "label": "OP", "color": "#FACC15", "count": 2, "stagger": 0.5 },
@@ -184,11 +187,11 @@
           "accent": "#FB923C",
           "narration": "Once a method crosses ten thousand invocations, HotSpot flags it red hot and hands it to the C2 Just-In-Time compiler. Using real runtime branch profiles, C2 inlines methods and emits native CPU machine code.",
           "actions": [
+            { "type": "focus", "x": 1000, "y": 640, "zoom": 1.18, "p": 0.10, "dur": 0.95 },
             { "type": "mutate", "target": "profiler", "p": 0.08, "dur": 0.8, "meter": 1.0, "status": "hot", "badge": "10,000+ HOT!", "sub": "Threshold Crossed" },
             { "type": "spawn", "target": "jit", "p": 0.20, "dur": 0.45 },
             { "type": "connect", "from": "profiler", "to": "jit", "p": 0.26, "dur": 0.4, "color": "#FB923C" },
             { "type": "packet", "from": "profiler", "to": "jit", "p": 0.32, "dur": 0.9, "label": "HOT IR", "color": "#FB923C" },
-            { "type": "focus", "target": "jit", "p": 0.42, "dur": 0.9, "zoom": 1.36 },
             { "type": "mutate", "target": "jit", "p": 0.56, "badge": "COMPILED ✔", "status": "ok", "sub": "x86_64 / ARM64" },
             { "type": "callout", "target": "jit", "p": 0.60, "pUntil": 0.96, "text": "Optimizes based on REAL runtime traffic!", "side": "top", "color": "#FB923C" }
           ]
@@ -201,7 +204,7 @@
           "accent": "#34D399",
           "narration": "That compiled machine code is stored inside the Code Cache. From that moment on, the JVM bypasses the Interpreter completely and executes native instructions directly on your CPU silicon at up to one hundred times the speed.",
           "actions": [
-            { "type": "resetCamera", "p": 0.04, "dur": 0.8 },
+            { "type": "resetCamera", "p": 0.04, "dur": 0.85 },
             { "type": "spawn", "target": "codeCache", "p": 0.14, "dur": 0.45 },
             { "type": "connect", "from": "jit", "to": "codeCache", "p": 0.20, "dur": 0.4, "color": "#34D399" },
             { "type": "packet", "from": "jit", "to": "codeCache", "p": 0.26, "dur": 0.85, "label": "NATIVE", "color": "#34D399" },
@@ -221,9 +224,9 @@
       "backdrop": "dotMatrix",
       "whiteboard": {
         "actors": [
-          { "id": "p1", "kind": "box", "x": 340, "y": 500, "w": 320, "h": 220, "label": "1. ClassLoader", "sub": "Portable & Verified", "color": "#38BDF8", "items": ["• Load .class bytes", "• Verify stack safety", "• Store in Metaspace"], "initial": true },
-          { "id": "p2", "kind": "box", "x": 960, "y": 500, "w": 340, "h": 220, "label": "2. Generational GC", "sub": "Self-Healing Memory", "color": "#FACC15", "items": ["• Fast Eden bump alloc", "• Sweep 90% short-lived", "• Promote to Old Gen"], "initial": true },
-          { "id": "p3", "kind": "box", "x": 1580, "y": 500, "w": 320, "h": 220, "label": "3. HotSpot JIT", "sub": "Adaptive Native Speed", "color": "#34D399", "items": ["• Profile hot loops", "• C2 inline & unroll", "• Bare-metal CPU exec"], "initial": true }
+          { "id": "p1", "kind": "box", "icon": "shieldGuard", "icons": ["linuxPenguin", "appleLogo", "winOS"], "x": 340, "y": 565, "w": 440, "h": 395, "label": "1. ClassLoader", "sub": "Portable & Type-Safe", "color": "#38BDF8", "items": ["• Load .class bytecode", "• Verify stack & safety", "• Store in Metaspace"], "initial": true },
+          { "id": "p2", "kind": "box", "icon": "trashSweep", "icons": ["stackLayers", "ramChip", "databaseStack"], "x": 960, "y": 565, "w": 460, "h": 395, "label": "2. Generational GC", "sub": "Auto-Managed Memory", "color": "#FACC15", "items": ["• Fast Eden bump alloc", "• Sweep 90% dead temp", "• Promote to Old Gen"], "initial": true },
+          { "id": "p3", "kind": "box", "icon": "rocketBoost", "icons": ["flameNitro", "lightningBolt", "cpuSilicon"], "x": 1580, "y": 565, "w": 440, "h": 395, "label": "3. HotSpot C2 JIT", "sub": "Adaptive Native Speed", "color": "#34D399", "items": ["• Profile hot loops live", "• Inline & unroll code", "• Bare-metal CPU exec"], "initial": true }
         ]
       },
       "beats": [
@@ -235,6 +238,7 @@
           "accent": "#34D399",
           "narration": "Put it all together and the JVM's brilliance is clear. ClassLoaders guarantee portability and safety, Generational Garbage Collection automates memory at scale, and the HotSpot JIT turns hot bytecode into native speed.",
           "actions": [
+            { "type": "resetCamera", "p": 0.0, "dur": 0.01 },
             { "type": "spotlight", "targets": ["p1"], "p": 0.06, "pUntil": 0.34 },
             { "type": "mutate", "target": "p1", "p": 0.12, "badge": "PORTABLE ✔", "status": "ok" },
             { "type": "connect", "from": "p1", "to": "p2", "p": 0.30, "dur": 0.4, "color": "#38BDF8" },

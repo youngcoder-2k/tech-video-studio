@@ -244,11 +244,13 @@ function drawTopHeader(ctx, title, chapterText = '', options = {}) {
   const accentColor = options.accentColor || '#38BDF8';
   const marginX = options.marginX || 64;
 
+  const cleanTitle = (title || '').replace(/\s*\([^)]*(?:whiteboard|v\d+|living|beta|preview|edition)[^)]*\)/gi, '').trim();
+
   ctx.save();
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = `600 36px ${FONTS.sans}`;
+  ctx.font = `600 32px ${FONTS.sans}`;
   ctx.textAlign = 'left';
-  ctx.fillText(title, marginX, 68);
+  ctx.fillText(cleanTitle, marginX, 64);
 
   if (chapterText) {
     ctx.font = `600 16px ${FONTS.sans}`;
@@ -683,20 +685,20 @@ function drawBeatHeader(ctx, title, subtitle = '', opts = {}) {
   ctx.globalAlpha *= alpha;
   ctx.textAlign = 'center';
 
-  // Subtle accent bar above title
+  // Subtle accent bar above title — compact header ends cleanly at y=185 leaving y=215..955 strictly for diagrams
   ctx.fillStyle = accent;
   ctx.beginPath();
-  ctx.roundRect(960 - 34, 118, 68, 4, 2);
+  ctx.roundRect(960 - 34, 96, 68, 4, 2);
   ctx.fill();
 
   ctx.fillStyle = '#F8FAFC';
-  ctx.font = `800 36px ${FONTS.sans}`;
-  ctx.fillText(title, 960, 164);
+  ctx.font = `800 34px ${FONTS.sans}`;
+  ctx.fillText(title, 960, 138);
 
   if (subtitle) {
     ctx.fillStyle = '#94A3B8';
-    ctx.font = `600 22px ${FONTS.sans}`;
-    ctx.fillText(subtitle, 960, 198);
+    ctx.font = `600 20px ${FONTS.sans}`;
+    ctx.fillText(subtitle, 960, 172);
   }
   ctx.restore();
 }
@@ -1643,7 +1645,13 @@ const BUILTIN_SVGS = {
   magnifyingGlass: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="44" cy="44" r="26" fill="rgba(56,189,248,0.2)" stroke="#38BDF8" stroke-width="6"/><line x1="63" y1="63" x2="86" y2="86" stroke="#FACC15" stroke-width="9" stroke-linecap="round"/><path d="M32,36 A14,14 0 0,1 52,32" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/></svg>`,
   boxArchive: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="16" y="28" width="68" height="56" rx="8" fill="#4C1D95" stroke="#C084FC" stroke-width="3.5"/><rect x="12" y="16" width="76" height="16" rx="5" fill="#6D28D9" stroke="#E9D5FF" stroke-width="3"/><rect x="44" y="16" width="12" height="68" fill="#FACC15" opacity="0.85"/><rect x="38" y="46" width="24" height="14" rx="4" fill="#0F172A" stroke="#FACC15" stroke-width="2"/></svg>`,
   checkShield: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#064E3B" stroke="#34D399" stroke-width="4"/><path d="M32,52 L45,65 L70,36" fill="none" stroke="#4ADE80" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  warningAlert: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,12 90,84 10,84" fill="#7F1D1D" stroke="#F87171" stroke-width="4" stroke-linejoin="round"/><line x1="50" y1="38" x2="50" y2="60" stroke="#FEF08A" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="73" r="4.5" fill="#FEF08A"/></svg>`
+  warningAlert: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,12 90,84 10,84" fill="#7F1D1D" stroke="#F87171" stroke-width="4" stroke-linejoin="round"/><line x1="50" y1="38" x2="50" y2="60" stroke="#FEF08A" stroke-width="7" stroke-linecap="round"/><circle cx="50" cy="73" r="4.5" fill="#FEF08A"/></svg>`,
+  codeFile: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M22,10 L62,10 L82,30 L82,90 L22,90 Z" fill="#0F172A" stroke="#38BDF8" stroke-width="4" stroke-linejoin="round"/><path d="M62,10 L62,30 L82,30" fill="#0369A1" stroke="#38BDF8" stroke-width="3.5" stroke-linejoin="round"/><polyline points="42,50 32,60 42,70" fill="none" stroke="#7DD3FC" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><polyline points="62,50 72,60 62,70" fill="none" stroke="#7DD3FC" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><line x1="56" y1="46" x2="48" y2="74" stroke="#FACC15" stroke-width="4.5" stroke-linecap="round"/></svg>`,
+  binaryFile: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M22,10 L62,10 L82,30 L82,90 L22,90 Z" fill="#064E3B" stroke="#34D399" stroke-width="4" stroke-linejoin="round"/><path d="M62,10 L62,30 L82,30" fill="#047857" stroke="#34D399" stroke-width="3.5" stroke-linejoin="round"/><text x="52" y="58" font-family="monospace" font-weight="900" font-size="22" fill="#6EE7B7" text-anchor="middle">0101</text><text x="52" y="78" font-family="monospace" font-weight="900" font-size="18" fill="#FACC15" text-anchor="middle">CAFE</text></svg>`,
+  stackLayers: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><polygon points="50,14 88,32 50,50 12,32" fill="#0284C7" stroke="#7DD3FC" stroke-width="3.5" stroke-linejoin="round"/><polyline points="12,50 50,68 88,50" fill="none" stroke="#38BDF8" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><polyline points="12,68 50,86 88,68" fill="none" stroke="#34D399" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  trashSweep: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="24" y="28" width="52" height="58" rx="8" fill="#7F1D1D" stroke="#F87171" stroke-width="4"/><line x1="16" y1="28" x2="84" y2="28" stroke="#FCA5A5" stroke-width="6" stroke-linecap="round"/><path d="M38,28 L38,18 C38,14 62,14 62,18 L62,28" fill="none" stroke="#FCA5A5" stroke-width="4.5"/><line x1="40" y1="42" x2="40" y2="72" stroke="#FCA5A5" stroke-width="4.5" stroke-linecap="round"/><line x1="50" y1="42" x2="50" y2="72" stroke="#FCA5A5" stroke-width="4.5" stroke-linecap="round"/><line x1="60" y1="42" x2="60" y2="72" stroke="#FCA5A5" stroke-width="4.5" stroke-linecap="round"/></svg>`,
+  databaseStack: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><ellipse cx="50" cy="24" rx="34" ry="12" fill="#6D28D9" stroke="#C4B5FD" stroke-width="3.5"/><path d="M16,24 L16,74 C16,81 31,86 50,86 C69,86 84,81 84,74 L84,24" fill="#4C1D95" stroke="#C4B5FD" stroke-width="3.5"/><path d="M16,49 C16,56 31,61 50,61 C69,61 84,56 84,49" fill="none" stroke="#A78BFA" stroke-width="3.5"/><ellipse cx="50" cy="24" rx="34" ry="12" fill="#7C3AED" stroke="#DDD6FE" stroke-width="3"/></svg>`,
+  serverRack: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="16" y="14" width="68" height="22" rx="5" fill="#1E293B" stroke="#38BDF8" stroke-width="3.5"/><circle cx="30" cy="25" r="4" fill="#34D399"/><line x1="44" y1="25" x2="72" y2="25" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/><rect x="16" y="42" width="68" height="22" rx="5" fill="#1E293B" stroke="#38BDF8" stroke-width="3.5"/><circle cx="30" cy="53" r="4" fill="#FACC15"/><line x1="44" y1="53" x2="72" y2="53" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/><rect x="16" y="70" width="68" height="22" rx="5" fill="#1E293B" stroke="#38BDF8" stroke-width="3.5"/><circle cx="30" cy="81" r="4" fill="#34D399"/><line x1="44" y1="81" x2="72" y2="81" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/></svg>`
 };
 
 const imageCache = {};
@@ -1906,8 +1914,8 @@ function resolveActionTiming(action, totalDuration) {
  * Compute anchor point on an actor's bounding box facing another actor.
  */
 function getActorBounds(actor) {
-  const w = actor.w || (actor.kind === 'icon' ? 140 : actor.kind === 'pill' ? 220 : 260);
-  const h = actor.h || (actor.kind === 'icon' ? 140 : actor.kind === 'pill' ? 68 : 140);
+  const w = actor.w || (actor.kind === 'icon' ? 160 : actor.kind === 'pill' ? 260 : 380);
+  const h = actor.h || (actor.kind === 'icon' ? 160 : actor.kind === 'pill' ? 76 : 210);
   return {
     cx: actor.x,
     cy: actor.y,
@@ -1997,7 +2005,7 @@ function evaluateWhiteboardState(spec, t, totalDuration) {
 
   // Spotlight tracking (last active spotlight wins)
   let spotlightTargets = null;
-  let spotlightDim = 0.28;
+  let spotlightDim = 0.58;
 
   const actions = Array.isArray(spec.actions) ? spec.actions : [];
   for (const action of actions) {
@@ -2100,7 +2108,7 @@ function evaluateWhiteboardState(spec, t, totalDuration) {
     if (action.type === 'spotlight') {
       if (t >= start && (action.until == null || t <= action.until) && (action.pUntil == null || t <= action.pUntil * safeDur)) {
         spotlightTargets = new Set(Array.isArray(action.targets) ? action.targets : [action.target]);
-        spotlightDim = action.dimAlpha != null ? action.dimAlpha : 0.28;
+        spotlightDim = action.dimAlpha != null ? action.dimAlpha : 0.62;
       }
       continue;
     }
@@ -2203,24 +2211,42 @@ function drawActor(ctx, actor, t) {
         ? '#34D399'
         : actor.borderColor;
 
-  // 1. Dashed Architectural Group Container (drawn behind other actors)
+  // 1. Dashed Architectural Group Container (label pill sits cleanly ON top border — never floats into header!)
   if (actor.kind === 'group') {
     ctx.save();
     ctx.beginPath();
-    ctx.roundRect(b.x, b.y, b.w, b.h, 16);
+    ctx.roundRect(b.x, b.y, b.w, b.h, 18);
     ctx.fillStyle = actor.fillColor || 'rgba(255,255,255,0.025)';
     ctx.fill();
-    ctx.setLineDash([12, 8]);
+    ctx.setLineDash([14, 10]);
     ctx.strokeStyle = strokeCol || 'rgba(255,255,255,0.45)';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3;
     ctx.stroke();
     ctx.setLineDash([]);
 
     if (actor.label) {
-      ctx.fillStyle = strokeCol || '#E5E7EB';
       ctx.font = `800 22px ${Theme.FONTS.sans}`;
+      const hasGrpIcon = Boolean(actor.icon);
+      const labelW = ctx.measureText(actor.label).width;
+      const pillW = labelW + (hasGrpIcon ? 64 : 32);
+      const pillH = 38;
+      const pillX = b.x + 24;
+      const pillY = b.y - pillH / 2;
+
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillW, pillH, 10);
+      ctx.fillStyle = '#232323';
+      ctx.fill();
+      ctx.strokeStyle = strokeCol || 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      if (hasGrpIcon) {
+        Icons.draw(ctx, actor.icon, pillX + 24, b.y, 24, { animate: false });
+      }
+      ctx.fillStyle = strokeCol || '#E5E7EB';
       ctx.textAlign = 'left';
-      ctx.fillText(actor.label, b.x + 18, b.y - 12);
+      ctx.fillText(actor.label, pillX + (hasGrpIcon ? 44 : 16), b.y + 8);
     }
     ctx.restore();
     ctx.restore();
@@ -2234,7 +2260,7 @@ function drawActor(ctx, actor, t) {
       ctx.beginPath();
       ctx.arc(b.cx, b.cy, Math.max(b.w, b.h) * 0.56, 0, Math.PI * 2);
       ctx.strokeStyle = strokeCol;
-      ctx.lineWidth = 3.5;
+      ctx.lineWidth = 4;
       ctx.shadowColor = strokeCol;
       ctx.shadowBlur = 18;
       ctx.stroke();
@@ -2255,14 +2281,14 @@ function drawActor(ctx, actor, t) {
     return;
   }
 
-  // 3. Pill Actor (ByteByteGo crisp rounded pill)
+  // 3. Pill Actor (ByteByteGo crisp rounded pill with optional crisp icon)
   if (actor.kind === 'pill') {
     ctx.beginPath();
     ctx.roundRect(b.x, b.y, b.w, b.h, b.h / 2);
     ctx.fillStyle = actor.fillColor || (actor.spotlight ? 'rgba(16, 185, 129, 0.25)' : 'rgba(20, 24, 30, 0.94)');
     ctx.fill();
     ctx.strokeStyle = strokeCol;
-    ctx.lineWidth = actor.spotlight ? 4 : 3;
+    ctx.lineWidth = actor.spotlight ? 4.5 : 3.5;
     if (actor.spotlight) {
       ctx.shadowColor = strokeCol;
       ctx.shadowBlur = 16;
@@ -2272,8 +2298,18 @@ function drawActor(ctx, actor, t) {
 
     ctx.fillStyle = '#FFFFFF';
     ctx.font = `800 24px ${Theme.FONTS.sans}`;
-    ctx.textAlign = 'center';
-    ctx.fillText(actor.label || '', b.cx, b.cy + 8);
+    if (actor.icon) {
+      const iconSize = Math.min(38, b.h * 0.58);
+      const labelW = ctx.measureText(actor.label || '').width;
+      const totalW = iconSize + 14 + labelW;
+      const startX = b.cx - totalW / 2;
+      Icons.draw(ctx, actor.icon, startX + iconSize / 2, b.cy, iconSize, { animate: false });
+      ctx.textAlign = 'left';
+      ctx.fillText(actor.label || '', startX + iconSize + 14, b.cy + 8);
+    } else {
+      ctx.textAlign = 'center';
+      ctx.fillText(actor.label || '', b.cx, b.cy + 8);
+    }
     if (actor.crossOutProgress > 0.02) {
       Effects.crossOutFailure(ctx, b.cx, b.cy, actor.crossOutProgress, { size: b.h * 0.48 });
     }
@@ -2281,12 +2317,12 @@ function drawActor(ctx, actor, t) {
     return;
   }
 
-  // 4. Cylinder Database / Storage Actor
+  // 4. Cylinder Database / Storage Actor (with optional icon + generous spacing)
   if (actor.kind === 'cylinder') {
-    const ry = 20;
+    const ry = 22;
     ctx.fillStyle = actor.fillColor || '#2C2C2C';
     ctx.strokeStyle = strokeCol;
-    ctx.lineWidth = actor.spotlight ? 4 : 3;
+    ctx.lineWidth = actor.spotlight ? 4.5 : 3.5;
     if (actor.spotlight) {
       ctx.shadowColor = strokeCol;
       ctx.shadowBlur = 18;
@@ -2308,14 +2344,19 @@ function drawActor(ctx, actor, t) {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
+    const hasCylIcon = Boolean(actor.icon);
+    const labelY = hasCylIcon ? b.cy + 24 : b.cy + 6;
+    if (hasCylIcon) {
+      Icons.draw(ctx, actor.icon, b.cx, b.cy - 22, 46, { animate: false });
+    }
     ctx.fillStyle = '#FFFFFF';
     ctx.font = `800 24px ${Theme.FONTS.sans}`;
     ctx.textAlign = 'center';
-    ctx.fillText(actor.label || '', b.cx, b.cy + 8);
+    ctx.fillText(actor.label || '', b.cx, labelY);
     if (actor.sub) {
       ctx.fillStyle = '#CBD5E1';
       ctx.font = `600 18px ${Theme.FONTS.mono}`;
-      ctx.fillText(actor.sub, b.cx, b.cy + 34);
+      ctx.fillText(actor.sub, b.cx, labelY + 32);
     }
     if (actor.badge) {
       drawActorBadge(ctx, b.x + b.w - 10, b.y - 6, actor.badge, actor.badgeColor);
@@ -2327,13 +2368,13 @@ function drawActor(ctx, actor, t) {
     return;
   }
 
-  // 5. Default Architectural Card / Memory Bar / Code Block Actor
+  // 5. Visual-First Architectural Card / Memory Bar / Code Block Actor (generous spacing, zero cramped text!)
   ctx.beginPath();
-  ctx.roundRect(b.x, b.y, b.w, b.h, 14);
-  ctx.fillStyle = actor.fillColor || (actor.kind === 'code' ? '#181C22' : '#2C2C2C');
+  ctx.roundRect(b.x, b.y, b.w, b.h, 16);
+  ctx.fillStyle = actor.fillColor || (actor.kind === 'code' ? '#181C22' : '#2A2D34');
   ctx.fill();
   ctx.strokeStyle = strokeCol;
-  ctx.lineWidth = actor.spotlight ? 4 : 2.8;
+  ctx.lineWidth = actor.spotlight ? 4.5 : 3.5;
   if (actor.spotlight) {
     ctx.shadowColor = strokeCol;
     ctx.shadowBlur = 18;
@@ -2341,69 +2382,142 @@ function drawActor(ctx, actor, t) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // Header bar for box/code/memory-bar
   const hasIcon = Boolean(actor.icon);
-  const titleY = b.y + 36;
-  if (hasIcon) {
-    Icons.draw(ctx, actor.icon, b.x + 34, b.y + 34, 22, { color: strokeCol, animate: false });
-  }
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = `800 23px ${Theme.FONTS.sans}`;
-  ctx.textAlign = hasIcon ? 'left' : 'center';
-  ctx.fillText(actor.label || '', hasIcon ? b.x + 62 : b.cx, titleY + 4);
+  const hasItems = Array.isArray(actor.items) && actor.items.length > 0;
+  const hasMeter = actor.meter != null;
+  const hasLogoStrip = Array.isArray(actor.icons) && actor.icons.length > 0;
 
-  if (actor.sub) {
-    ctx.fillStyle = '#CBD5E1';
-    ctx.font = `600 18px ${Theme.FONTS.mono}`;
-    ctx.textAlign = hasIcon ? 'left' : 'center';
-    ctx.fillText(actor.sub, hasIcon ? b.x + 62 : b.cx, titleY + 30);
-  }
+  // Mode A: Hero Icon Card (clean visual icon centered above title + sub — ByteByteGo visual-first standard!)
+  if (hasIcon && !hasItems && !hasMeter && !hasLogoStrip) {
+    const iconSize = Math.min(68, b.h * 0.38);
+    const iconCy = b.y + b.h * 0.34;
 
-  // Live fill meter (for Heap / Eden / Queue / CPU load)
-  if (actor.meter != null) {
-    const padX = 20;
-    const barW = b.w - padX * 2;
-    const barH = 22;
-    const barY = b.y + b.h - 38;
+    // Soft circular icon medallion
+    ctx.save();
     ctx.beginPath();
-    ctx.roundRect(b.x + padX, barY, barW, barH, 8);
-    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.arc(b.cx, iconCy, iconSize * 0.68, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
     ctx.fill();
-    const fillW = Math.max(0, barW * clamp01(actor.meter));
-    if (fillW > 2) {
-      const mCol = actor.meter > 0.85 ? '#F87171' : (actor.meter > 0.6 ? '#FACC15' : '#34D399');
-      ctx.beginPath();
-      ctx.roundRect(b.x + padX, barY, fillW, barH, 8);
-      ctx.fillStyle = mCol;
-      ctx.fill();
-    }
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = `700 14px ${Theme.FONTS.mono}`;
-    ctx.textAlign = 'right';
-    ctx.fillText(`${Math.round(clamp01(actor.meter) * 100)}%`, b.x + b.w - padX - 6, barY + 16);
-  }
+    ctx.strokeStyle = strokeCol;
+    ctx.globalAlpha *= 0.45;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
 
-  // Dynamic appended items (code lines, heap objects, log entries)
-  if (actor.items && actor.items.length > 0) {
-    const startY = actor.sub ? titleY + 58 : titleY + 38;
-    const rowH = 28;
-    actor.items.slice(0, 6).forEach((item, idx) => {
-      const text = typeof item === 'string' ? item : item.text;
-      const col = typeof item === 'string' ? '#E5E7EB' : (item.color || '#E5E7EB');
-      const itemP = typeof item === 'string' ? 1 : (item.progress != null ? item.progress : 1);
+    Icons.draw(ctx, actor.icon, b.cx, iconCy, iconSize, { animate: false });
+
+    const titleY = iconCy + iconSize * 0.68 + 34;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `800 25px ${Theme.FONTS.sans}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(actor.label || '', b.cx, titleY);
+
+    if (actor.sub) {
+      ctx.fillStyle = '#CBD5E1';
+      ctx.font = `600 18px ${Theme.FONTS.mono}`;
+      ctx.fillText(actor.sub, b.cx, titleY + 32);
+    }
+  } else {
+    // Mode B: Structured Header + Generous Spacing + Divider + Items / Meter / Multi-Logo Strip
+    const headerPadTop = 26;
+    const iconBadgeSize = 46;
+    const textLeftX = hasIcon ? b.x + 88 : b.cx;
+    const titleY = b.y + headerPadTop + 22;
+
+    if (hasIcon) {
       ctx.save();
-      ctx.globalAlpha *= itemP;
-      ctx.fillStyle = col;
-      ctx.font = `600 18px ${actor.kind === 'code' ? Theme.FONTS.mono : Theme.FONTS.sans}`;
-      ctx.textAlign = 'left';
-      ctx.fillText(text, b.x + 22, startY + idx * rowH);
+      ctx.beginPath();
+      ctx.arc(b.x + 48, b.y + headerPadTop + 26, 28, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.07)';
+      ctx.fill();
       ctx.restore();
-    });
+      Icons.draw(ctx, actor.icon, b.x + 48, b.y + headerPadTop + 26, iconBadgeSize, { animate: false });
+    }
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `800 24px ${Theme.FONTS.sans}`;
+    ctx.textAlign = hasIcon ? 'left' : 'center';
+    ctx.fillText(actor.label || '', textLeftX, titleY);
+
+    if (actor.sub) {
+      ctx.fillStyle = '#CBD5E1';
+      ctx.font = `600 18px ${Theme.FONTS.mono}`;
+      ctx.textAlign = hasIcon ? 'left' : 'center';
+      ctx.fillText(actor.sub, textLeftX, titleY + 32);
+    }
+
+    // Subtle divider between header and body content
+    const dividerY = b.y + (actor.sub ? 96 : 76);
+    if (hasItems || hasLogoStrip) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(b.x + 22, dividerY);
+      ctx.lineTo(b.x + b.w - 22, dividerY);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Dynamic appended items with airy 38px vertical rhythm
+    if (hasItems) {
+      const startY = dividerY + 36;
+      const rowH = 38;
+      actor.items.slice(0, 6).forEach((item, idx) => {
+        const text = typeof item === 'string' ? item : item.text;
+        const col = typeof item === 'string' ? '#E5E7EB' : (item.color || '#E5E7EB');
+        const itemP = typeof item === 'string' ? 1 : (item.progress != null ? item.progress : 1);
+        ctx.save();
+        ctx.globalAlpha *= itemP;
+        ctx.fillStyle = col;
+        ctx.font = `600 20px ${actor.kind === 'code' ? Theme.FONTS.mono : Theme.FONTS.sans}`;
+        ctx.textAlign = 'left';
+        ctx.fillText(text, b.x + 26, startY + idx * rowH);
+        ctx.restore();
+      });
+    }
+
+    // Multi-Logo Strip (e.g. Linux + Apple + Windows logos for cross-platform clarity!)
+    if (hasLogoStrip) {
+      const logos = actor.icons.slice(0, 5);
+      const logoSize = 36;
+      const gap = 26;
+      const stripW = logos.length * logoSize + (logos.length - 1) * gap;
+      const stripStartX = b.cx - stripW / 2 + logoSize / 2;
+      const stripY = b.y + b.h - 36;
+      logos.forEach((iconName, idx) => {
+        Icons.draw(ctx, iconName, stripStartX + idx * (logoSize + gap), stripY, logoSize, { animate: false });
+      });
+    }
+
+    // Live fill meter (for Heap / Eden / Queue / CPU load)
+    if (hasMeter) {
+      const padX = 24;
+      const barW = b.w - padX * 2;
+      const barH = 26;
+      const barY = b.y + b.h - 46;
+      ctx.beginPath();
+      ctx.roundRect(b.x + padX, barY, barW, barH, 8);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fill();
+      const fillW = Math.max(0, barW * clamp01(actor.meter));
+      if (fillW > 2) {
+        const mCol = actor.meter > 0.85 ? '#F87171' : (actor.meter > 0.6 ? '#FACC15' : '#34D399');
+        ctx.beginPath();
+        ctx.roundRect(b.x + padX, barY, fillW, barH, 8);
+        ctx.fillStyle = mCol;
+        ctx.fill();
+      }
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `700 16px ${Theme.FONTS.mono}`;
+      ctx.textAlign = 'right';
+      ctx.fillText(`${Math.round(clamp01(actor.meter) * 100)}%`, b.x + b.w - padX - 8, barY + 19);
+    }
   }
 
   // Status badge pill on top-right corner
   if (actor.badge) {
-    drawActorBadge(ctx, b.x + b.w - 10, b.y - 6, actor.badge, actor.badgeColor);
+    drawActorBadge(ctx, b.x + b.w - 12, b.y - 4, actor.badge, actor.badgeColor);
   }
 
   // Mutation pulse ring
@@ -2413,7 +2527,7 @@ function drawActor(ctx, actor, t) {
     ctx.beginPath();
     ctx.roundRect(b.x - 8 * actor.pulseAt, b.y - 8 * actor.pulseAt, b.w + 16 * actor.pulseAt, b.h + 16 * actor.pulseAt, 18);
     ctx.strokeStyle = strokeCol;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3.5;
     ctx.stroke();
     ctx.restore();
   }
@@ -2427,16 +2541,16 @@ function drawActor(ctx, actor, t) {
 
 function drawActorBadge(ctx, rightX, topY, text, color) {
   ctx.save();
-  ctx.font = `800 15px ${Theme.FONTS.mono}`;
-  const tw = ctx.measureText(text).width + 20;
-  const bh = 28;
+  ctx.font = `800 17px ${Theme.FONTS.mono}`;
+  const tw = ctx.measureText(text).width + 24;
+  const bh = 32;
   ctx.beginPath();
-  ctx.roundRect(rightX - tw, topY - bh / 2, tw, bh, 14);
+  ctx.roundRect(rightX - tw, topY - bh / 2, tw, bh, 16);
   ctx.fillStyle = color || '#38BDF8';
   ctx.fill();
   ctx.fillStyle = '#0B1120';
   ctx.textAlign = 'center';
-  ctx.fillText(text, rightX - tw / 2, topY + 5);
+  ctx.fillText(text, rightX - tw / 2, topY + 6);
   ctx.restore();
 }
 
@@ -2459,75 +2573,107 @@ function drawPacket(ctx, fromActor, toActor, packet) {
 
   ctx.save();
   const label = packet.label || '';
-  ctx.font = `800 16px ${Theme.FONTS.mono}`;
-  const pw = Math.max(38, ctx.measureText(label).width + 24);
-  const ph = 32;
+  ctx.font = `800 18px ${Theme.FONTS.mono}`;
+  const pw = Math.max(46, ctx.measureText(label).width + 28);
+  const ph = 36;
 
   ctx.shadowColor = packet.color;
-  ctx.shadowBlur = 16;
+  ctx.shadowBlur = 18;
   ctx.beginPath();
-  ctx.roundRect(px - pw / 2, py - ph / 2, pw, ph, 16);
+  ctx.roundRect(px - pw / 2, py - ph / 2, pw, ph, 18);
   ctx.fillStyle = packet.color;
   ctx.fill();
   ctx.shadowBlur = 0;
 
   ctx.strokeStyle = '#18181B';
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.stroke();
 
   if (label) {
     ctx.fillStyle = '#0F172A';
     ctx.textAlign = 'center';
-    ctx.fillText(label, px, py + 5);
+    ctx.fillText(label, px, py + 6);
   }
   ctx.restore();
 }
 
 /**
- * Draw a crisp ByteByteGo-style callout annotation pointing to an actor.
+ * Draw a crisp ByteByteGo-style callout annotation pointing cleanly to an actor's OUTER border
+ * (never stabbing through card text or overlapping top status badges!).
  */
 function drawCallout(ctx, callout, actors) {
   let tx = callout.x || 960;
   let ty = callout.y || 540;
-  let offsetY = -105;
-  let offsetX = 0;
+  let edgeX = tx;
+  let edgeY = ty;
+  let cx = tx;
+  let cy = ty - 110;
+  const bh = 52;
 
   if (callout.target && actors.has(callout.target)) {
-    const b = getActorBounds(actors.get(callout.target));
+    const targetActor = actors.get(callout.target);
+    const b = getActorBounds(targetActor);
     tx = b.cx;
     ty = b.cy;
-    if (callout.side === 'bottom') offsetY = b.h / 2 + 54;
-    else if (callout.side === 'left') { offsetX = -(b.w / 2 + 170); offsetY = 0; }
-    else if (callout.side === 'right') { offsetX = b.w / 2 + 170; offsetY = 0; }
-    else offsetY = -(b.h / 2 + 56);
+    const extraBadgeClear = targetActor.badge ? 22 : 0;
+    if (callout.side === 'bottom') {
+      edgeX = b.cx;
+      edgeY = b.y + b.h + 6;
+      cx = b.cx;
+      cy = edgeY + 56;
+    } else if (callout.side === 'left') {
+      edgeX = b.x - 6;
+      edgeY = b.cy;
+      cx = edgeX - 180;
+      cy = b.cy;
+    } else if (callout.side === 'right') {
+      edgeX = b.x + b.w + 6;
+      edgeY = b.cy;
+      cx = edgeX + 180;
+      cy = b.cy;
+    } else {
+      edgeX = b.cx;
+      edgeY = b.y - 6 - extraBadgeClear * 0.4;
+      cx = b.cx;
+      cy = edgeY - 58 - extraBadgeClear * 0.5;
+    }
   }
-
-  const cx = tx + offsetX;
-  const cy = ty + offsetY;
 
   ctx.save();
   ctx.globalAlpha = callout.alpha;
-  ctx.font = `800 20px ${Theme.FONTS.sans}`;
-  const tw = ctx.measureText(callout.text).width + 36;
-  const bh = 46;
+  ctx.font = `700 21px ${Theme.FONTS.sans}`;
+  const tw = ctx.measureText(callout.text).width + 44;
 
-  // Connector stem
+  // Stem connects pill edge neatly to actor outer border — ZERO overlap with text!
+  let stemStartX = cx;
+  let stemStartY = cy;
+  if (cy < edgeY) stemStartY = cy + bh / 2;
+  else if (cy > edgeY) stemStartY = cy - bh / 2;
+  else if (cx < edgeX) stemStartX = cx + tw / 2;
+  else stemStartX = cx - tw / 2;
+
   ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(tx, ty + (offsetY < 0 ? -36 : offsetY > 0 ? 36 : 0));
+  ctx.moveTo(stemStartX, stemStartY);
+  ctx.lineTo(edgeX, edgeY);
   ctx.strokeStyle = callout.color;
-  ctx.lineWidth = 2.5;
-  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 3;
+  ctx.setLineDash([7, 5]);
   ctx.stroke();
   ctx.setLineDash([]);
 
+  // Anchor dot on target outer edge
+  ctx.beginPath();
+  ctx.arc(edgeX, edgeY, 5, 0, Math.PI * 2);
+  ctx.fillStyle = callout.color;
+  ctx.fill();
+
   // Callout pill
   ctx.beginPath();
-  ctx.roundRect(cx - tw / 2, cy - bh / 2, tw, bh, 12);
+  ctx.roundRect(cx - tw / 2, cy - bh / 2, tw, bh, 14);
   ctx.fillStyle = '#181C22';
   ctx.fill();
   ctx.strokeStyle = callout.color;
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 2.8;
   ctx.stroke();
 
   ctx.fillStyle = '#FFFFFF';
@@ -2538,6 +2684,7 @@ function drawCallout(ctx, callout, actors) {
 
 /**
  * Render a complete Composable Whiteboard scene at time `t` (in seconds).
+ * Enforces a strict Safe Diagram Stage (y = 198..960) so zoomed cameras NEVER collide with the beat header!
  */
 function renderScene(ctx, spec, t, totalDuration, opts = {}) {
   const state = evaluateWhiteboardState(spec, t, totalDuration);
@@ -2550,12 +2697,22 @@ function renderScene(ctx, spec, t, totalDuration, opts = {}) {
     });
   }
 
-  // Apply smooth camera zoom/pan
-  Camera.apply(ctx, {
-    camX: state.camera.x,
-    camY: state.camera.y,
-    camZoom: state.camera.zoom
-  }, 1920, 1080);
+  // Strict Safe Diagram Stage Clip + Stage-Centered Camera Transform (y = 198..960, centerY = 580)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 198, 1920, 765);
+  ctx.clip();
+
+  const z = state.camera.zoom || 1;
+  const cx = state.camera.x != null ? state.camera.x : 960;
+  const cy = state.camera.y != null ? state.camera.y : 580;
+  if (Math.abs(z - 1) > 0.0005 || Math.abs(cx - 960) > 0.5 || Math.abs(cy - 580) > 0.5) {
+    // Pivot zoomed framing around the safe stage center (960, 580) instead of raw 540 so zoomed objects stay well clear of the header!
+    const stageCenterY = Math.abs(z - 1) > 0.01 ? 585 : 540;
+    ctx.translate(960, stageCenterY);
+    ctx.scale(z, z);
+    ctx.translate(-cx, -(Math.abs(z - 1) > 0.01 ? cy : 540));
+  }
 
   // Layer 1: Group containers (behind everything)
   for (const actor of state.actors.values()) {
@@ -2619,7 +2776,7 @@ function renderScene(ctx, spec, t, totalDuration, opts = {}) {
     drawCallout(ctx, callout, state.actors);
   }
 
-  Camera.restore(ctx);
+  ctx.restore();
 
   // Optional bottom takeaway pill (drawn in screen space)
   if (spec.takeaway) {
@@ -6243,7 +6400,7 @@ const Runner = require('./core/runner');
 const Illustrations = Object.assign({}, Primitives, Archetypes);
 
 const TechVideoStudio = {
-  version: '4.0.0',
+  version: '4.1.0',
   Theme,
   Camera,
   Effects,

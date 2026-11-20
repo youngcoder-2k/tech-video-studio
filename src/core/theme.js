@@ -227,11 +227,13 @@ function drawTopHeader(ctx, title, chapterText = '', options = {}) {
   const accentColor = options.accentColor || '#38BDF8';
   const marginX = options.marginX || 64;
 
+  const cleanTitle = (title || '').replace(/\s*\([^)]*(?:whiteboard|v\d+|living|beta|preview|edition)[^)]*\)/gi, '').trim();
+
   ctx.save();
   ctx.fillStyle = '#FFFFFF';
-  ctx.font = `600 36px ${FONTS.sans}`;
+  ctx.font = `600 32px ${FONTS.sans}`;
   ctx.textAlign = 'left';
-  ctx.fillText(title, marginX, 68);
+  ctx.fillText(cleanTitle, marginX, 64);
 
   if (chapterText) {
     ctx.font = `600 16px ${FONTS.sans}`;
@@ -666,20 +668,20 @@ function drawBeatHeader(ctx, title, subtitle = '', opts = {}) {
   ctx.globalAlpha *= alpha;
   ctx.textAlign = 'center';
 
-  // Subtle accent bar above title
+  // Subtle accent bar above title — compact header ends cleanly at y=185 leaving y=215..955 strictly for diagrams
   ctx.fillStyle = accent;
   ctx.beginPath();
-  ctx.roundRect(960 - 34, 118, 68, 4, 2);
+  ctx.roundRect(960 - 34, 96, 68, 4, 2);
   ctx.fill();
 
   ctx.fillStyle = '#F8FAFC';
-  ctx.font = `800 36px ${FONTS.sans}`;
-  ctx.fillText(title, 960, 164);
+  ctx.font = `800 34px ${FONTS.sans}`;
+  ctx.fillText(title, 960, 138);
 
   if (subtitle) {
     ctx.fillStyle = '#94A3B8';
-    ctx.font = `600 22px ${FONTS.sans}`;
-    ctx.fillText(subtitle, 960, 198);
+    ctx.font = `600 20px ${FONTS.sans}`;
+    ctx.fillText(subtitle, 960, 172);
   }
   ctx.restore();
 }

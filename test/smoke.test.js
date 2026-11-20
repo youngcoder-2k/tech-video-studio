@@ -289,3 +289,33 @@ test('v4.0.0 Composable Whiteboard Engine evaluates causal packets, state mutati
   const Rea = require('../src/core/rea-analyzer');
   assert.equal(typeof Rea.learnChannelGrammar, 'function');
 });
+
+test('v4.1.0 Visual-First Icon Rule & Anti-Overlap Audit catches missing icons, header collisions, and squished connectors', () => {
+  const iconNames = Studio.Icons.listNames();
+  for (const k of ['codeFile', 'binaryFile', 'stackLayers', 'trashSweep', 'databaseStack', 'serverRack']) {
+    assert.ok(iconNames.includes(k), `Missing v4.1.0 icon: ${k}`);
+  }
+  const Nav = require('../src/core/narrative');
+  const badBp = {
+    title: 'Bad Layout Test',
+    scenes: [{
+      id: 's1',
+      whiteboard: {
+        actors: [
+          { id: 'a', kind: 'box', x: 400, y: 260, w: 300, h: 160, label: 'No Icon A' }, // topY = 180 (< 215!)
+          { id: 'b', kind: 'box', x: 730, y: 260, w: 300, h: 160, label: 'No Icon B' }  // gapX = 30 (< 75!)
+        ]
+      },
+      beats: [{
+        role: 'hook',
+        duration: 10,
+        narration: 'Short test beat. Second clear sentence.',
+        actions: [{ type: 'connect', from: 'a', to: 'b', p: 0.1 }]
+      }]
+    }]
+  };
+  const audit = Nav.auditBlueprintNarrative(badBp);
+  assert.ok(audit.warnings.some((w) => /icons\/logos/i.test(w)), 'Should warn on missing visual icons');
+  assert.ok(audit.warnings.some((w) => /top header safe zone/i.test(w)), 'Should warn on header safe-zone intrusion');
+  assert.ok(audit.warnings.some((w) => /clearance/i.test(w)), 'Should warn on squished connector gap');
+});
