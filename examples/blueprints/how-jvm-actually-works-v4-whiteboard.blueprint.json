@@ -121,7 +121,7 @@
           "actions": [
             { "type": "packet", "from": "stackBox", "to": "eden", "p": 0.08, "dur": 0.85, "label": "NEW", "color": "#FACC15", "count": 3, "stagger": 0.3 },
             { "type": "mutate", "target": "eden", "p": 0.22, "dur": 1.4, "meter": 0.96, "status": "error", "badge": "96% FULL!" },
-            { "type": "focus", "x": 960, "y": 585, "zoom": 1.18, "p": 0.38, "dur": 0.9 },
+            { "type": "focus", "x": 960, "y": 585, "zoom": 1.10, "p": 0.38, "dur": 0.9 },
             { "type": "callout", "target": "eden", "p": 0.55, "pUntil": 0.96, "text": "Minor GC scans ONLY live roots, not dead garbage!", "side": "bottom", "color": "#F87171" }
           ]
         },
@@ -187,7 +187,7 @@
           "accent": "#FB923C",
           "narration": "Once a method crosses ten thousand invocations, HotSpot flags it red hot and hands it to the C2 Just-In-Time compiler. Using real runtime branch profiles, C2 inlines methods and emits native CPU machine code.",
           "actions": [
-            { "type": "focus", "x": 1000, "y": 640, "zoom": 1.18, "p": 0.10, "dur": 0.95 },
+            { "type": "focus", "x": 1020, "y": 585, "zoom": 1.12, "p": 0.10, "dur": 0.95 },
             { "type": "mutate", "target": "profiler", "p": 0.08, "dur": 0.8, "meter": 1.0, "status": "hot", "badge": "10,000+ HOT!", "sub": "Threshold Crossed" },
             { "type": "spawn", "target": "jit", "p": 0.20, "dur": 0.45 },
             { "type": "connect", "from": "profiler", "to": "jit", "p": 0.26, "dur": 0.4, "color": "#FB923C" },
